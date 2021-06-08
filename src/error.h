@@ -1,0 +1,22 @@
+#pragma once
+
+#ifndef ERROR_H
+
+enum error {
+	error_insufficient_memory,
+	error_insufficient_evals,
+	error_insufficient_calls,
+
+	error_label_redefine,
+	error_unnexpected_type,
+
+	error_index_out_of_range,
+	error_variable_undefined,
+
+	error_unrecognized_tok,
+	error_unrecognized_control_seq,
+	error_unexpected_char,
+	error_unexpected_tok
+};
+
+#endif // !ERROR_H
