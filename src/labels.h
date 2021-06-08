@@ -3,15 +3,13 @@
 #ifndef LABEL_H
 #define LABEL_H
 
-struct label_bucket {
-	unsigned long id;
-	unsigned long pos;
-	
-	struct label_bucket* next;
-};
-
 struct label_cache {
-	struct label_bucket** buckets;
+	struct label_bucket {
+		unsigned long id;
+		unsigned long pos;
+
+		struct label_bucket* next;
+	}** buckets;
 };
 
 void init_label_cache(struct label_cache* label_cache);

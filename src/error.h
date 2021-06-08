@@ -8,6 +8,7 @@ enum error {
 	error_insufficient_calls,
 
 	error_label_redefine,
+	error_label_undefined,
 	error_unnexpected_type,
 
 	error_index_out_of_range,

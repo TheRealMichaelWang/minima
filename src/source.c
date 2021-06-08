@@ -55,7 +55,7 @@ int main() {
 	{
 		char src_buf[4096];
 		unsigned int index = 0;
-
+		printf("\n");
 		while (block_check(src_buf, index) || !index)
 		{
 			printf(">>> ");
@@ -74,9 +74,9 @@ int main() {
 		init_compiler(&compiler, src_buf);
 
 		if (!compile(&compiler, 1)) {
-			printf("\n***Syntax Error***\nError No. %d\n\n", compiler.last_err);
+			printf("\n***Syntax Error***\nError No. %d\n", compiler.last_err);
 			print_last_line(compiler.scanner);
-			printf("\n\n");
+			printf("\n");
 		}
 		else {
 			struct chunk new_chunk = build_chunk(&compiler.chunk_builder);
@@ -87,7 +87,7 @@ int main() {
 
 			int err = execute(&machine, &global_chunk);
 			if (err) {
-				printf("\n***Runtime Error***\nError No. %d\n\n", err);
+				printf("\n***Runtime Error***\nError No. %d\n", err);
 				global_chunk.pos = ip;
 			}
 			else

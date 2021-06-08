@@ -6,14 +6,12 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
 
-struct var_bucket {
-	unsigned long id_hash;
-	const struct value* value;
-	struct var_bucket* next;
-};
-
 struct var_context {
-	struct var_bucket** buckets;
+	struct var_bucket {
+		unsigned long id_hash;
+		const struct value* value;
+		struct var_bucket* next;
+	}** buckets;
 	struct garbage_collector* garbage_collector;
 };
 

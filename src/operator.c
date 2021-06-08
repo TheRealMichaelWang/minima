@@ -65,7 +65,7 @@ struct value* op_or(struct value* a, struct value* b) {
 
 struct value* op_add(struct value* a, struct value* b) {
 	struct value* c = malloc(sizeof(struct value));
-	init_num(c, a->payload.numerical, b->payload.numerical);
+	init_num(c, a->payload.numerical + b->payload.numerical);
 	return c;
 }
 
@@ -146,5 +146,19 @@ struct value* op_alloc(struct value* a) {
 		init_null(collection->inner_collection[i]);
 	}
 	init_col(c, collection);
+	return c;
+}
+
+struct value* op_increment(struct value* a) {
+	struct value* c = malloc(sizeof(struct value));
+	init_num(c, a->payload.numerical);
+	a->payload.numerical++;
+	return c;
+}
+
+struct value* op_decriment(struct value* a) {
+	struct value* c = malloc(sizeof(struct value));
+	init_num(c, a->payload.numerical);
+	a->payload.numerical--;
 	return c;
 }

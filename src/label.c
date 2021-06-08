@@ -1,14 +1,14 @@
 #include <stdlib.h>
 #include "labels.h"
 
-#define MAX_LABEL_BUCKETS 255
+#define MAX_SIZE 255
 
 void init_label_cache(struct label_cache* label_cache) {
-	label_cache->buckets = calloc(MAX_LABEL_BUCKETS, sizeof(struct label_bucket*));
+	label_cache->buckets = calloc(MAX_SIZE, sizeof(struct label_bucket*));
 }
 
 void free_label_cache(struct label_cache* label_cache) {
-	for (unsigned char i = 0; i < MAX_LABEL_BUCKETS; i++) {
+	for (unsigned char i = 0; i < MAX_SIZE; i++) {
 		struct label_bucket* bucket = label_cache->buckets[i];
 		while (bucket != NULL)
 		{
@@ -21,7 +21,7 @@ void free_label_cache(struct label_cache* label_cache) {
 }
 
 int insert_label(struct label_cache* label_cache, unsigned long id, unsigned long pos) {
-	struct label_bucket** bucket = &label_cache->buckets[id % MAX_LABEL_BUCKETS];
+	struct label_bucket** bucket = &label_cache->buckets[id % MAX_SIZE];
 	while (*bucket != NULL)
 	{
 		if ((*bucket)->id == id)
@@ -38,7 +38,7 @@ int insert_label(struct label_cache* label_cache, unsigned long id, unsigned lon
 }
 
 unsigned long retrieve_pos(struct label_cache* label_cache, unsigned long id) {
-	struct label_bucket* bucket = label_cache->buckets[id % MAX_LABEL_BUCKETS];
+	struct label_bucket* bucket = label_cache->buckets[id % MAX_SIZE];
 	while (bucket != NULL)
 	{
 		if (bucket->id == id)

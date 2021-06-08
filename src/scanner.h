@@ -26,6 +26,7 @@ struct token {
 		keyword_to,
 		keyword_ref,
 		goto_procedure,
+		goto_extern,
 		return_procedure,
 		dynamic_alloc,
 		identifier,

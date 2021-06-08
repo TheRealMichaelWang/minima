@@ -8,6 +8,7 @@
 #include "chunk.h"
 #include "variable.h"
 #include "labels.h"
+#include "builtins.h"
 
 //machine codes
 
@@ -67,6 +68,7 @@ struct machine {
 
 	struct garbage_collector garbage_collector;
 	struct label_cache label_cache;
+	struct builtin_register builtin_register;
 };
 
 void init_machine(struct machine* machine);

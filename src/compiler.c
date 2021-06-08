@@ -119,17 +119,20 @@ const int compile_value(struct compiler* compiler, char expr_optimize) {
 		write(&compiler->chunk_builder, MACHINE_EVAL_UNI_OP);
 		write(&compiler->chunk_builder, op);
 	}
-	else if (compiler->last_tok.type == goto_procedure) {
+	else if (compiler->last_tok.type == goto_procedure || compiler->last_tok.type == goto_extern) {
+		int is_proc = compiler->last_tok.type == goto_procedure;
 		if (read_ctok(compiler).type != identifier) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
 		unsigned long proc_id = compiler->last_tok.payload.identifier;
+		unsigned long arguments = 0;
 		if (read_ctok(compiler).type == open_paren) {
 			while (1)
 			{
 				read_ctok(compiler);
 				compile_expression(compiler, begin, 1);
+				arguments++;
 				if (compiler->last_tok.type != comma)
 					break;
 			}
@@ -139,9 +142,16 @@ const int compile_value(struct compiler* compiler, char expr_optimize) {
 			}
 			read_ctok(compiler);
 		}
-		write(&compiler->chunk_builder, MACHINE_GOTO);
-		write_ulong(&compiler->chunk_builder, proc_id);
-		write(&compiler->chunk_builder, MACHINE_CLEAN);
+		if (is_proc) {
+			write(&compiler->chunk_builder, MACHINE_GOTO);
+			write_ulong(&compiler->chunk_builder, proc_id);
+			write(&compiler->chunk_builder, MACHINE_CLEAN);
+		}
+		else {
+			write(&compiler->chunk_builder, MACHINE_CALL_EXTERN);
+			write_ulong(&compiler->chunk_builder, proc_id);
+			write_ulong(&compiler->chunk_builder, arguments);
+		}
 	}
 	else {
 		compiler->last_err = error_unrecognized_tok;
@@ -175,6 +185,8 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 const int compile_statement(struct compiler* compiler, char encapsulated, char func_encapsulated) {
 	switch (compiler->last_tok.type)
 	{
+	case unary_op:
+	case goto_extern:
 	case goto_procedure: {
 		if (!compile_value(compiler, 0))
 			return 0;

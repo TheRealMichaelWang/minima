@@ -96,8 +96,11 @@ struct token read_tok(struct scanner* scanner) {
 		case 422601765: //return
 			tok.type = return_procedure;
 			break;
-		case 253189136:
+		case 253189136: //alloc
 			tok.type = dynamic_alloc;
+			break;
+		case 4231324027: //exterm
+			tok.type = goto_extern;
 			break;
 		case 193486360: //and
 			tok.type = binary_op;
@@ -106,6 +109,14 @@ struct token read_tok(struct scanner* scanner) {
 		case 5863686: //or
 			tok.type = binary_op;
 			tok.payload.bin_op = operator_or;
+			break;
+		case 193495071: //inc
+			tok.type = unary_op;
+			tok.payload.uni_op = operator_increment;
+			break;
+		case 193489329: //dec
+			tok.type = unary_op;
+			tok.payload.uni_op = operator_decriment;
 			break;
 		case 2090557760: //null
 			tok.type = primative;
@@ -149,11 +160,9 @@ struct token read_tok(struct scanner* scanner) {
 	else if (scanner->last_char == '\"') {
 		tok.type = primative;
 		read_char(scanner);
-		char* old_block = NULL;
 		char* buffer = NULL;
 		while (scanner->last_char != '\"')
 		{
-			old_block = buffer;
 			buffer = realloc(buffer, ++length);
 			if (buffer == NULL) {
 				tok.type = error;
@@ -166,21 +175,15 @@ struct token read_tok(struct scanner* scanner) {
 				break;
 			}
 		}
-		if (tok.type != error && read_char(scanner) != '\"') {
-			scanner->last_err = error_unexpected_char;
-			tok.type = error;
+		read_char(scanner);
+		struct collection* col = malloc(sizeof(struct collection));
+		init_collection(col, length);
+		for (unsigned long i = 0; i < length; i++) {
+			col->inner_collection[i] = malloc(sizeof(struct value));
+			init_char(col->inner_collection[i], buffer[i]);
 		}
-		else {
-			struct collection* col = malloc(sizeof(struct collection));
-			init_collection(col, length);
-			for (unsigned long i = 0; i < length; i++) {
-				col->inner_collection[i] = malloc(sizeof(struct value));
-				init_char(col->inner_collection[i], buffer[i]);
-			}
-			init_col(&tok.payload.primative, col);
-		}
+		init_col(&tok.payload.primative, col);
 		free(buffer);
-		free(old_block);
 	}
 	else {
 		switch (scanner->last_char)

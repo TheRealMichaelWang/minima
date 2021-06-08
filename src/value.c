@@ -30,6 +30,9 @@ const int copy_value(struct value* dest, struct value* src) {
 	memcpy(dest, src, sizeof(struct value));
 	dest->gc_flag = garbage_uninit;
 	if (dest->type == collection) {
+		dest->payload.collection = malloc(sizeof(struct collection));
+		if (dest->payload.collection == NULL)
+			return 0;
 		if (!copy_collection(dest->payload.collection, src->payload.collection))
 			return 0;
 	}

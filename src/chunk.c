@@ -107,6 +107,8 @@ void skip_instruction(struct chunk* chunk) {
 		op_code = 20;
 	switch (op_code)
 	{
+	case MACHINE_CALL_EXTERN:
+		read_size(chunk, sizeof(unsigned long));
 	case MACHINE_LABEL:
 	case MACHINE_GOTO:
 	case MACHINE_STORE_VAR:

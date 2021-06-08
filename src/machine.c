@@ -2,6 +2,7 @@
 #include <string.h>
 #include "operators.h"
 #include "error.h"
+#include "io.h"
 #include "machine.h"
 
 #define MAX_POSITIONS 2000
@@ -28,11 +29,13 @@ struct value* (*binary_operators[14])(struct value* a, struct value* b) = {
 	op_power
 };
 
-struct value* (*unary_operators[4])(struct value* a) = {
+struct value* (*unary_operators[6])(struct value* a) = {
 	op_copy,
 	op_invert,
 	op_negate,
-	op_alloc
+	op_alloc,
+	op_increment,
+	op_decriment
 };
 
 void init_machine(struct machine* machine) {
@@ -49,6 +52,9 @@ void init_machine(struct machine* machine) {
 
 	init_gcollect(&machine->garbage_collector);
 	init_label_cache(&machine->label_cache);
+	init_builtin_register(&machine->builtin_register);
+
+	declare_builtin_proc(&machine->builtin_register, 271190290, print);
 }
 
 void free_machine(struct machine* machine) {
@@ -71,6 +77,7 @@ void free_machine(struct machine* machine) {
 
 	free_gcollect(&machine->garbage_collector);
 	free_label_cache(&machine->label_cache);
+	free_builtin_register(&machine->builtin_register);
 }
 
 inline void push_eval(struct machine* machine, struct value* value, char flags) {
@@ -236,6 +243,25 @@ int eval_uni_op(struct machine* machine, struct chunk* chunk) {
 	return 1;
 }
 
+int eval_builtin(struct machine* machine, struct chunk* chunk) {
+	unsigned long id = read_ulong(chunk);
+	unsigned long arguments = read_ulong(chunk);
+
+	if (machine->evals < arguments) {
+		machine->last_err = error_insufficient_evals;
+		return 0;
+	}
+	struct value* result = invoke_builtin(&machine->builtin_register, id, &machine->evaluation_stack[machine->evals - arguments], arguments);
+	if (result == NULL) {
+		machine->last_err = error_label_undefined;
+		return 0;
+	}
+	for (unsigned long i = machine->evals - arguments; i < machine->evals; i++)
+		free_eval(machine->evaluation_stack[i], machine->eval_flags[i]);
+	machine->evals -= arguments;
+	push_eval(machine, result, EVAL_FLAG_CPY);
+}
+
 int build_collection(struct machine* machine, struct chunk* chunk) {
 	unsigned long req_size = read_ulong(chunk);
 	if (machine->evals < req_size) {
@@ -377,6 +403,9 @@ int execute(struct machine* machine, struct chunk* chunk) {
 			break;
 		case MACHINE_POP:
 			free_eval(machine->evaluation_stack[--machine->evals], machine->eval_flags[machine->evals]);
+			break;
+		case MACHINE_CALL_EXTERN:
+			eval_builtin(machine, chunk);
 			break;
 		}
 	}

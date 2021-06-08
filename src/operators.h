@@ -24,7 +24,9 @@ enum unary_operator {
 	operator_copy,
 	operator_invert,
 	operator_negate,
-	operator_alloc
+	operator_alloc,
+	operator_increment,
+	operator_decriment
 };
 
 struct value* op_equals(struct value* a, struct value* b);
@@ -50,5 +52,9 @@ struct value* op_invert(struct value* a);
 struct value* op_negate(struct value* a);
 
 struct value* op_alloc(struct value* a);
+
+struct value* op_increment(struct value* a);
+
+struct value* op_decriment(struct value* a);
 
 #endif // !OPERATORS
