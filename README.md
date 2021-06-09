@@ -16,13 +16,13 @@ Fizz Buzz
 ```
 set i to 0
 while inc i <= 99 {
-	if i % 15 {
+	if i % 15 == 0 {
 		extern print("fizzbuzz")
 	}
-	elif i % 5 {
+	elif i % 5 == 0{
 		extern print("fizz")
 	}
-	elif i % 3 {
+	elif i % 3 == 0{
 		extern print("buzz")
 	}
 	else {
