@@ -103,8 +103,6 @@ void jump_to(struct chunk* chunk, const unsigned long pos) {
 
 void skip_instruction(struct chunk* chunk) {
 	char op_code = chunk->last_code;
-	if (op_code == 20)
-		op_code = 20;
 	switch (op_code)
 	{
 	case MACHINE_CALL_EXTERN:
