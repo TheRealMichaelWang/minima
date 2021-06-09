@@ -6,6 +6,8 @@
 void print_last_line(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)
 		scanner.pos = scanner.size;
+	scanner.pos--;
+	unsigned int pos = scanner.pos - 1;
 	while (scanner.pos != 0)
 	{
 		if (scanner.source[scanner.pos] == '\n') {
@@ -17,6 +19,10 @@ void print_last_line(struct scanner scanner) {
 
 	while (scanner.pos < scanner.size && scanner.source[scanner.pos] != '\n')
 		printf("%c", scanner.source[scanner.pos++]);
+	printf("\n");
+	while (pos--)
+		printf(" ");
+	printf("^");
 }
 
 void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
@@ -55,10 +61,10 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	case MACHINE_MARK:
 		printf("MARK");
 		break;
-	case MACHINE_GOTO:
+	case MACHINE_RETURN_GOTO:
 		printf("GOTO");
 		break;
-	case MACHINE_RETURN_GOTO:
+	case MACHINE_GOTO:
 		printf("GOTO, id:%d", read_ulong(chunk));
 		break;
 	case MACHINE_LABEL:

@@ -32,24 +32,45 @@ const char read_data_char(struct scanner* scanner)
 		switch (scanner->last_char)
 		{
 		case 'b':
+			read_char(scanner);
 			return '\b';
 		case 't':
+			read_char(scanner);
 			return '\t';
 		case 'r':
+			read_char(scanner);
 			return '\r';
 		case 'n':
+			read_char(scanner);
 			return '\n';
 		case '0':
-			return 0;
 		case '\'':
 		case '\"':
-		case '\\':
-			return scanner->last_char;
+		case '\\': {
+			char toret = scanner->last_char;
+			read_char(scanner);
+			return toret; 
+		}
 		default:
 			scanner->last_err = error_unrecognized_control_seq;
 		}
 	}
 	return c;
+}
+
+const int read_str(struct scanner* scanner, char* str) {
+	unsigned int len = 0;
+	while (scanner->last_char == '\t' || scanner->last_char == '\r' || scanner->last_char == ' ' || scanner->last_char == '\n')
+		read_char(scanner);
+	if (scanner->last_char != '\"') {
+		scanner->last_err = error_unexpected_char;
+		return 0;
+	}
+	while (read_char(scanner) != '\"')
+		str[len++] = scanner->last_char;
+	str[len] = 0;
+	read_char(scanner);
+	return 1;
 }
 
 struct token read_tok(struct scanner* scanner) {
@@ -95,6 +116,9 @@ struct token read_tok(struct scanner* scanner) {
 			break;
 		case 422601765: //return
 			tok.type = return_procedure;
+			break;
+		case 2654384009: //include
+			tok.type = keyword_include;
 			break;
 		case 253189136: //alloc
 			tok.type = dynamic_alloc;

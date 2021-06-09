@@ -25,6 +25,7 @@ struct token {
 		keyword_set,
 		keyword_to,
 		keyword_ref,
+		keyword_include,
 		goto_procedure,
 		goto_extern,
 		return_procedure,
@@ -58,5 +59,7 @@ struct token {
 void init_scanner(struct scanner* scanner, const char* source);
 
 struct token read_tok(struct scanner* scanner);
+
+const int read_str(struct scanner* scanner, char* str);
 
 #endif // !SCANNER_H

@@ -243,9 +243,12 @@ int eval_uni_op(struct machine* machine, struct chunk* chunk) {
 	}
 	char uni_op = read(chunk);
 	struct value* result = (*unary_operators[uni_op])(machine->evaluation_stack[--machine->evals]);
-	if (result != machine->evaluation_stack[machine->evals])
+	if (result != machine->evaluation_stack[machine->evals]) {
 		free_eval(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
-	push_eval(machine, result, EVAL_FLAG_CPY);
+		push_eval(machine, result, EVAL_FLAG_CPY);
+	}
+	else
+		push_eval(machine, result, machine->eval_flags[machine->evals]);
 	return 1;
 }
 
@@ -409,7 +412,8 @@ int execute(struct machine* machine, struct chunk* chunk) {
 			free_eval(machine->evaluation_stack[--machine->evals], machine->eval_flags[machine->evals]);
 			break;
 		case MACHINE_CALL_EXTERN:
-			eval_builtin(machine, chunk);
+			if (!eval_builtin(machine, chunk))
+				return machine->last_err;
 			break;
 		}
 	}

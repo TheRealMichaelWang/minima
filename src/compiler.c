@@ -1,4 +1,12 @@
+#define _CRT_SECURE_NO_DEPRECATE
+//buffer security is imoortant, but not as much as portability
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "hash.h"
 #include "compiler.h"
+//#include <cstdio>
 
 enum op_precedence {
 	begin,
@@ -401,6 +409,61 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 		write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 		break;
 	}
+	case keyword_include: {
+		if (func_encapsulated) {
+			compiler->last_err = error_unexpected_tok;
+			return 0;
+		}
+		char* file_path = malloc(150);
+		if (file_path == NULL) {
+			compiler->last_err = error_insufficient_memory;
+			return 0;
+		}
+
+		read_str(&compiler->scanner, file_path);
+
+		
+		FILE* infile = fopen(file_path, "r");
+
+		if (infile == NULL) {
+			compiler->last_err = error_cannot_open_file;
+			return 0;
+		}
+		unsigned long path_hash = hash(file_path, strlen(file_path));
+		for (unsigned char i = 0; i < compiler->imported_files; i++)
+			if (compiler->imported_file_hashes[i] == path_hash)
+				return 1;
+		compiler->imported_file_hashes[compiler->imported_files++] = path_hash;
+
+		fseek(infile, 0, SEEK_END);
+		unsigned long fsize = ftell(infile);
+		fseek(infile, 0, SEEK_SET);
+		char* source = malloc(fsize + 1);
+		if (source == NULL) {
+			fclose(infile);
+			free(file_path);
+			compiler->last_err = error_insufficient_memory;
+			return 0;
+		}
+		fread(source, 1, fsize, infile);
+		fclose(infile);
+		source[fsize] = 0;
+
+		struct compiler temp_compiler;
+		init_compiler(&temp_compiler, source);
+
+		if (!compile(&temp_compiler, 0)) {
+			compiler->last_err = temp_compiler.last_err;
+			return 0;
+		}
+		struct chunk compiled_chunk = build_chunk(&temp_compiler.chunk_builder);
+		write_chunk(&compiler->chunk_builder, compiled_chunk);
+		read_ctok(compiler);
+
+		free(source);
+		free(file_path);
+		break;
+	}
 	default:
 		compiler->last_err = error_unexpected_tok;
 		return 0;
@@ -419,6 +482,7 @@ const int compile_body(struct compiler* compiler, char func_encapsulated) {
 }
 
 void init_compiler(struct compiler* compiler, const char* source) {
+	compiler->imported_files = 0;
 	init_scanner(&compiler->scanner, source);
 	init_chunk_builder(&compiler->chunk_builder);
 	read_ctok(compiler);

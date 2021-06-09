@@ -17,7 +17,8 @@ enum error {
 	error_unrecognized_tok,
 	error_unrecognized_control_seq,
 	error_unexpected_char,
-	error_unexpected_tok
+	error_unexpected_tok,
+	error_cannot_open_file,
 };
 
 #endif // !ERROR_H

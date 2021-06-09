@@ -19,7 +19,7 @@ unsigned int block_check(const char* src, unsigned int length) {
 	return blocks;
 }
 
-int main() {
+int main(unsigned int argc, char** argv) {
 	printf("North-Hollywood Minima, version 1.0\n");
 	printf("Written by Michael Wang in 2021\n\n");
 
