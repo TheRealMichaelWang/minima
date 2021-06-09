@@ -8,7 +8,7 @@ Countdown
 ```
 set i to 10
 while dec i {
-	extern print(i, '\n')
+	extern print(i, "\n")
 }
 ```
 
@@ -28,7 +28,7 @@ while inc i <= 99 {
 	else {
 		extern print(i)
 	}
-	extern print('\n')
+	extern print("\n")
 }
 ```
 
