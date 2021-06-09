@@ -24,16 +24,17 @@ void free_gcollect(struct garbage_collector* garbage_collector) {
 	free(garbage_collector->frame_stack);
 }
 
-void register_value(struct garbage_collector* garbage_collector, struct value* value) {
+void register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head) {
 	if (value->gc_flag != garbage_uninit)
 		return;
 	value->gc_flag = garbage_collect;
 	struct garbage_frame* gframe = &garbage_collector->frame_stack[garbage_collector->frames - 1];
-	gframe->to_collect[gframe->values++] = value;
+	if(!noreg_head)
+		gframe->to_collect[gframe->values++] = value;
 	
 	if (value->type == collection) {
 		for (unsigned long i = 0; i < value->payload.collection->size; i++)
-			register_value(garbage_collector, value->payload.collection->inner_collection[i]);
+			register_value(garbage_collector, value->payload.collection->inner_collection[i], 0);
 	}
 }
 
@@ -61,7 +62,7 @@ void gc_protect(struct value* value) {
 
 void reset_flags(struct garbage_frame* garbage_frame) {
 	for (unsigned long i = 0; i < garbage_frame->values; i++)
-		if(garbage_frame->to_collect[i]->gc_flag != garbage_protected)
+		if (garbage_frame->to_collect[i]->gc_flag != garbage_protected)
 			garbage_frame->to_collect[i]->gc_flag = garbage_collect;
 }
 
@@ -73,7 +74,7 @@ void trace_frame(struct garbage_frame* garbage_frame) {
 void gc_collect(struct garbage_collector* garbage_collector) {
 	reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 1]);
 	if (garbage_collector->frames > 1) {
-		reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 2]);
+		//reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 2], 0);
 		for (unsigned long i = 0; i < garbage_collector->frame_stack[garbage_collector->frames - 2].values; i++)
 			trace_value(garbage_collector->frame_stack[garbage_collector->frames - 2].to_collect[i]);
 	}

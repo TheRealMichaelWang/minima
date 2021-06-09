@@ -57,7 +57,7 @@ void init_machine(struct machine* machine) {
 	declare_builtin_proc(&machine->builtin_register, 271190290, print);
 }
 
-void free_machine(struct machine* machine) {
+void reset_stack(struct machine* machine) {
 	while (machine->evals) {
 		if (machine->eval_flags[machine->evals - 1] == EVAL_FLAG_CPY) {
 			free_value(machine->evaluation_stack[machine->evals - 1]);
@@ -65,8 +65,13 @@ void free_machine(struct machine* machine) {
 		}
 		machine->evals--;
 	}
+	while (machine->call_size > 1)
+		free_var_context(&machine->var_stack[--machine->call_size]);
+}
 
-	while (machine->call_size > 0)
+void free_machine(struct machine* machine) {
+	reset_stack(machine);
+	if (machine->call_size > 0)
 		free_var_context(&machine->var_stack[--machine->call_size]);
 	
 	free(machine->position_stack);
@@ -117,13 +122,14 @@ int store_var(struct machine* machine, struct chunk* chunk) {
 	if (machine->eval_flags[machine->evals] == EVAL_FLAG_CPY) {
 		struct value* varptr = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
 		if (varptr == NULL) {
-			register_value(&machine->garbage_collector, setptr);
+			register_value(&machine->garbage_collector, setptr, 0);
 			emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr);
 		}
 		else {
 			free_value(varptr);
 			memcpy(varptr, setptr, sizeof(struct value));
 			free(setptr);
+			register_value(&machine->garbage_collector, varptr, 1);
 		}
 	}
 	else
@@ -337,9 +343,6 @@ int execute(struct machine* machine, struct chunk* chunk) {
 			machine->position_stack[machine->positions] = chunk->pos - 1;
 			machine->position_flags[machine->positions++] = 0;
 			break;
-		case MACHINE_RETURN:
-			jump_to(chunk, machine->position_stack[--machine->positions]);
-			break;
 		case MACHINE_GOTO:
 			machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
 			machine->position_flags[machine->positions++] = 1;
@@ -363,8 +366,9 @@ int execute(struct machine* machine, struct chunk* chunk) {
 				skip(chunk, 0);
 			break;
 		case MACHINE_COND_RETURN:
+			--machine->positions;
 			if (condition_check(machine))
-				jump_to(chunk, machine->position_stack[--machine->positions]);
+				jump_to(chunk, machine->position_stack[machine->positions]);
 			break;
 		case MACHINE_FLAG:
 			machine->std_flag = 1;

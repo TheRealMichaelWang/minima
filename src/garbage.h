@@ -24,7 +24,7 @@ void init_gcollect(struct garbage_collector* garbage_collector);
 
 void free_gcollect(struct garbage_collector* garbage_collector);
 
-void register_value(struct garbage_collector* garbage_collector, struct value* value);
+void register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head);
 
 inline void new_gframe(struct garbage_collector* garbage_collector) {
 	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++]);

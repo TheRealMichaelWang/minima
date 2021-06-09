@@ -24,31 +24,30 @@
 #define MACHINE_END_SKIP 7
 
 #define MACHINE_MARK 8
-#define MACHINE_RETURN 9
 
-#define MACHINE_GOTO 10
-#define MACHINE_RETURN_GOTO 11
-#define MACHINE_LABEL 12
+#define MACHINE_GOTO 9
+#define MACHINE_RETURN_GOTO 10
+#define MACHINE_LABEL 11
 
-#define MACHINE_COND_SKIP 13
-#define MACHINE_COND_RETURN 14
+#define MACHINE_COND_SKIP 12
+#define MACHINE_COND_RETURN 13
 
-#define MACHINE_FLAG 15
-#define MACHINE_RESET_FLAG 16
-#define MACHINE_FLAG_SKIP 17
+#define MACHINE_FLAG 14
+#define MACHINE_RESET_FLAG 15
+#define MACHINE_FLAG_SKIP 16
 
-#define MACHINE_NEW_FRAME 18
-#define MACHINE_CLEAN 19
+#define MACHINE_NEW_FRAME 17
+#define MACHINE_CLEAN 18
 
-#define MACHINE_BUILD_COL 20
+#define MACHINE_BUILD_COL 19
 
-#define MACHINE_GET_INDEX 21
-#define MACHINE_SET_INDEX 22
+#define MACHINE_GET_INDEX 20
+#define MACHINE_SET_INDEX 21
 
-#define MACHINE_PROTECT 23
-#define MACHINE_POP 24
+#define MACHINE_PROTECT 22
+#define MACHINE_POP 23
 
-#define MACHINE_CALL_EXTERN 25
+#define MACHINE_CALL_EXTERN 24
 
 struct machine {
 	unsigned long* position_stack;
@@ -73,6 +72,8 @@ struct machine {
 
 void init_machine(struct machine* machine);
 void free_machine(struct machine* machine);
+
+void reset_stack(struct machine* machine);
 
 int execute(struct machine* machine, struct chunk* chunk);
 
