@@ -40,15 +40,16 @@ proc fib(n) {
 	}
 	return goproc fib(n - 1) + goproc fib(n - 2)
 }
-goproc fib(25)
+extern print(goproc fib(25))
 ```
 
 Factorial
 ```
 proc fact(n) {
 	if n {
-		return n * fact(n - 1)
+		return n * goproc fact(n - 1)
 	}
 	return 1
 }
+extern print(goproc fact(50))
 ```
