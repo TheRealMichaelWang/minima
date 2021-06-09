@@ -179,14 +179,15 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 		}
 		return 1;
 	}
-	enum binary_operator op = compiler->last_tok.payload.bin_op;
-	if (precedence[op] < min_prec)
-		return 1;
-	read_ctok(compiler);
-	if (!compile_expression(compiler, min_prec, 1))
-		return 0;
-	write(&compiler->chunk_builder, MACHINE_EVAL_BIN_OP);
-	write(&compiler->chunk_builder, op);
+	while (compiler->last_tok.type == binary_op && precedence[compiler->last_tok.payload.bin_op] > min_prec)
+	{
+		enum binary_operator op = compiler->last_tok.payload.bin_op;
+		read_ctok(compiler);
+		if (!compile_expression(compiler, precedence[op], 1))
+			return 0;
+		write(&compiler->chunk_builder, MACHINE_EVAL_BIN_OP);
+		write(&compiler->chunk_builder, op);
+	}
 	return 1;
 }
 

@@ -42,6 +42,7 @@ const int copy_value(struct value* dest, struct value* src) {
 const int compare_value(struct value* a, struct value* b) {
 	if (a->type != b->type)
 		return a->type - b->type;
+
 	switch (a->type)
 	{
 	case null:
