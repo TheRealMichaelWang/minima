@@ -45,7 +45,6 @@ void print_value(struct value* value) {
 }
 
 struct value* print(struct value** argv, unsigned int argc) {
-
 	for (unsigned long i = 0; i < argc; i++) {
 		print_value(argv[i]);
 	}
@@ -53,4 +52,35 @@ struct value* print(struct value** argv, unsigned int argc) {
 	struct value* nullvalue = malloc(sizeof(struct value));
 	init_null(nullvalue);
 	return nullvalue;
+}
+
+struct value* get_input(struct value** argv, unsigned int argc) {
+	char format_flag = 0;
+	if (argc > 0 && argv[0]->type == character)
+		format_flag = argv[0]->payload.character;
+	
+	char buffer[4096];
+	unsigned int length = 0;
+	while (scanf_s("%c", &buffer[length], 1)) {
+		if (buffer[length] == '\n')
+			break;
+		length++;
+	}
+	buffer[length] = 0;
+	length--;
+	
+	struct value* toret = malloc(sizeof(struct value));
+	if (format_flag == 'n' || format_flag == 'N') {
+		init_num(toret, strtod(buffer, NULL));
+	}
+	else {
+		struct collection* collection = malloc(sizeof(struct collection));
+		init_collection(collection, length);
+		while (length--) {
+			collection->inner_collection[length] = malloc(sizeof(struct value));
+			init_char(collection->inner_collection[length], buffer[length]);
+		}
+		init_col(toret, collection);
+	}
+	return toret;
 }

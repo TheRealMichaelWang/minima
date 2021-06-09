@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include "variable.h"
 
-#define VAR_MAX_BUCKETS 250
+#define MAX_SIZE 255
 
 int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector) {
-	var_context->buckets = calloc(VAR_MAX_BUCKETS, sizeof(struct var_bucket*));
+	var_context->buckets = calloc(MAX_SIZE, sizeof(struct var_bucket*));
 	if (var_context->buckets == NULL)
 		return 0;
 	var_context->garbage_collector = garbage_collector;
@@ -13,7 +13,7 @@ int init_var_context(struct var_context* var_context, struct garbage_collector* 
 }
 
 void free_var_context(struct var_context* var_context) {
-	for (unsigned char i = 0; i < VAR_MAX_BUCKETS; i++) {
+	for (unsigned char i = 0; i < MAX_SIZE; i++) {
 		struct var_bucket* current = var_context->buckets[i];
 		while (current != NULL)
 		{
@@ -27,7 +27,7 @@ void free_var_context(struct var_context* var_context) {
 }
 
 const struct value* retrieve_var(struct var_context* var_context, const unsigned long id) {
-	struct var_bucket* bucket = var_context->buckets[id % VAR_MAX_BUCKETS];
+	struct var_bucket* bucket = var_context->buckets[id & MAX_SIZE];
 	while (bucket != NULL) {
 		if (bucket->id_hash == id)
 			return bucket->value;
@@ -37,7 +37,7 @@ const struct value* retrieve_var(struct var_context* var_context, const unsigned
 }
 
 int emplace_var(struct var_context* var_context, const unsigned long id, const struct value* value) {
-	struct var_bucket** current_bucket = &var_context->buckets[id % VAR_MAX_BUCKETS];
+	struct var_bucket** current_bucket = &var_context->buckets[id & MAX_SIZE];
 	while (*current_bucket != NULL)
 	{
 		if ((*current_bucket)->id_hash == id)

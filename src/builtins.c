@@ -21,7 +21,7 @@ void free_builtin_register(struct builtin_register* builtin_register) {
 }
 
 const int declare_builtin_proc(struct builtin_register* builtin_register, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc)) {
-	struct builtin_procedure** procedure = &builtin_register->procedures[id % MAX_SIZE];
+	struct builtin_procedure** procedure = &builtin_register->procedures[id & MAX_SIZE];
 	while (*procedure != NULL)
 	{
 		if ((*procedure)->id == id)
@@ -38,7 +38,7 @@ const int declare_builtin_proc(struct builtin_register* builtin_register, unsign
 }
 
 struct value* invoke_builtin(struct builtin_register* builtin_register, unsigned long id, struct value** argv, unsigned int argc) {
-	struct builtin_procedure* current = builtin_register->procedures[id % MAX_SIZE];
+	struct builtin_procedure* current = builtin_register->procedures[id & MAX_SIZE];
 	while (current != NULL)
 	{
 		if (current->id = id) {

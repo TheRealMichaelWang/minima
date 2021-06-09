@@ -4,24 +4,24 @@
 #define MAX_GARBAGE 1000
 #define MAX_VALUES 1000
 
-void init_gframe(struct garbage_frame* garbage_frame) {
-	garbage_frame->to_collect = malloc(sizeof(struct value*) * MAX_VALUES);
-	garbage_frame->values = 0;
-}
-
 void init_gcollect(struct garbage_collector* garbage_collector) {
 	garbage_collector->frame_stack = malloc(sizeof(struct garbage_frame) * MAX_GARBAGE);
 	garbage_collector->frames = 0;
-}
-
-void free_gframe(struct garbage_frame* garbgage_frame) {
-	free(garbgage_frame->to_collect);
 }
 
 void free_gcollect(struct garbage_collector* garbage_collector) {
 	while (garbage_collector->frames > 0)
 		gc_collect(garbage_collector);
 	free(garbage_collector->frame_stack);
+}
+
+void init_gframe(struct garbage_frame* garbage_frame) {
+	garbage_frame->to_collect = malloc(sizeof(struct value*) * MAX_VALUES);
+	garbage_frame->values = 0;
+}
+
+void free_gframe(struct garbage_frame* garbgage_frame) {
+	free(garbgage_frame->to_collect);
 }
 
 void register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head) {

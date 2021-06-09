@@ -414,16 +414,15 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
+
 		char* file_path = malloc(150);
 		if (file_path == NULL) {
 			compiler->last_err = error_insufficient_memory;
 			return 0;
 		}
-
 		read_str(&compiler->scanner, file_path);
 
-		
-		FILE* infile = fopen(file_path, "r");
+		FILE* infile = fopen(file_path, "rb");
 
 		if (infile == NULL) {
 			compiler->last_err = error_cannot_open_file;

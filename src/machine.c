@@ -55,6 +55,7 @@ void init_machine(struct machine* machine) {
 	init_builtin_register(&machine->builtin_register);
 
 	declare_builtin_proc(&machine->builtin_register, 271190290, print);
+	declare_builtin_proc(&machine->builtin_register, 262752949, get_input);
 }
 
 void reset_stack(struct machine* machine) {

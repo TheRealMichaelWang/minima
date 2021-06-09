@@ -7,5 +7,6 @@
 
 void print_value(struct value* value);
 struct value* print(struct value** argv, unsigned int argc);
+struct value* get_input(struct value** argv, unsigned int argc);
 
 #endif // !IO_H

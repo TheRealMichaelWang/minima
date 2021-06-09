@@ -21,7 +21,7 @@ void free_label_cache(struct label_cache* label_cache) {
 }
 
 int insert_label(struct label_cache* label_cache, unsigned long id, unsigned long pos) {
-	struct label_bucket** bucket = &label_cache->buckets[id % MAX_SIZE];
+	struct label_bucket** bucket = &label_cache->buckets[id & MAX_SIZE];
 	while (*bucket != NULL)
 	{
 		if ((*bucket)->id == id)
@@ -38,7 +38,7 @@ int insert_label(struct label_cache* label_cache, unsigned long id, unsigned lon
 }
 
 unsigned long retrieve_pos(struct label_cache* label_cache, unsigned long id) {
-	struct label_bucket* bucket = label_cache->buckets[id % MAX_SIZE];
+	struct label_bucket* bucket = label_cache->buckets[id & MAX_SIZE];
 	while (bucket != NULL)
 	{
 		if (bucket->id == id)

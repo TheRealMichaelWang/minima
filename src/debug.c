@@ -5,7 +5,7 @@
 
 void print_last_line(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)
-		scanner.pos = scanner.size;
+		scanner.pos = scanner.size - 1;
 	scanner.pos--;
 	unsigned int pos = scanner.pos - 1;
 	while (scanner.pos != 0)
@@ -110,7 +110,7 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("POP EVAL");
 		break;
 	case MACHINE_CALL_EXTERN:
-		printf("CALL EXTERN, id:%d args:%d", read_ulong(chunk), read_ulong(chunk));
+		printf("CALL EXTERN, args:%d id:%d", read_ulong(chunk), read_ulong(chunk));
 		break;
 	}
 }
