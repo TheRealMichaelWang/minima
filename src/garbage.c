@@ -74,9 +74,7 @@ void trace_frame(struct garbage_frame* garbage_frame) {
 void gc_collect(struct garbage_collector* garbage_collector) {
 	reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 1]);
 	if (garbage_collector->frames > 1) {
-		//reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 2], 0);
-		for (unsigned long i = 0; i < garbage_collector->frame_stack[garbage_collector->frames - 2].values; i++)
-			trace_value(garbage_collector->frame_stack[garbage_collector->frames - 2].to_collect[i]);
+		trace_frame(&garbage_collector->frame_stack[garbage_collector->frames - 1]);
 	}
 	for (unsigned long i = 0; i < garbage_collector->frame_stack[garbage_collector->frames - 1].values; i++)
 		if (garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]->gc_flag == garbage_collect) {

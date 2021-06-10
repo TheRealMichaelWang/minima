@@ -6,7 +6,7 @@
 #include "machine.h"
 
 #define MAX_POSITIONS 2000
-#define MAX_EVALS 256
+#define MAX_EVALS 2000
 #define MAX_CALLS 1000
 
 #define EVAL_FLAG_CPY 0
@@ -410,7 +410,8 @@ int execute(struct machine* machine, struct chunk* chunk) {
 			gc_protect(machine->evaluation_stack[machine->evals - 1]);
 			break;
 		case MACHINE_POP:
-			free_eval(machine->evaluation_stack[--machine->evals], machine->eval_flags[machine->evals]);
+			machine->evals--;
+			free_eval(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
 			break;
 		case MACHINE_CALL_EXTERN:
 			if (!eval_builtin(machine, chunk))

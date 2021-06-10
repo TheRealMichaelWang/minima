@@ -173,11 +173,13 @@ struct token read_tok(struct scanner* scanner) {
 		if (scanner->last_err == error_unrecognized_control_seq) {
 			free_value(&tok.payload.primative);
 			tok.type = error;
+			return tok;
 		}
 		if (tok.type != error && read_char(scanner) != '\'') {
 			free_value(&tok.payload.primative);
 			scanner->last_err = error_unexpected_char;
 			tok.type = error;
+			return tok;
 		}
 		tok.type = primative;
 	}
@@ -220,7 +222,6 @@ struct token read_tok(struct scanner* scanner) {
 			break;
 		case ']':
 			tok.type = close_bracket;
-			break;
 			break;
 		case '(':
 			tok.type = open_paren;
