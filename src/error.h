@@ -12,6 +12,7 @@ enum error {
 	error_unnexpected_type,
 
 	error_index_out_of_range,
+	error_stack_overflow,
 	error_variable_undefined,
 
 	error_unrecognized_tok,

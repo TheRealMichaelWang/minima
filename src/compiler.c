@@ -41,10 +41,10 @@ inline struct token read_ctok(struct compiler* compiler) {
 	return compiler->last_tok;
 }
 
-const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, char expr_optimize);
-const int compile_body(struct compiler* compiler, char func_encapsulated);
+const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize);
+const int compile_body(struct compiler* compiler, const int func_encapsulated, int* returned);
 
-const int compile_value(struct compiler* compiler, char expr_optimize) {
+const int compile_value(struct compiler* compiler, const int expr_optimize) {
 	if (compiler->last_tok.type == primative) {
 		write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
 		write_value(&compiler->chunk_builder, compiler->last_tok.payload.primative);
@@ -168,7 +168,7 @@ const int compile_value(struct compiler* compiler, char expr_optimize) {
 	return 1;
 }
 
-const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, char expr_optimize) {
+const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize) {
 	char is_id = compiler->last_tok.type == identifier;
 	if (!compile_value(compiler, 1)) //lhs
 		return 0;
@@ -191,7 +191,7 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 	return 1;
 }
 
-const int compile_statement(struct compiler* compiler, char encapsulated, char func_encapsulated) {
+const int compile_statement(struct compiler* compiler, const int encapsulated, const int func_encapsulated, int* returned) {
 	switch (compiler->last_tok.type)
 	{
 	case unary_op:
@@ -260,7 +260,8 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 		}
 		read_ctok(compiler);
 
-		if (!compile_body(compiler, func_encapsulated))
+		int if_returned = 0;
+		if (!compile_body(compiler, func_encapsulated, &if_returned))
 			return 0;
 		
 		write(&compiler->chunk_builder, MACHINE_FLAG);
@@ -280,7 +281,7 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 					return 0;
 				}
 				read_ctok(compiler);
-				if (!compile_body(compiler, func_encapsulated))
+				if (!compile_body(compiler, func_encapsulated, &if_returned))
 					return 0;
 
 				write(&compiler->chunk_builder, MACHINE_FLAG);
@@ -295,7 +296,7 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 					return 0;
 				}
 				read_ctok(compiler);
-				if (!compile_body(compiler, func_encapsulated))
+				if (!compile_body(compiler, func_encapsulated, &if_returned))
 					return 0;
 				write(&compiler->chunk_builder, MACHINE_END_SKIP);
 			}
@@ -331,7 +332,8 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 
 		write(&compiler->chunk_builder, MACHINE_MARK);
 
-		if (!compile_body(compiler, func_encapsulated))
+		int while_return = 0;
+		if (!compile_body(compiler, func_encapsulated, &while_return))
 			return 0;
 		
 		write_chunk(&compiler->chunk_builder, temp_expr_chunk);
@@ -388,14 +390,17 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 		}
 		read_ctok(compiler);
 
-		if (!compile_body(compiler, 1))
+		int func_returned = 0;
+		if (!compile_body(compiler, 1, &func_returned))
 			return 0;
-		write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-		struct value nulbuf;
-		init_null(&nulbuf);
-		write_value(&compiler->chunk_builder, nulbuf);
-		free_value(&nulbuf);
-		write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
+		if (!func_returned) {
+			write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
+			struct value nulbuf;
+			init_null(&nulbuf);
+			write_value(&compiler->chunk_builder, nulbuf);
+			free_value(&nulbuf);
+			write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
+		}
 		write(&compiler->chunk_builder, MACHINE_END_SKIP);
 		break;
 	}
@@ -408,6 +413,7 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 		compile_expression(compiler, begin, 0);
 		write(&compiler->chunk_builder, MACHINE_PROTECT);
 		write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
+		*returned = 1;
 		break;
 	}
 	case keyword_include: {
@@ -471,10 +477,11 @@ const int compile_statement(struct compiler* compiler, char encapsulated, char f
 	return 1;
 }
 
-const int compile_body(struct compiler* compiler, char func_encapsulated) {
+const int compile_body(struct compiler* compiler, const int func_encapsulated, int* returned) {
+	*returned = 0;
 	while (compiler->last_tok.type != end && compiler->last_tok.type != close_brace)
 	{
-		if (!compile_statement(compiler, 1, func_encapsulated))
+		if (!compile_statement(compiler, 1, func_encapsulated, returned))
 			return 0;
 	}
 	read_ctok(compiler);
@@ -493,7 +500,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 	while (compiler->last_tok.type != end)
 	{
-		if (!compile_statement(compiler, 0, 0))
+		if (!compile_statement(compiler, 0, 0, NULL))
 			return 0;
 	}
 	if(!repl_mode)

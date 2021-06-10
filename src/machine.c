@@ -86,11 +86,16 @@ void free_machine(struct machine* machine) {
 	free_builtin_register(&machine->builtin_register);
 }
 
-inline void push_eval(struct machine* machine, struct value* value, char flags) {
+inline const int push_eval(struct machine* machine, struct value* value, char flags) {
+	if (machine->evals == MAX_EVALS) {
+		machine->last_err = error_stack_overflow;
+		return 0;
+	}
 	machine->evaluation_stack[machine->evals] = value;
 	machine->eval_flags[machine->evals++] = flags;
 	if (flags == EVAL_FLAG_CPY)
 		value->gc_flag = garbage_uninit;
+	return 1;
 }
 
 inline void free_eval(struct value* value, char flags) {
@@ -233,7 +238,8 @@ int eval_bin_op(struct machine* machine, struct chunk* chunk) {
 	struct value* result = (*binary_operators[bin_op])(value_a, value_b);
 	free_eval(value_a, flag_a);
 	free_eval(value_b, flag_b);
-	push_eval(machine, result, EVAL_FLAG_CPY);
+	if (!push_eval(machine, result, EVAL_FLAG_CPY))
+		return 0;
 	return 1;
 }
 
@@ -246,14 +252,15 @@ int eval_uni_op(struct machine* machine, struct chunk* chunk) {
 	struct value* result = (*unary_operators[uni_op])(machine->evaluation_stack[--machine->evals]);
 	if (result != machine->evaluation_stack[machine->evals]) {
 		free_eval(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
-		push_eval(machine, result, EVAL_FLAG_CPY);
+		if (!push_eval(machine, result, EVAL_FLAG_CPY))
+			return 0;
 	}
 	else
 		push_eval(machine, result, machine->eval_flags[machine->evals]);
 	return 1;
 }
 
-int eval_builtin(struct machine* machine, struct chunk* chunk) {
+const int eval_builtin(struct machine* machine, struct chunk* chunk) {
 	unsigned long id = read_ulong(chunk);
 	unsigned long arguments = read_ulong(chunk);
 
@@ -269,10 +276,10 @@ int eval_builtin(struct machine* machine, struct chunk* chunk) {
 	for (unsigned long i = machine->evals - arguments; i < machine->evals; i++)
 		free_eval(machine->evaluation_stack[i], machine->eval_flags[i]);
 	machine->evals -= arguments;
-	push_eval(machine, result, EVAL_FLAG_CPY);
+	return push_eval(machine, result, EVAL_FLAG_CPY);
 }
 
-int build_collection(struct machine* machine, struct chunk* chunk) {
+const int build_collection(struct machine* machine, struct chunk* chunk) {
 	unsigned long req_size = read_ulong(chunk);
 	if (machine->evals < req_size) {
 		machine->last_err = error_insufficient_evals;
@@ -301,8 +308,7 @@ int build_collection(struct machine* machine, struct chunk* chunk) {
 
 	init_col(new_val, collection);
 
-	push_eval(machine, new_val, EVAL_FLAG_CPY);
-	return 1;
+	return push_eval(machine, new_val, EVAL_FLAG_CPY);
 }
 
 int execute(struct machine* machine, struct chunk* chunk) {
@@ -313,16 +319,18 @@ int execute(struct machine* machine, struct chunk* chunk) {
 		case MACHINE_LOAD_VAR: {
 			struct value* var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], read_ulong(chunk));
 			if (!var_ptr) 
-				return error_variable_undefined;
-			push_eval(machine, var_ptr, EVAL_FLAG_REF);
+				return machine->last_err = error_variable_undefined;
+			if (!push_eval(machine, var_ptr, EVAL_FLAG_REF))
+				return error_stack_overflow;
 			break; 
 		}
 		case MACHINE_LOAD_CONST: {
 			struct value* to_push = malloc(sizeof(struct value));
 			if (to_push == NULL)
-				return error_insufficient_memory;
+				return machine->last_err = error_insufficient_memory;
 			copy_value(to_push, read_size(chunk, sizeof(struct value)));
-			push_eval(machine, to_push, EVAL_FLAG_CPY);
+			if (!push_eval(machine, to_push, EVAL_FLAG_CPY))
+				return error_stack_overflow;
 			break;
 		}
 		case MACHINE_STORE_VAR: {
@@ -344,10 +352,14 @@ int execute(struct machine* machine, struct chunk* chunk) {
 			skip(chunk, 0);
 			break;
 		case MACHINE_MARK:
+			if(machine->positions == MAX_POSITIONS)
+				return machine->last_err = error_stack_overflow;
 			machine->position_stack[machine->positions] = chunk->pos - 1;
 			machine->position_flags[machine->positions++] = 0;
 			break;
 		case MACHINE_GOTO:
+			if (machine->positions == MAX_POSITIONS)
+				return machine->last_err = error_stack_overflow;
 			machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
 			machine->position_flags[machine->positions++] = 1;
 			jump_to(chunk, retrieve_pos(&machine->label_cache, read_ulong(chunk)));
@@ -360,7 +372,7 @@ int execute(struct machine* machine, struct chunk* chunk) {
 		case MACHINE_LABEL: {
 			unsigned long id = read_ulong(chunk);
 			if (!insert_label(&machine->label_cache, id, chunk->pos /*+ sizeof(unsigned long)*/))
-				return error_label_redefine;
+				return machine->last_err = error_label_redefine;
 			read(chunk);
 			skip(chunk, 1);
 			break; 
@@ -385,6 +397,8 @@ int execute(struct machine* machine, struct chunk* chunk) {
 				skip(chunk, 0);
 			break;
 		case MACHINE_NEW_FRAME:
+			if (machine->call_size == MAX_CALLS)
+				return machine->last_err = error_stack_overflow;
 			if (!init_var_context(&machine->var_stack[machine->call_size++], &machine->garbage_collector))
 				return error_insufficient_memory;
 			break;
