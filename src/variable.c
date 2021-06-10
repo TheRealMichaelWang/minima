@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "variable.h"
 
-#define MAX_SIZE 255
+#define MAX_SIZE 63
 
 int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector) {
 	var_context->buckets = calloc(MAX_SIZE, sizeof(struct var_bucket*));

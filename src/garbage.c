@@ -2,10 +2,11 @@
 #include "garbage.h"
 
 #define MAX_GARBAGE 1000
-#define MAX_VALUES 1000
+#define MAX_VALUES 10000
 
 void init_gcollect(struct garbage_collector* garbage_collector) {
-	garbage_collector->frame_stack = malloc(sizeof(struct garbage_frame) * MAX_GARBAGE);
+	garbage_collector->frame_stack = malloc(MAX_GARBAGE * sizeof(struct garbage_frame));
+	garbage_collector->value_stack = malloc(MAX_VALUES * sizeof(struct value));
 	garbage_collector->frames = 0;
 }
 
@@ -13,15 +14,12 @@ void free_gcollect(struct garbage_collector* garbage_collector) {
 	while (garbage_collector->frames > 0)
 		gc_collect(garbage_collector);
 	free(garbage_collector->frame_stack);
+	free(garbage_collector->value_stack);
 }
 
-void init_gframe(struct garbage_frame* garbage_frame) {
-	garbage_frame->to_collect = malloc(sizeof(struct value*) * MAX_VALUES);
+void init_gframe(struct garbage_frame* garbage_frame, struct value** begin) {
+	garbage_frame->to_collect = begin;
 	garbage_frame->values = 0;
-}
-
-void free_gframe(struct garbage_frame* garbgage_frame) {
-	free(garbgage_frame->to_collect);
 }
 
 void register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head) {
@@ -91,6 +89,6 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 				free(garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]);
 			}
 		}
-	free_gframe(&garbage_collector->frame_stack[garbage_collector->frames - 1]);
+	//free_gframe(&garbage_collector->frame_stack[garbage_collector->frames - 1]);
 	garbage_collector->frames--;
 }

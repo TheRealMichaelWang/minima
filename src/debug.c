@@ -62,7 +62,7 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("MARK");
 		break;
 	case MACHINE_RETURN_GOTO:
-		printf("GOTO");
+		printf("RETURN");
 		break;
 	case MACHINE_GOTO:
 		printf("GOTO, id:%d", read_ulong(chunk));
