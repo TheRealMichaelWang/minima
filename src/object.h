@@ -6,20 +6,24 @@
 struct value;
 
 #include "collection.h"
+#include "record.h"
 
 struct object {
 	union object_ptr
 	{
-		struct collection* collection;
+		struct collection* collection;\
+		struct record* record;
 	}ptr;
 
 	enum obj_type
 	{
-		obj_type_collection
+		obj_type_collection,
+		obj_type_record
 	} type;
 };
 
 void init_object_col(struct object* object, struct collection* collection);
+void init_object_rec(struct object* object, struct record* record);
 void free_object(struct object* object);
 
 const int copy_object(struct object* dest, struct object* src);

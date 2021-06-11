@@ -378,7 +378,7 @@ int execute(struct machine* machine, struct chunk* chunk) {
 			break;
 		case MACHINE_LABEL: {
 			unsigned long id = read_ulong(chunk);
-			if (!insert_label(&machine->label_cache, id, chunk->pos /*+ sizeof(unsigned long)*/))
+			if (!insert_label(&machine->label_cache, id, chunk->pos))
 				return machine->last_err = error_label_redefine;
 			read(chunk);
 			skip(chunk, 1);

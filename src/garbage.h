@@ -29,7 +29,12 @@ void init_gframe(struct garbage_frame* garbage_frame, struct value** begin);
 void gc_register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head);
 
 inline void gc_new_frame(struct garbage_collector* garbage_collector) {
-	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], garbage_collector->frames == 0 ? garbage_collector->value_stack : &garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[garbage_collector->frame_stack[garbage_collector->frames - 1].values]);
+	struct value** begin = garbage_collector->value_stack;
+	if (garbage_collector->frames > 0) {
+		struct garbage_frame* prev_frame = &garbage_collector->frame_stack[garbage_collector->frames - 1];
+		begin = &prev_frame->to_collect[prev_frame->values];
+	}
+	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], begin);
 }
 
 #endif // !GARBAGE_H
