@@ -7,23 +7,23 @@ void init_object_col(struct object* object, struct collection* collection) {
 	object->ptr.collection = collection;
 }
 
-void free_object(struct object* object) {
-	if (object->type == obj_type_collection) {
-		free_collection(object->ptr.collection);
-		free(object->ptr.collection);
-	}
+void init_object_rec(struct object* object, struct record* record) {
+	object->type = obj_type_record;
+	object->ptr.record = record;
 }
 
-const int copy_object(struct object* dest, struct object* src) {
-	memcpy(dest, src, sizeof(struct object));
-	switch (dest->type)
+void free_object(struct object* object) {
+	switch (object->type)
 	{
 	case obj_type_collection:
-		if (!copy_collection(dest->ptr.collection, src->ptr.collection))
-			return 0;
+		free_collection(object->ptr.collection);
+		free(object->ptr.collection);
+		break;
+	case obj_type_record:
+		free_record(object->ptr.record);
+		free(object->ptr.record);
 		break;
 	}
-	return 1;
 }
 
 const int compare_object(struct object* a, struct object* b) {
@@ -33,6 +33,8 @@ const int compare_object(struct object* a, struct object* b) {
 	{
 	case obj_type_collection:
 		return !compare_collection(a->ptr.collection, b->ptr.collection);
+	case obj_type_record:
+		return !(a->ptr.record == b->ptr.record);
 	}
 	return 1;
 }
@@ -43,6 +45,9 @@ const struct value** get_children(struct object* object, unsigned long* size) {
 	case obj_type_collection:
 		*size = object->ptr.collection->size;
 		return object->ptr.collection->inner_collection;
+	case obj_type_record:
+		*size = object->ptr.record->prototype->size;
+		return object->ptr.record->properties;
 	}
 	return NULL;
 }

@@ -26,7 +26,6 @@ void init_object_col(struct object* object, struct collection* collection);
 void init_object_rec(struct object* object, struct record* record);
 void free_object(struct object* object);
 
-const int copy_object(struct object* dest, struct object* src);
 const int compare_object(struct object* a, struct object* b);
 const struct value** get_children(struct object* object, unsigned long* size);
 

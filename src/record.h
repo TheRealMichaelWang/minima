@@ -5,8 +5,8 @@
 
 struct value; //forward declare value.
 
-struct record_prototye {
-	unsigned long* property_map;
+struct record_prototype {
+	unsigned char* property_map;
 	unsigned char size;
 };
 
@@ -18,12 +18,23 @@ struct record {
 void init_record_prototype(struct record_prototype* prototype);
 void free_record_prototype(struct record_prototype* prototype);
 
-void append_record_property(struct record_prototype* prototype, unsigned long property);
+inline void append_record_property(struct record_prototype* prototype, unsigned long property) {
+	prototype->property_map[property & 255] = prototype->size++;
+}
+
+inline unsigned char retrieve_property_index(struct record_prototype* prototype, unsigned long property) {
+	return prototype->property_map[property & 255];
+}
 
 void init_record(struct record* record, struct record_prototype* prototype);
 void free_record(struct record* record);
 
-struct value* get_value_ref(struct record* record, unsigned long property);
-struct value* set_value_ref(struct record* record, unsigned long property)
+inline struct value* get_value_ref(struct record* record, unsigned long property) {
+	return record->properties[retrieve_property_index(record, property)];
+}
+
+inline void set_value_ref(struct record* record, unsigned long property, struct value* value) {
+	record->properties[retrieve_property_index(record, property)] = value;
+}
 
 #endif // !RECORD_H

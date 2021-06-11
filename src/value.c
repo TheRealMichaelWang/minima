@@ -30,10 +30,7 @@ const int copy_value(struct value* dest, struct value* src) {
 	memcpy(dest, src, sizeof(struct value));
 	dest->gc_flag = garbage_uninit;
 
-	if (dest->type == value_type_object)
-		if (!copy_object(&dest->payload.object, &src->payload.object))
-			return 0;
-	return 1;
+	return dest->type != value_type_object;
 }
 
 const int compare_value(struct value* a, struct value* b) {

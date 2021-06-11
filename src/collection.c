@@ -19,19 +19,19 @@ void free_collection(struct collection* collection) {
 	free(collection->inner_collection);
 }
 
-const int copy_collection(struct collection* dest, struct collection* src) {
-	dest->size = src->size;
-	dest->inner_collection = malloc(dest->size * sizeof(struct value*));
-	if (dest->inner_collection == NULL)
-		return 0;
-	for (unsigned long i = 0; i < dest->size; i++) {
-		dest->inner_collection[i] = malloc(sizeof(struct value));
-		if (dest->inner_collection[i] == NULL)
-			return 0;
-		copy_value(dest->inner_collection[i], src->inner_collection[i]);
-	}
-	return 1;
-}
+//const int copy_collection(struct collection* dest, struct collection* src) {
+//	dest->size = src->size;
+//	dest->inner_collection = malloc(dest->size * sizeof(struct value*));
+//	if (dest->inner_collection == NULL)
+//		return 0;
+//	for (unsigned long i = 0; i < dest->size; i++) {
+//		dest->inner_collection[i] = malloc(sizeof(struct value));
+//		if (dest->inner_collection[i] == NULL)
+//			return 0;
+//		copy_value(dest->inner_collection[i], src->inner_collection[i]);
+//	}
+//	return 1;
+//}
 
 const int compare_collection(struct collection* a, struct collection* b) {
 	if (a->size != b->size)
