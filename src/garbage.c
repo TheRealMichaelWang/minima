@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "object.h"
 #include "garbage.h"
 
 #define MAX_GARBAGE 1000
@@ -22,7 +23,7 @@ void init_gframe(struct garbage_frame* garbage_frame, struct value** begin) {
 	garbage_frame->values = 0;
 }
 
-void register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head) {
+void gc_register_value(struct garbage_collector* garbage_collector, struct value* value, int noreg_head) {
 	if (value->gc_flag != garbage_uninit)
 		return;
 	value->gc_flag = garbage_collect;
@@ -30,9 +31,11 @@ void register_value(struct garbage_collector* garbage_collector, struct value* v
 	if(!noreg_head)
 		gframe->to_collect[gframe->values++] = value;
 	
-	if (value->type == collection) {
-		for (unsigned long i = 0; i < value->payload.collection->size; i++)
-			register_value(garbage_collector, value->payload.collection->inner_collection[i], 0);
+	if (value->type == value_type_object) {
+		unsigned long size = 0;
+		const struct value** children = get_children(&value->payload.object,&size);
+		for (unsigned long i = 0; i < size; i++)
+			gc_register_value(garbage_collector, children[i], 0);
 	}
 }
 
@@ -41,9 +44,11 @@ void trace_value(struct value* value) {
 		return;
 	value->gc_flag = garbage_keep;
 	
-	if (value->type == collection) {
-		for (unsigned long i = 0; i < value->payload.collection->size; i++)
-			trace_value(value->payload.collection->inner_collection[i]);
+	if (value->type == value_type_object) {
+		unsigned long size = 0;
+		const struct value** children = get_children(&value->payload.object, &size);
+		for (unsigned long i = 0; i < size; i++)
+			trace_value(children[i]);
 	}
 }
 
@@ -52,9 +57,11 @@ void gc_protect(struct value* value) {
 		return;
 	if(value->gc_flag != garbage_uninit)
 		value->gc_flag = garbage_protected;
-	if (value->type == collection) {
-		for (unsigned long i = 0; i < value->payload.collection->size; i++)
-			gc_protect(value->payload.collection->inner_collection[i]);
+	if (value->type == value_type_object) {
+		unsigned long size = 0;
+		const struct value** children = get_children(&value->payload.object, &size);
+		for (unsigned long i = 0; i < size; i++)
+			gc_protect(children[i]);
 	}
 }
 

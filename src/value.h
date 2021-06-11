@@ -3,6 +3,8 @@
 #ifndef VALUE_H
 #define VALUE_H
 
+#include "object.h"
+
 struct value {
 	enum garbage_flag {
 		garbage_uninit,
@@ -15,39 +17,25 @@ struct value {
 	{
 		double numerical;
 		char character;
-		struct collection* collection;
+		struct object object;
 	}payload;
 
 	enum value_type {
-		null,
-		numerical,
-		character,
-		collection
+		value_type_null,
+		value_type_numerical,
+		value_type_character,
+		value_type_object,
 	} type;
 };
 
-struct collection {
-	struct value** inner_collection;
-	unsigned long size;
-};
-
-//value methods
-
-void init_null(struct value* value);
-void init_num(struct value* value, const double d);
-void init_char(struct value* value, const char c);
-void init_col(struct value* value, struct collection* col);
+void init_null_value(struct value* value);
+void init_num_value(struct value* value, const double d);
+void init_char_value(struct value* value, const char c);
+void init_obj_value(struct value* value, struct object obj);
 
 const int copy_value(struct value* dest, struct value* src);
 const int compare_value(struct value* a, struct value* b);
 
 void free_value(struct value* value);
-
-//collection methods
-int init_collection(struct collection* collection, unsigned long size);
-void free_collection(struct collection* collection);
-
-const int copy_collection(struct collection* dest, struct collection* src);
-const int compare_collection(struct collection* a, struct collection* b);
 
 #endif // !VALUE_H

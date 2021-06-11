@@ -82,7 +82,9 @@ const void* read_size(struct chunk* chunk, const unsigned long size) {
 	return position;
 }
 
-int write_value(struct chunk_builder* chunk_builder, struct value value) {
+const int write_value(struct chunk_builder* chunk_builder, struct value value) {
+	if (value.type == value_type_object)
+		return 0;
 	struct value copy;
 	copy_value(&copy, &value);
 	write_size(chunk_builder, &copy, sizeof(struct value));

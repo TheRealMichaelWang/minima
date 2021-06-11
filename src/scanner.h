@@ -17,32 +17,33 @@ struct scanner {
 
 struct token {
 	enum token_type {
-		keyword_if,
-		keyword_else,
-		keyword_elif,
-		keyword_while,
-		define_procedure,
-		keyword_set,
-		keyword_to,
-		keyword_ref,
-		keyword_include,
-		goto_procedure,
-		goto_extern,
-		return_procedure,
-		dynamic_alloc,
-		identifier,
-		primative,
-		binary_op,
-		unary_op,
-		open_paren,
-		close_paren,
-		open_brace,
-		close_brace,
-		open_bracket,
-		close_bracket,
-		comma,
-		end,
-		error
+		tok_if,
+		tok_else,
+		tok_elif,
+		tok_while,
+		tok_proc,
+		tok_set,
+		tok_to,
+		tok_ref,
+		tok_include,
+		tok_goto,
+		tok_extern,
+		tok_return,
+		tok_alloc,
+		tok_identifier,
+		tok_primative,
+		tok_bin_op,
+		tok_uni_op,
+		tok_open_paren,
+		tok_close_paren,
+		tok_open_brace,
+		tok_close_brace,
+		tok_open_bracket,
+		tok_close_bracket,
+		tok_comma,
+		tok_end,
+		tok_str,
+		tok_error
 	} type;
 
 	union token_type_payload
@@ -60,6 +61,6 @@ void init_scanner(struct scanner* scanner, const char* source);
 
 struct token read_tok(struct scanner* scanner);
 
-const int read_str(struct scanner* scanner, char* str);
+const int read_str(struct scanner* scanner, char* str, const int data_mode);
 
 #endif // !SCANNER_H

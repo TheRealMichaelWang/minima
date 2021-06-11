@@ -112,7 +112,7 @@ int condition_check(struct machine* machine) {
 	}
 	struct value* valptr = machine->evaluation_stack[--machine->evals];
 	int cond = 1;
-	if (valptr->type == null || (valptr->type == numerical && valptr->payload.numerical == 0))
+	if (valptr->type == value_type_null || (valptr->type == value_type_numerical && valptr->payload.numerical == 0))
 		cond = 0;
 	free_eval(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
 	return cond;
@@ -128,14 +128,14 @@ int store_var(struct machine* machine, struct chunk* chunk) {
 	if (machine->eval_flags[machine->evals] == EVAL_FLAG_CPY) {
 		struct value* varptr = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
 		if (varptr == NULL) {
-			register_value(&machine->garbage_collector, setptr, 0);
+			gc_register_value(&machine->garbage_collector, setptr, 0);
 			emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr);
 		}
 		else {
 			free_value(varptr);
 			memcpy(varptr, setptr, sizeof(struct value));
 			free(setptr);
-			register_value(&machine->garbage_collector, varptr, 1);
+			gc_register_value(&machine->garbage_collector, varptr, 1);
 		}
 	}
 	else
@@ -153,12 +153,15 @@ int get_index(struct machine* machine) {
 	struct value* collection_val = machine->evaluation_stack[--machine->evals];
 	char collection_flag = machine->eval_flags[machine->evals];
 
-	if (index_val->type != numerical || collection_val->type != collection) {
+	if (index_val->type != value_type_numerical || collection_val->type != value_type_object || collection_val->payload.object.type != obj_type_collection) {
 		machine->last_err = error_unnexpected_type;
 		return 0;
 	}
 
-	if (index_val->payload.numerical < 0 || index_val->payload.numerical > collection_val->payload.collection->size) {
+	struct collection* collection = collection_val->payload.object.ptr.collection;
+	unsigned long index = index_val->payload.numerical;
+
+	if (index < 0 || index > collection->size) {
 		machine->last_err = error_index_out_of_range;
 		return 0;
 	}
@@ -166,12 +169,12 @@ int get_index(struct machine* machine) {
 	struct value* toreturn = NULL;
 
 	if (collection_flag == EVAL_FLAG_REF) {
-		toreturn = collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical];
+		toreturn = collection->inner_collection[index];
 		machine->eval_flags[machine->evals] = EVAL_FLAG_REF;
 	}
-	else if(collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical]->gc_flag == garbage_uninit){
+	else if(collection->inner_collection[index]->gc_flag == garbage_uninit){
 		toreturn = malloc(sizeof(struct value));
-		copy_value(toreturn, collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical]);
+		copy_value(toreturn, collection->inner_collection[index]);
 		machine->eval_flags[machine->evals] = EVAL_FLAG_CPY;
 	}
 	machine->evaluation_stack[machine->evals++] = toreturn;
@@ -193,30 +196,32 @@ int set_index(struct machine* machine) {
 	char index_flag = machine->eval_flags[machine->evals];
 	struct value* collection_val = machine->evaluation_stack[--machine->evals];
 	char collection_flag = machine->eval_flags[machine->evals];
-	
 
-	if (index_val->type != numerical || collection_val->type != collection) {
+	if (index_val->type != value_type_numerical || collection_val->type != value_type_object || collection_val->payload.object.type != obj_type_collection) {
 		machine->last_err = error_unnexpected_type;
 		return 0;
 	}
 
-	if (index_val->payload.numerical < 0 || index_val->payload.numerical > collection_val->payload.collection->size) {
+	struct collection* collection = collection_val->payload.object.ptr.collection;
+	unsigned long index = index_val->payload.numerical;
+
+	if (index < 0 || index > collection->size) {
 		machine->last_err = error_index_out_of_range;
 		return 0;
 	}
 
 	if (set_flag == EVAL_FLAG_CPY) {
-		struct value* item_ptr = collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical];
+		struct value* item_ptr = collection->inner_collection[index];
 		free_value(item_ptr);
 		memcpy(item_ptr, set_val, sizeof(struct value));
 		free(set_val);
 	}
 	else if (set_flag == EVAL_FLAG_REF) {
-		if (collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical]->gc_flag == garbage_uninit) {
-			free_value(collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical]);
-			free(collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical]);
+		if (collection->inner_collection[index]->gc_flag == garbage_uninit) {
+			free_value(collection->inner_collection[index]);
+			free(collection->inner_collection[index]);
 		}
-		collection_val->payload.collection->inner_collection[(int)index_val->payload.numerical] = set_val;
+		collection->inner_collection[index] = set_val;
 	}
 
 	free_eval(collection_val, collection_flag);
@@ -306,7 +311,9 @@ const int build_collection(struct machine* machine, struct chunk* chunk) {
 		return 0;
 	}
 
-	init_col(new_val, collection);
+	struct object obj;
+	init_object_col(&obj, collection);
+	init_obj_value(new_val, obj);
 
 	return push_eval(machine, new_val, EVAL_FLAG_CPY);
 }
