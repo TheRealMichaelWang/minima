@@ -73,6 +73,7 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 			write_value(&compiler->chunk_builder, char_val);
 			free_value(&char_val);
 		}
+		free(buffer);
 		write(&compiler->chunk_builder, MACHINE_BUILD_COL);
 		write_ulong(&compiler->chunk_builder, len);
 		read_ctok(compiler);
@@ -230,9 +231,9 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 		unsigned long arguments = 1;
 		unsigned long record_id = compiler->last_tok.payload.identifier;
 		if (read_ctok(compiler).type == tok_open_paren) {
-			read_ctok(compiler);
 			while (1)
 			{
+				read_ctok(compiler);
 				if (!compile_expression(compiler, begin, 1))
 					return 0;
 				arguments++;
@@ -281,7 +282,7 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 	return 1;
 }
 
-const int compile_statement(struct compiler* compiler, const unsigned long callee, const int encapsulated, const int func_encapsulated, const int record_encapsulated, int* returned) {
+const int compile_statement(struct compiler* compiler, const unsigned long callee, const int encapsulated, const int func_encapsulated, int* returned) {
 	switch (compiler->last_tok.type)
 	{
 	case tok_uni_op:
@@ -371,7 +372,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		}
 		read_ctok(compiler);
 
-		if (!compile_body(compiler, func_encapsulated, 0, NULL))
+		if (!compile_body(compiler, func_encapsulated, NULL))
 			return 0;
 		
 		write(&compiler->chunk_builder, MACHINE_FLAG);
@@ -391,7 +392,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 					return 0;
 				}
 				read_ctok(compiler);
-				if (!compile_body(compiler, func_encapsulated, 0, NULL))
+				if (!compile_body(compiler, func_encapsulated, NULL))
 					return 0;
 
 				write(&compiler->chunk_builder, MACHINE_FLAG);
@@ -406,7 +407,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 					return 0;
 				}
 				read_ctok(compiler);
-				if (!compile_body(compiler, func_encapsulated, 0, NULL))
+				if (!compile_body(compiler, func_encapsulated, NULL))
 					return 0;
 				write(&compiler->chunk_builder, MACHINE_END_SKIP);
 			}
@@ -442,7 +443,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 
 		write(&compiler->chunk_builder, MACHINE_MARK);
 
-		if (!compile_body(compiler, func_encapsulated, 0, NULL))
+		if (!compile_body(compiler, func_encapsulated, NULL))
 			return 0;
 		
 		write_chunk(&compiler->chunk_builder, temp_expr_chunk);
@@ -483,7 +484,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 			}
 			read_ctok(compiler);
 		}
-		if (record_encapsulated)
+		if (callee)
 			reverse_buffer[buffer_size++] = 2090759133;
 		write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
@@ -498,14 +499,21 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		read_ctok(compiler);
 
 		int func_returned = 0;
-		if (!compile_body(compiler, 1, 0, &func_returned))
+		if (!compile_body(compiler, 1, &func_returned))
 			return 0;
 		if (!func_returned) {
-			write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-			struct value nulbuf;
-			init_null_value(&nulbuf);
-			write_value(&compiler->chunk_builder, nulbuf);
-			free_value(&nulbuf);
+			if (callee) {
+				write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
+				write_ulong(&compiler->chunk_builder, 2090759133);
+				write(&compiler->chunk_builder, MACHINE_PROTECT);
+			}
+			else {
+				write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
+				struct value nulbuf;
+				init_null_value(&nulbuf);
+				write_value(&compiler->chunk_builder, nulbuf);
+				free_value(&nulbuf);
+			}
 			write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 		}
 		write(&compiler->chunk_builder, MACHINE_END_SKIP);
@@ -531,7 +539,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 				read_ctok(compiler);
 			}
 			else if (compiler->last_tok.type == tok_proc) {
-				compile_statement(compiler, record_id, 0, 0, 1, NULL);
+				compile_statement(compiler, record_id, 0, 0, NULL);
 			}
 			else {
 				compiler->last_err = error_unexpected_tok;
@@ -620,12 +628,12 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 	return 1;
 }
 
-const int compile_body(struct compiler* compiler, const int func_encapsulated, const int record_encapsulated, int* returned) {
+const int compile_body(struct compiler* compiler, const int func_encapsulated, int* returned) {
 	if(returned)
 		*returned = 0;
 	while (compiler->last_tok.type != tok_end && compiler->last_tok.type != tok_close_brace)
 	{
-		if (!compile_statement(compiler, 0,1, func_encapsulated, record_encapsulated, returned))
+		if (!compile_statement(compiler, 0,1, func_encapsulated, returned))
 			return 0;
 	}
 	read_ctok(compiler);
@@ -644,7 +652,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 	while (compiler->last_tok.type != tok_end)
 	{
-		if (!compile_statement(compiler, 0, 0, 0, 0, NULL))
+		if (!compile_statement(compiler, 0, 0, 0, NULL))
 			return 0;
 	}
 	if(!repl_mode)

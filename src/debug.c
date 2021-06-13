@@ -129,18 +129,16 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("CALL EXTERN, args:%d id:%d", read_ulong(chunk), read_ulong(chunk));
 		break;
 	}
+
 }
 
-void print_dump(struct chunk chunk, int print_ip) {
-	unsigned long old_pos = chunk.pos - 1;
+void print_dump(struct chunk chunk) {
+	unsigned long old_pos = chunk.pos;
 	chunk.pos = 0;
 	unsigned int indent = 1;
 	while (!end_chunk(&chunk)) {
-		int ip_flag = 0;
-		if (chunk.pos == old_pos && print_ip)
-			ip_flag = 1;
 		print_instruction_dump(&chunk, &indent);
-		if (ip_flag)
+		if (chunk.pos == old_pos)
 			printf(" <<< IP");
 		printf("\n");
 	}

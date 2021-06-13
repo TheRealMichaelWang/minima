@@ -7,6 +7,6 @@
 #include "chunk.h"
 
 void print_last_line(struct scanner scanner);
-void print_dump(struct chunk chunk, int print_ip);
+void print_dump(struct chunk chunk);
 
 #endif // !DEBUG_H
