@@ -4,11 +4,9 @@
 #define MAX_SIZE 63
 
 int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector) {
-	var_context->buckets = calloc(MAX_SIZE, sizeof(struct var_bucket*));
-	if (var_context->buckets == NULL)
-		return 0;
+	var_context->buckets = calloc(MAX_SIZE, sizeof(struct var_bucket));
 	var_context->garbage_collector = garbage_collector;
-	new_gframe(garbage_collector);
+	gc_new_frame(garbage_collector);
 	return 1;
 }
 
@@ -22,8 +20,8 @@ void free_var_context(struct var_context* var_context) {
 			free(old);
 		}
 	}
-	free(var_context->buckets);
 	gc_collect(var_context->garbage_collector);
+	free(var_context->buckets);
 }
 
 const struct value* retrieve_var(struct var_context* var_context, const unsigned long id) {

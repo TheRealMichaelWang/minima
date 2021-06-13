@@ -11,7 +11,7 @@ struct var_context {
 		unsigned long id_hash;
 		const struct value* value;
 		struct var_bucket* next;
-	}** buckets;
+	} **buckets;
 	struct garbage_collector* garbage_collector;
 };
 

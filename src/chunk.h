@@ -34,7 +34,7 @@ inline const struct value* read_value(struct chunk* chunk) {
 	return read_size(chunk, sizeof(struct value));
 }
 
-int write_value(struct chunk_builder* chunk_builder, struct value value);
+const int write_value(struct chunk_builder* chunk_builder, struct value value);
 
 void write_chunk(struct chunk_builder* dest, struct chunk src);
 

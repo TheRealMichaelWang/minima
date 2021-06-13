@@ -82,7 +82,9 @@ const void* read_size(struct chunk* chunk, const unsigned long size) {
 	return position;
 }
 
-int write_value(struct chunk_builder* chunk_builder, struct value value) {
+const int write_value(struct chunk_builder* chunk_builder, struct value value) {
+	if (value.type == value_type_object)
+		return 0;
 	struct value copy;
 	copy_value(&copy, &value);
 	write_size(chunk_builder, &copy, sizeof(struct value));
@@ -112,6 +114,9 @@ void skip_instruction(struct chunk* chunk) {
 	case MACHINE_STORE_VAR:
 	case MACHINE_LOAD_VAR:
 	case MACHINE_BUILD_COL:
+	case MACHINE_SET_PROPERTY:
+	case MACHINE_GET_PROPERTY:
+	case MACHINE_BUILD_RECORD:
 		read_size(chunk, sizeof(unsigned long));
 		break;
 	case MACHINE_LOAD_CONST:
@@ -121,6 +126,13 @@ void skip_instruction(struct chunk* chunk) {
 	case MACHINE_EVAL_UNI_OP:
 		read(chunk);
 		break;
+	case MACHINE_BUILD_PROTO: {
+		read_ulong(chunk);
+		unsigned long i = read_ulong(chunk);
+		while (i--)
+			read_ulong(chunk);
+		break;
+	}
 	}
 	read(chunk);
 }
@@ -129,7 +141,7 @@ void skip(struct chunk* chunk, unsigned long depth) {
 	while (chunk->last_code != 0)
 	{
 		char op_code = chunk->last_code;
-		if (op_code == MACHINE_SKIP || op_code == MACHINE_FLAG_SKIP || op_code == MACHINE_COND_SKIP || op_code == MACHINE_LABEL)
+		if (op_code == MACHINE_FLAG_SKIP || op_code == MACHINE_COND_SKIP || op_code == MACHINE_LABEL)
 			depth++;
 		else if (op_code == MACHINE_END_SKIP)
 			depth--;

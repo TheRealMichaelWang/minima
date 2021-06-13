@@ -42,17 +42,13 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		break;
 	case MACHINE_LOAD_CONST:
 		printf("LOAD CONST, const:");
-		print_value(read_value(chunk));
+		print_value(read_value(chunk), 0);
 		break;
 	case MACHINE_EVAL_BIN_OP:
 		printf("EVAL BIN OP, op: %d", read(chunk));
 		break;
 	case MACHINE_EVAL_UNI_OP:
 		printf("EVAL UNI OP, op: %d", read(chunk));
-		break;
-	case MACHINE_SKIP:
-		printf("SKIP");
-		(*indent)++;
 		break;
 	case MACHINE_END_SKIP:
 		printf("END_SKIP");
@@ -97,11 +93,28 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	case MACHINE_BUILD_COL:
 		printf("BUILD COL, size:%d", read_ulong(chunk));
 		break;
+	case MACHINE_BUILD_PROTO: {
+		printf("BUILD RECORD-PROTO, id:%d", read_ulong(chunk));
+		unsigned long properties = read_ulong(chunk);
+		printf(", properties:%d", properties);
+		while (properties--)
+			printf(", id:%d", read_ulong(chunk));
+		break;
+	}
+	case MACHINE_BUILD_RECORD:
+		printf("BUILD RECORD, proto-id:%d", read_ulong(chunk));
+		break;
 	case MACHINE_SET_INDEX:
 		printf("SET INDEX");
 		break;
 	case MACHINE_GET_INDEX:
 		printf("GET INDEX");
+		break;
+	case MACHINE_GET_PROPERTY:
+		printf("GET PROPERTY, property:%d", read_ulong(chunk));
+		break;
+	case MACHINE_SET_PROPERTY:
+		printf("SET PROPERTY, property:%d", read_ulong(chunk));
 		break;
 	case MACHINE_PROTECT:
 		printf("GC PROTECT");
@@ -116,7 +129,7 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 }
 
 void print_dump(struct chunk chunk, int print_ip) {
-	unsigned long old_pos = chunk.pos;
+	unsigned long old_pos = chunk.pos - 1;
 	chunk.pos = 0;
 	unsigned int indent = 1;
 	while (!end_chunk(&chunk)) {
