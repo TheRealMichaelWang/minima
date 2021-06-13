@@ -4,7 +4,8 @@
 
 #define MAX_SIZE 255
 
-void init_record_prototype(struct record_prototype* prototype) {
+void init_record_prototype(struct record_prototype* prototype, unsigned long identifier) {
+	prototype->identifier = identifier;
 	prototype->property_map = calloc(MAX_SIZE, sizeof(unsigned char));
 	prototype->size = 0;
 }

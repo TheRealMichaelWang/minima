@@ -6,6 +6,7 @@
 struct value; //forward declare value.
 
 struct record_prototype {
+	unsigned long identifier;
 	unsigned char* property_map;
 	unsigned char size;
 };
@@ -15,7 +16,7 @@ struct record {
 	struct value** properties;
 };
 
-void init_record_prototype(struct record_prototype* prototype);
+void init_record_prototype(struct record_prototype* prototype, unsigned long identifier);
 void free_record_prototype(struct record_prototype* prototype);
 
 const int append_record_property(struct record_prototype* prototype, unsigned long property);

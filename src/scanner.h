@@ -25,6 +25,7 @@ struct token {
 		tok_record,
 		tok_set,
 		tok_to,
+		tok_as,
 		tok_ref,
 		tok_new,
 		tok_include,

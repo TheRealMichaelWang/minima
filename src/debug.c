@@ -63,6 +63,9 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	case MACHINE_GOTO:
 		printf("GOTO, id:%d", read_ulong(chunk));
 		break;
+	case MACHINE_GOTO_AS:
+		printf("GOTO AS, id:%d", read_ulong(chunk));
+		break;
 	case MACHINE_LABEL:
 		printf("LABEL, id:%d", read_ulong(chunk));
 		(*indent)++;

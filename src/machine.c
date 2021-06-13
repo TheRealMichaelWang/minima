@@ -5,6 +5,7 @@
 #include "io.h"
 #include "collection.h"
 #include "record.h"
+#include "hash.h"
 #include "machine.h"
 
 #define MAX_POSITIONS 2000
@@ -397,6 +398,34 @@ const int build_collection(struct machine* machine, struct chunk* chunk) {
 	return push_eval(machine, new_val, EVAL_FLAG_CPY);
 }
 
+const int goto_as(struct machine* machine, struct chunk* chunk) {
+	if (!match_evals(machine, 1))
+		return 0;
+
+	struct value* record_eval = machine->evaluation_stack[machine->evals - 1];
+	char record_flag = machine->eval_flags[machine->evals - 1];
+
+	if (record_eval->type != value_type_object || record_eval->payload.object.type != obj_type_record) {
+		machine->last_err = error_unnexpected_type;
+		return 0;
+	}
+
+	if (machine->positions == MAX_POSITIONS) {
+		machine->last_err = error_stack_overflow;
+		return 0;
+	}
+
+	machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
+	machine->position_flags[machine->positions++] = 1;
+	unsigned long pos = retrieve_pos(&machine->global_cache, combine_hash(read_ulong(chunk), record_eval->payload.object.ptr.record->prototype->identifier));
+	if (!pos) {
+		machine->last_err = error_label_undefined;
+		return 0;
+	}
+	jump_to(chunk, pos);
+	return 1;
+}
+
 const int execute(struct machine* machine, struct chunk* chunk) {
 	while (!end_chunk(chunk))
 	{
@@ -437,12 +466,22 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			machine->position_stack[machine->positions] = chunk->pos - 1;
 			machine->position_flags[machine->positions++] = 0;
 			break;
-		case MACHINE_GOTO:
+		case MACHINE_GOTO: {
 			if (machine->positions == MAX_POSITIONS)
 				return machine->last_err = error_stack_overflow;
 			machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
 			machine->position_flags[machine->positions++] = 1;
-			jump_to(chunk, retrieve_pos(&machine->global_cache, read_ulong(chunk)));
+			unsigned long pos = retrieve_pos(&machine->global_cache, read_ulong(chunk));
+			if (!pos) {
+				machine->last_err = error_label_undefined;
+				return 0;
+			}
+			jump_to(chunk, pos);
+			break; 
+		}
+		case MACHINE_GOTO_AS:
+			if (!goto_as(machine, chunk))
+				return machine->last_err;
 			break;
 		case MACHINE_RETURN_GOTO:
 			while (!machine->position_flags[machine->positions - 1])
@@ -495,7 +534,7 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			unsigned long id = read_ulong(chunk);
 			unsigned long properties = read_ulong(chunk);
 			struct record_prototype* prototype = malloc(sizeof(struct record_prototype));
-			init_record_prototype(prototype);
+			init_record_prototype(prototype, id);
 			while (properties--)
 				if (!append_record_property(prototype, read_ulong(chunk))) {
 					machine->last_err = error_property_undefined;

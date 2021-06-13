@@ -114,6 +114,9 @@ struct token read_tok(struct scanner* scanner) {
 		case 421984292:
 			tok.type = tok_record;
 			break;
+		case 5863225:
+			tok.type = tok_as;
+			break;
 		case 193500239:
 			tok.type = tok_new;
 			break;
