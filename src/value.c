@@ -39,8 +39,6 @@ const int compare_value(struct value* a, struct value* b) {
 
 	switch (a->type)
 	{
-	case value_type_null:
-		return 1;
 	case value_type_numerical: {
 		return a->payload.numerical - b->payload.numerical;
 	}

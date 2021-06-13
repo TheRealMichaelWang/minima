@@ -30,11 +30,11 @@ void init_record(struct record* record, struct record_prototype* prototype);
 void free_record(struct record* record);
 
 inline struct value* get_value_ref(struct record* record, unsigned long property) {
-	return record->properties[retrieve_property_index(record, property)];
+	return record->properties[retrieve_property_index(record->prototype, property)];
 }
 
 inline void set_value_ref(struct record* record, unsigned long property, struct value* value) {
-	record->properties[retrieve_property_index(record, property)] = value;
+	record->properties[retrieve_property_index(record->prototype, property)] = value;
 }
 
 #endif // !RECORD_H

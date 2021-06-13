@@ -44,6 +44,8 @@ const char read_data_char(struct scanner* scanner)
 			read_char(scanner);
 			return '\n';
 		case '0':
+			read_char(scanner);
+			return 0;
 		case '\'':
 		case '\"':
 		case '\\': {
@@ -87,7 +89,7 @@ struct token read_tok(struct scanner* scanner) {
 	const char* start = &scanner->source[scanner->pos - 1];
 	unsigned long length = 0;
 	if (isalpha(scanner->last_char)) {
-		while (isalpha(scanner->last_char)) {
+		while (isalpha(scanner->last_char) || scanner->last_char == '_') {
 			read_char(scanner);
 			length++;
 		}
@@ -108,6 +110,12 @@ struct token read_tok(struct scanner* scanner) {
 			break;
 		case 2090626457: //proc
 			tok.type = tok_proc;
+			break;
+		case 421984292:
+			tok.type = tok_record;
+			break;
+		case 193500239:
+			tok.type = tok_new;
 			break;
 		case 193505681: //set
 			tok.type = tok_set;
@@ -182,19 +190,23 @@ struct token read_tok(struct scanner* scanner) {
 			tok.type = tok_error;
 			return tok;
 		}
-		if (tok.type != tok_error && read_char(scanner) != '\'') {
+		if (scanner->last_char != '\'') {
 			free_value(&tok.payload.primative);
 			scanner->last_err = error_unexpected_char;
 			tok.type = tok_error;
 			return tok;
 		}
 		tok.type = tok_primative;
+		read_char(scanner);
 	}
 	else {
 		switch (scanner->last_char)
 		{
 		case ',':
 			tok.type = tok_comma;
+			break;
+		case '.':
+			tok.type = tok_period;
 			break;
 		case '[': 
 			tok.type = tok_open_bracket;
