@@ -252,6 +252,10 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 	unsigned long property = read_ulong(chunk);
 	struct record* record = record_eval->payload.object.ptr.record;
 	struct value* property_val = get_value_ref(record, property);
+	if (!property_val) {
+		machine->last_err = error_property_undefined;
+		return 0;
+	}
 
 	if (set_flag == EVAL_FLAG_CPY) {
 		free_value(property_val);
@@ -265,7 +269,10 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 			free_value(property_val);
 			free(property_val);
 		}
-		set_value_ref(record, property, set_val);
+		if (!set_value_ref(record, property, set_val)) {
+			machine->last_err = error_property_undefined;
+			return 0;
+		}
 	}
 
 	free_eval(record_eval, record_flag);
@@ -286,6 +293,10 @@ const int get_property(struct machine* machine, struct chunk* chunk) {
 
 	struct value* toreturn = NULL;
 	struct value* property_val = get_value_ref(record_eval->payload.object.ptr.record, read_ulong(chunk));
+	if (!property_val) {
+		machine->last_err = error_property_undefined;
+		return 0;
+	}
 
 	if (property_val->gc_flag == garbage_uninit) {
 		toreturn = malloc(sizeof(struct value));
@@ -486,8 +497,12 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			struct record_prototype* prototype = malloc(sizeof(struct record_prototype));
 			init_record_prototype(prototype);
 			while (properties--)
-				append_record_property(prototype, read_ulong(chunk));
-			insert_prototype(&machine->global_cache, id, prototype);
+				if (!append_record_property(prototype, read_ulong(chunk))) {
+					machine->last_err = error_property_undefined;
+					return 0;
+				}
+			if (!insert_prototype(&machine->global_cache, id, prototype))
+				return machine->last_err = error_record_redefine;
 			break;
 		}
 		case MACHINE_BUILD_RECORD: {
@@ -496,7 +511,7 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			if (new_rec == NULL)
 				return machine->last_err = error_insufficient_memory;
 			if (!init_record_id(&machine->global_cache, id, new_rec))
-				return machine->last_err = error_label_redefine;
+				return machine->last_err = error_record_undefined;
 			for (unsigned char i = 0; i < new_rec->prototype->size; i++) {
 				struct value* property = malloc(sizeof(struct value));
 				if(property == NULL)

@@ -89,7 +89,7 @@ struct token read_tok(struct scanner* scanner) {
 	const char* start = &scanner->source[scanner->pos - 1];
 	unsigned long length = 0;
 	if (isalpha(scanner->last_char)) {
-		while (isalpha(scanner->last_char) || scanner->last_char == '_') {
+		while (isalpha(scanner->last_char) || isalnum(scanner->last_char) || scanner->last_char == '_') {
 			read_char(scanner);
 			length++;
 		}

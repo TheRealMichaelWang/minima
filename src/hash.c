@@ -7,6 +7,6 @@ unsigned long hash(const char* str, unsigned long len) {
     return hash;
 }
 
-unsigned long combine(unsigned long hash_a, unsigned long hash_b) {
-    return 5381 + hash_a * 33 + hash_b;
+unsigned long combine_hash(unsigned long hash_a, unsigned long hash_b) {
+    return (5381 + hash_a) << 5 + hash_b;
 }

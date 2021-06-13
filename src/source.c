@@ -133,5 +133,5 @@ int main(unsigned int argc, char** argv) {
 		free_chunk(&global_chunk);
 	}
 	free_machine(&machine);
-	exit(EXIT_SUCCESS);
+   	exit(EXIT_SUCCESS);
 }

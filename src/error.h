@@ -9,6 +9,10 @@ enum error {
 
 	error_label_redefine,
 	error_label_undefined,
+	error_record_redefine,
+	error_record_undefined,
+	error_property_redefine,
+	error_property_undefined,
 	error_unnexpected_type,
 
 	error_index_out_of_range,

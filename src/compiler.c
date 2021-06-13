@@ -41,6 +41,10 @@ inline struct token read_ctok(struct compiler* compiler) {
 	return compiler->last_tok;
 }
 
+inline unsigned long format_label(unsigned long identifier, unsigned long callee, unsigned long arguments) {
+	return combine_hash(identifier, combine_hash(callee, arguments));
+}
+
 const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize);
 const int compile_body(struct compiler* compiler, const int func_encapsulated, int* returned);
 
@@ -185,7 +189,7 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 		}
 		if (is_proc) {
 			write(&compiler->chunk_builder, MACHINE_GOTO);
-			write_ulong(&compiler->chunk_builder, combine(proc_id, arguments));
+			write_ulong(&compiler->chunk_builder, format_label(proc_id, 0, arguments));
 			write(&compiler->chunk_builder, MACHINE_CLEAN);
 		}
 		else {
@@ -233,7 +237,7 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 	return 1;
 }
 
-const int compile_statement(struct compiler* compiler, const int encapsulated, const int func_encapsulated, int* returned) {
+const int compile_statement(struct compiler* compiler, const unsigned long callee, const int encapsulated, const int func_encapsulated, int* returned) {
 	switch (compiler->last_tok.type)
 	{
 	case tok_uni_op:
@@ -437,7 +441,7 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 				return 0;
 			}
 
-			write_ulong(&compiler->chunk_builder, combine(proc_id, buffer_size));
+			write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
 			write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 			while (buffer_size--) {
 				write(&compiler->chunk_builder, MACHINE_STORE_VAR);
@@ -446,7 +450,7 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 			read_ctok(compiler);
 		}
 		else {
-			write_ulong(&compiler->chunk_builder, combine(proc_id, 0));
+			write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, 0));
 			write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 		}
 		if (compiler->last_tok.type != tok_open_brace) {
@@ -470,26 +474,34 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 		break;
 	}
 	case tok_record: {
-		write(&compiler->chunk_builder, MACHINE_BUILD_PROTO);
 		if (read_ctok(compiler).type != tok_identifier) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
-		write_ulong(&compiler->chunk_builder, compiler->last_tok.payload.identifier);
+		unsigned long record_id = compiler->last_tok.payload.identifier;
 		if (read_ctok(compiler).type != tok_open_brace) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
 		unsigned long property_buffer[500];
 		unsigned long properties = 0;
-		while (read_ctok(compiler).type != tok_close_brace)
+		read_ctok(compiler);
+		while (compiler->last_tok.type != tok_close_brace)
 		{
-			if (compiler->last_tok.type != tok_identifier) {
+			if (compiler->last_tok.type == tok_identifier) {
+				property_buffer[properties++] = compiler->last_tok.payload.identifier;
+				read_ctok(compiler);
+			}
+			else if (compiler->last_tok.type == tok_proc) {
+				compile_statement(compiler, record_id, 0, 0, NULL);
+			}
+			else {
 				compiler->last_err = error_unexpected_tok;
 				return 0;
 			}
-			property_buffer[properties++] = compiler->last_tok.payload.identifier;
 		}
+		write(&compiler->chunk_builder, MACHINE_BUILD_PROTO);
+		write_ulong(&compiler->chunk_builder, record_id);
 		write_ulong(&compiler->chunk_builder, properties);
 		while (properties--)
 			write_ulong(&compiler->chunk_builder, property_buffer[properties]);
@@ -575,7 +587,7 @@ const int compile_body(struct compiler* compiler, const int func_encapsulated, i
 		*returned = 0;
 	while (compiler->last_tok.type != tok_end && compiler->last_tok.type != tok_close_brace)
 	{
-		if (!compile_statement(compiler, 1, func_encapsulated, returned))
+		if (!compile_statement(compiler, 0,1, func_encapsulated, returned))
 			return 0;
 	}
 	read_ctok(compiler);
@@ -594,7 +606,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 	while (compiler->last_tok.type != tok_end)
 	{
-		if (!compile_statement(compiler, 0, 0, NULL))
+		if (!compile_statement(compiler, 0, 0, 0, NULL))
 			return 0;
 	}
 	if(!repl_mode)
