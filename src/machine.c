@@ -585,8 +585,10 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			if (!set_property(machine, chunk))
 				return machine->last_err;
 			break;
-		case MACHINE_PROTECT:
-			gc_protect(machine->evaluation_stack[machine->evals - 1]);
+		case MACHINE_TRACE:
+			if (machine->eval_flags[machine->evals - 1] == EVAL_FLAG_REF) {
+				gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1]);
+			}
 			break;
 		case MACHINE_POP:
 			machine->evals--;

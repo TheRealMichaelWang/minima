@@ -492,6 +492,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 		while (buffer_size--) {
+			write(&compiler->chunk_builder, MACHINE_TRACE);
 			write(&compiler->chunk_builder, MACHINE_STORE_VAR);
 			write_ulong(&compiler->chunk_builder, reverse_buffer[buffer_size]);
 		}
@@ -508,7 +509,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 			if (callee) {
 				write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
 				write_ulong(&compiler->chunk_builder, 2090759133);
-				write(&compiler->chunk_builder, MACHINE_PROTECT);
+				write(&compiler->chunk_builder, MACHINE_TRACE);
 			}
 			else {
 				write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
@@ -542,7 +543,8 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 				read_ctok(compiler);
 			}
 			else if (compiler->last_tok.type == tok_proc) {
-				compile_statement(compiler, record_id, 0, 0, NULL);
+				if (!compile_statement(compiler, record_id, 0, 0, NULL))
+					return 0;
 			}
 			else {
 				compiler->last_err = error_unexpected_tok;
@@ -564,7 +566,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		}
 		read_ctok(compiler);
 		compile_expression(compiler, begin, 0);
-		write(&compiler->chunk_builder, MACHINE_PROTECT);
+		write(&compiler->chunk_builder, MACHINE_TRACE);
 		write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 		if(returned)
 			*returned = 1;
@@ -614,6 +616,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 
 		if (!compile(&temp_compiler, 0)) {
 			compiler->last_err = temp_compiler.last_err;
+			compiler->scanner = temp_compiler.scanner;
 			return 0;
 		}
 		struct chunk compiled_chunk = build_chunk(&temp_compiler.chunk_builder);

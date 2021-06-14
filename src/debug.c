@@ -119,8 +119,8 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	case MACHINE_SET_PROPERTY:
 		printf("SET PROPERTY, property:%d", read_ulong(chunk));
 		break;
-	case MACHINE_PROTECT:
-		printf("GC PROTECT");
+	case MACHINE_TRACE:
+		printf("GC SET TRACE");
 		break;
 	case MACHINE_POP:
 		printf("POP EVAL");

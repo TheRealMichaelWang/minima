@@ -13,8 +13,8 @@ enum error {
 	error_record_undefined,
 	error_property_redefine,
 	error_property_undefined,
-	error_unnexpected_type,
 
+	error_unnexpected_type,
 	error_index_out_of_range,
 	error_stack_overflow,
 	error_variable_undefined,

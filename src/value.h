@@ -9,8 +9,8 @@ struct value {
 	enum garbage_flag {
 		garbage_uninit,
 		garbage_collect,
-		garbage_keep,
-		garbage_protected
+		garbage_trace,
+		garbage_keep
 	}gc_flag;
 
 	union value_payload
