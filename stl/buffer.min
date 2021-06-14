@@ -1,0 +1,20 @@
+proc realloc(buffer, len) {
+	if len < extern len(buffer) {
+		return null
+	}
+
+	set newbuffer to alloc[len]
+
+	set i to extern len(buffer)
+	while dec i {
+		set newbuffer[i] to buffer[i]
+	}
+	return newbuffer
+}
+
+proc memset(buffer, value) {
+	set i to extern len(buffer)
+	while dec i {
+		set buffer[i] to value
+	}
+}
