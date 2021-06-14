@@ -36,7 +36,7 @@ inline const struct value* read_value(struct chunk* chunk) {
 
 const int write_value(struct chunk_builder* chunk_builder, struct value value);
 
-void write_chunk(struct chunk_builder* dest, struct chunk src);
+void write_chunk(struct chunk_builder* dest, struct chunk src, const int free_chunk);
 
 void jump_to(struct chunk* chunk, const unsigned long pos);
 

@@ -5,6 +5,7 @@
 #include "io.h"
 #include "collection.h"
 #include "record.h"
+#include "hash.h"
 #include "machine.h"
 
 #define MAX_POSITIONS 2000
@@ -57,6 +58,7 @@ void init_machine(struct machine* machine) {
 
 	declare_builtin_proc(&machine->global_cache, 271190290, print);
 	declare_builtin_proc(&machine->global_cache, 262752949, get_input);
+	declare_builtin_proc(&machine->global_cache, 193498052, get_length);
 }
 
 void reset_stack(struct machine* machine) {
@@ -239,6 +241,8 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 	if (!match_evals(machine, 2))
 		return 0;
 
+	unsigned long property = read_ulong(chunk);
+
 	struct value* set_val = machine->evaluation_stack[--machine->evals];
 	char set_flag = machine->eval_flags[machine->evals];
 	struct value* record_eval = machine->evaluation_stack[--machine->evals];
@@ -249,9 +253,12 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 		return 0;
 	}
 
-	unsigned long property = read_ulong(chunk);
 	struct record* record = record_eval->payload.object.ptr.record;
 	struct value* property_val = get_value_ref(record, property);
+	if (!property_val) {
+		machine->last_err = error_property_undefined;
+		return 0;
+	}
 
 	if (set_flag == EVAL_FLAG_CPY) {
 		free_value(property_val);
@@ -265,7 +272,10 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 			free_value(property_val);
 			free(property_val);
 		}
-		set_value_ref(record, property, set_val);
+		if (!set_value_ref(record, property, set_val)) {
+			machine->last_err = error_property_undefined;
+			return 0;
+		}
 	}
 
 	free_eval(record_eval, record_flag);
@@ -286,6 +296,10 @@ const int get_property(struct machine* machine, struct chunk* chunk) {
 
 	struct value* toreturn = NULL;
 	struct value* property_val = get_value_ref(record_eval->payload.object.ptr.record, read_ulong(chunk));
+	if (!property_val) {
+		machine->last_err = error_property_undefined;
+		return 0;
+	}
 
 	if (property_val->gc_flag == garbage_uninit) {
 		toreturn = malloc(sizeof(struct value));
@@ -386,6 +400,34 @@ const int build_collection(struct machine* machine, struct chunk* chunk) {
 	return push_eval(machine, new_val, EVAL_FLAG_CPY);
 }
 
+const int goto_as(struct machine* machine, struct chunk* chunk) {
+	if (!match_evals(machine, 1))
+		return 0;
+
+	struct value* record_eval = machine->evaluation_stack[machine->evals - 1];
+	char record_flag = machine->eval_flags[machine->evals - 1];
+
+	if (record_eval->type != value_type_object || record_eval->payload.object.type != obj_type_record) {
+		machine->last_err = error_unnexpected_type;
+		return 0;
+	}
+
+	if (machine->positions == MAX_POSITIONS) {
+		machine->last_err = error_stack_overflow;
+		return 0;
+	}
+
+	machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
+	machine->position_flags[machine->positions++] = 1;
+	unsigned long pos = retrieve_pos(&machine->global_cache, combine_hash(read_ulong(chunk), record_eval->payload.object.ptr.record->prototype->identifier));
+	if (!pos) {
+		machine->last_err = error_label_undefined;
+		return 0;
+	}
+	jump_to(chunk, pos);
+	return 1;
+}
+
 const int execute(struct machine* machine, struct chunk* chunk) {
 	while (!end_chunk(chunk))
 	{
@@ -426,12 +468,22 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			machine->position_stack[machine->positions] = chunk->pos - 1;
 			machine->position_flags[machine->positions++] = 0;
 			break;
-		case MACHINE_GOTO:
+		case MACHINE_GOTO: {
 			if (machine->positions == MAX_POSITIONS)
 				return machine->last_err = error_stack_overflow;
 			machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
 			machine->position_flags[machine->positions++] = 1;
-			jump_to(chunk, retrieve_pos(&machine->global_cache, read_ulong(chunk)));
+			unsigned long pos = retrieve_pos(&machine->global_cache, read_ulong(chunk));
+			if (!pos) {
+				machine->last_err = error_label_undefined;
+				return 0;
+			}
+			jump_to(chunk, pos);
+			break; 
+		}
+		case MACHINE_GOTO_AS:
+			if (!goto_as(machine, chunk))
+				return machine->last_err;
 			break;
 		case MACHINE_RETURN_GOTO:
 			while (!machine->position_flags[machine->positions - 1])
@@ -484,10 +536,14 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			unsigned long id = read_ulong(chunk);
 			unsigned long properties = read_ulong(chunk);
 			struct record_prototype* prototype = malloc(sizeof(struct record_prototype));
-			init_record_prototype(prototype);
+			init_record_prototype(prototype, id);
 			while (properties--)
-				append_record_property(prototype, read_ulong(chunk));
-			insert_prototype(&machine->global_cache, id, prototype);
+				if (!append_record_property(prototype, read_ulong(chunk))) {
+					machine->last_err = error_property_redefine;
+					return 0;
+				}
+			if (!insert_prototype(&machine->global_cache, id, prototype))
+				return machine->last_err = error_record_redefine;
 			break;
 		}
 		case MACHINE_BUILD_RECORD: {
@@ -496,7 +552,7 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			if (new_rec == NULL)
 				return machine->last_err = error_insufficient_memory;
 			if (!init_record_id(&machine->global_cache, id, new_rec))
-				return machine->last_err = error_label_redefine;
+				return machine->last_err = error_record_undefined;
 			for (unsigned char i = 0; i < new_rec->prototype->size; i++) {
 				struct value* property = malloc(sizeof(struct value));
 				if(property == NULL)
@@ -529,8 +585,10 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			if (!set_property(machine, chunk))
 				return machine->last_err;
 			break;
-		case MACHINE_PROTECT:
-			gc_protect(machine->evaluation_stack[machine->evals - 1]);
+		case MACHINE_TRACE:
+			if (machine->eval_flags[machine->evals - 1] == EVAL_FLAG_REF) {
+				gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1]);
+			}
 			break;
 		case MACHINE_POP:
 			machine->evals--;

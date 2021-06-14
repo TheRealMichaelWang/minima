@@ -34,11 +34,18 @@ enum op_precedence precedence[14] = {
 };
 
 inline struct token read_ctok(struct compiler* compiler) {
-	compiler->last_tok = read_tok(&compiler->scanner);
+	do
+	{
+		compiler->last_tok = read_tok(&compiler->scanner);
+	} while (compiler->last_tok.type == tok_remark);
 	if (compiler->last_tok.type == tok_error) {
 		compiler->last_err = compiler->scanner.last_err;
 	}
 	return compiler->last_tok;
+}
+
+inline unsigned long format_label(unsigned long identifier, unsigned long callee, unsigned long arguments) {
+	return combine_hash(combine_hash(identifier, arguments), callee);
 }
 
 const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize);
@@ -69,6 +76,7 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 			write_value(&compiler->chunk_builder, char_val);
 			free_value(&char_val);
 		}
+		free(buffer);
 		write(&compiler->chunk_builder, MACHINE_BUILD_COL);
 		write_ulong(&compiler->chunk_builder, len);
 		read_ctok(compiler);
@@ -168,11 +176,27 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 		}
 		unsigned long proc_id = compiler->last_tok.payload.identifier;
 		unsigned long arguments = 0;
-		if (read_ctok(compiler).type == tok_open_paren) {
+		int is_record_proc = 0;
+		struct chunk_builder temp_builder;
+		struct chunk_builder og_builder;
+		if (read_ctok(compiler).type == tok_as) {
+			read_ctok(compiler);
+			init_chunk_builder(&temp_builder);
+			og_builder = compiler->chunk_builder;
+			compiler->chunk_builder = temp_builder;
+			if (!compile_expression(compiler, begin, 1))
+				return 0;
+			temp_builder = compiler->chunk_builder;
+			compiler->chunk_builder = og_builder;
+			is_record_proc = 1;
+			arguments++;
+		}
+		if (compiler->last_tok.type == tok_open_paren) {
 			while (1)
 			{
 				read_ctok(compiler);
-				compile_expression(compiler, begin, 1);
+				if (!compile_expression(compiler, begin, 1))
+					return 0;
 				arguments++;
 				if (compiler->last_tok.type != tok_comma)
 					break;
@@ -184,8 +208,16 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 			read_ctok(compiler);
 		}
 		if (is_proc) {
-			write(&compiler->chunk_builder, MACHINE_GOTO);
-			write_ulong(&compiler->chunk_builder, proc_id);
+			if (is_record_proc) {
+				struct chunk temp_chunk = build_chunk(&temp_builder);
+				write_chunk(&compiler->chunk_builder, temp_chunk, 1);
+				write(&compiler->chunk_builder, MACHINE_GOTO_AS);
+				write_ulong(&compiler->chunk_builder, combine_hash(proc_id, arguments));
+			}
+			else {
+				write(&compiler->chunk_builder, MACHINE_GOTO);
+				write_ulong(&compiler->chunk_builder, format_label(proc_id, 0, arguments));
+			}
 			write(&compiler->chunk_builder, MACHINE_CLEAN);
 		}
 		else {
@@ -199,9 +231,29 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
+		unsigned long arguments = 1;
+		unsigned long record_id = compiler->last_tok.payload.identifier;
+		if (read_ctok(compiler).type == tok_open_paren) {
+			while (1)
+			{
+				read_ctok(compiler);
+				if (!compile_expression(compiler, begin, 1))
+					return 0;
+				arguments++;
+				if (compiler->last_tok.type != tok_comma)
+					break;
+			}
+			if (compiler->last_tok.type != tok_close_paren) {
+				compiler->last_err = error_unexpected_tok;
+				return 0;
+			}
+			read_ctok(compiler);
+		}
 		write(&compiler->chunk_builder, MACHINE_BUILD_RECORD);
-		write_ulong(&compiler->chunk_builder, compiler->last_tok.payload.identifier);
-		read_ctok(compiler);
+		write_ulong(&compiler->chunk_builder, record_id);
+		write(&compiler->chunk_builder, MACHINE_GOTO_AS);
+		write_ulong(&compiler->chunk_builder, combine_hash(2090370361, arguments));
+		write(&compiler->chunk_builder, MACHINE_CLEAN);
 	}
 	else {
 		compiler->last_err = error_unrecognized_tok;
@@ -233,7 +285,7 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 	return 1;
 }
 
-const int compile_statement(struct compiler* compiler, const int encapsulated, const int func_encapsulated, int* returned) {
+const int compile_statement(struct compiler* compiler, const unsigned long callee, const int encapsulated, const int func_encapsulated, int* returned) {
 	switch (compiler->last_tok.type)
 	{
 	case tok_uni_op:
@@ -323,8 +375,7 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 		}
 		read_ctok(compiler);
 
-		int if_returned = 0;
-		if (!compile_body(compiler, func_encapsulated, &if_returned))
+		if (!compile_body(compiler, func_encapsulated, NULL))
 			return 0;
 		
 		write(&compiler->chunk_builder, MACHINE_FLAG);
@@ -344,7 +395,7 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 					return 0;
 				}
 				read_ctok(compiler);
-				if (!compile_body(compiler, func_encapsulated, &if_returned))
+				if (!compile_body(compiler, func_encapsulated, NULL))
 					return 0;
 
 				write(&compiler->chunk_builder, MACHINE_FLAG);
@@ -359,7 +410,7 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 					return 0;
 				}
 				read_ctok(compiler);
-				if (!compile_body(compiler, func_encapsulated, &if_returned))
+				if (!compile_body(compiler, func_encapsulated, NULL))
 					return 0;
 				write(&compiler->chunk_builder, MACHINE_END_SKIP);
 			}
@@ -390,18 +441,15 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 		read_ctok(compiler);
 		struct chunk temp_expr_chunk = build_chunk(&temp_expr_builder);
 
-		write_chunk(&compiler->chunk_builder, temp_expr_chunk);
+		write_chunk(&compiler->chunk_builder, temp_expr_chunk, 0);
 		write(&compiler->chunk_builder, MACHINE_COND_SKIP);
 
 		write(&compiler->chunk_builder, MACHINE_MARK);
 
-		int while_return = 0;
-		if (!compile_body(compiler, func_encapsulated, &while_return))
+		if (!compile_body(compiler, func_encapsulated, NULL))
 			return 0;
 		
-		write_chunk(&compiler->chunk_builder, temp_expr_chunk);
-
-		free_chunk(&temp_expr_chunk);
+		write_chunk(&compiler->chunk_builder, temp_expr_chunk, 1);
 		
 		write(&compiler->chunk_builder, MACHINE_COND_RETURN);
 		write(&compiler->chunk_builder, MACHINE_END_SKIP);
@@ -419,12 +467,9 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 		}
 		unsigned long proc_id = compiler->last_tok.payload.identifier;
 		write(&compiler->chunk_builder, MACHINE_LABEL);
-		write_ulong(&compiler->chunk_builder, proc_id);
-		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
-		
+		unsigned long reverse_buffer[50];
+		unsigned int buffer_size = 0;
 		if (read_ctok(compiler).type == tok_open_paren) {
-			unsigned long reverse_buffer[50];
-			unsigned int buffer_size = 0;
 			while (1)
 			{
 				if (read_ctok(compiler).type != tok_identifier) {
@@ -440,12 +485,16 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 				compiler->last_err = error_unexpected_tok;
 				return 0;
 			}
-
-			while (buffer_size--) {
-				write(&compiler->chunk_builder, MACHINE_STORE_VAR);
-				write_ulong(&compiler->chunk_builder, reverse_buffer[buffer_size]);
-			}
 			read_ctok(compiler);
+		}
+		if (callee)
+			reverse_buffer[buffer_size++] = 2090759133;
+		write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
+		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
+		while (buffer_size--) {
+			write(&compiler->chunk_builder, MACHINE_TRACE);
+			write(&compiler->chunk_builder, MACHINE_STORE_VAR);
+			write_ulong(&compiler->chunk_builder, reverse_buffer[buffer_size]);
 		}
 		if (compiler->last_tok.type != tok_open_brace) {
 			compiler->last_err = error_unexpected_tok;
@@ -457,37 +506,53 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 		if (!compile_body(compiler, 1, &func_returned))
 			return 0;
 		if (!func_returned) {
-			write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-			struct value nulbuf;
-			init_null_value(&nulbuf);
-			write_value(&compiler->chunk_builder, nulbuf);
-			free_value(&nulbuf);
+			if (callee) {
+				write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
+				write_ulong(&compiler->chunk_builder, 2090759133);
+				write(&compiler->chunk_builder, MACHINE_TRACE);
+			}
+			else {
+				write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
+				struct value nulbuf;
+				init_null_value(&nulbuf);
+				write_value(&compiler->chunk_builder, nulbuf);
+				free_value(&nulbuf);
+			}
 			write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 		}
 		write(&compiler->chunk_builder, MACHINE_END_SKIP);
 		break;
 	}
 	case tok_record: {
-		write(&compiler->chunk_builder, MACHINE_BUILD_PROTO);
 		if (read_ctok(compiler).type != tok_identifier) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
-		write_ulong(&compiler->chunk_builder, compiler->last_tok.payload.identifier);
+		unsigned long record_id = compiler->last_tok.payload.identifier;
 		if (read_ctok(compiler).type != tok_open_brace) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
 		unsigned long property_buffer[500];
 		unsigned long properties = 0;
-		while (read_ctok(compiler).type != tok_close_brace)
+		read_ctok(compiler);
+		while (compiler->last_tok.type != tok_close_brace)
 		{
-			if (compiler->last_tok.type != tok_identifier) {
+			if (compiler->last_tok.type == tok_identifier) {
+				property_buffer[properties++] = compiler->last_tok.payload.identifier;
+				read_ctok(compiler);
+			}
+			else if (compiler->last_tok.type == tok_proc) {
+				if (!compile_statement(compiler, record_id, 0, 0, NULL))
+					return 0;
+			}
+			else {
 				compiler->last_err = error_unexpected_tok;
 				return 0;
 			}
-			property_buffer[properties++] = compiler->last_tok.payload.identifier;
 		}
+		write(&compiler->chunk_builder, MACHINE_BUILD_PROTO);
+		write_ulong(&compiler->chunk_builder, record_id);
 		write_ulong(&compiler->chunk_builder, properties);
 		while (properties--)
 			write_ulong(&compiler->chunk_builder, property_buffer[properties]);
@@ -501,9 +566,10 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 		}
 		read_ctok(compiler);
 		compile_expression(compiler, begin, 0);
-		write(&compiler->chunk_builder, MACHINE_PROTECT);
+		write(&compiler->chunk_builder, MACHINE_TRACE);
 		write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
-		*returned = 1;
+		if(returned)
+			*returned = 1;
 		break;
 	}
 	case tok_include: {
@@ -550,10 +616,11 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 
 		if (!compile(&temp_compiler, 0)) {
 			compiler->last_err = temp_compiler.last_err;
+			compiler->scanner = temp_compiler.scanner;
 			return 0;
 		}
 		struct chunk compiled_chunk = build_chunk(&temp_compiler.chunk_builder);
-		write_chunk(&compiler->chunk_builder, compiled_chunk);
+		write_chunk(&compiler->chunk_builder, compiled_chunk, 1);
 		read_ctok(compiler);
 
 		free(source);
@@ -568,10 +635,11 @@ const int compile_statement(struct compiler* compiler, const int encapsulated, c
 }
 
 const int compile_body(struct compiler* compiler, const int func_encapsulated, int* returned) {
-	*returned = 0;
+	if(returned)
+		*returned = 0;
 	while (compiler->last_tok.type != tok_end && compiler->last_tok.type != tok_close_brace)
 	{
-		if (!compile_statement(compiler, 1, func_encapsulated, returned))
+		if (!compile_statement(compiler, 0,1, func_encapsulated, returned))
 			return 0;
 	}
 	read_ctok(compiler);
@@ -590,7 +658,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 	while (compiler->last_tok.type != tok_end)
 	{
-		if (!compile_statement(compiler, 0, 0, NULL))
+		if (!compile_statement(compiler, 0, 0, 0, NULL))
 			return 0;
 	}
 	if(!repl_mode)

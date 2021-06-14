@@ -91,8 +91,10 @@ const int write_value(struct chunk_builder* chunk_builder, struct value value) {
 	return 1;
 }
 
-void write_chunk(struct chunk_builder* dest, struct chunk src) {
+void write_chunk(struct chunk_builder* dest, struct chunk src, const int free_chunk) {
 	write_size(dest, src.code, src.size);
+	if(free_chunk)
+		free(src.code);
 }
 
 void jump_to(struct chunk* chunk, const unsigned long pos) {
@@ -111,6 +113,7 @@ void skip_instruction(struct chunk* chunk) {
 		read_size(chunk, sizeof(unsigned long));
 	case MACHINE_LABEL:
 	case MACHINE_GOTO:
+	case MACHINE_GOTO_AS:
 	case MACHINE_STORE_VAR:
 	case MACHINE_LOAD_VAR:
 	case MACHINE_BUILD_COL:

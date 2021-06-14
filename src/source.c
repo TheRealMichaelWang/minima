@@ -108,7 +108,7 @@ int main(unsigned int argc, char** argv) {
 				}
 				else {
 					struct chunk new_chunk = build_chunk(&compiler.chunk_builder);
-					write_chunk(&global_build, new_chunk);
+					write_chunk(&global_build, new_chunk, 1);
 
 					struct chunk global_chunk = build_chunk(&global_build);
 					global_chunk.pos = ip;
@@ -116,10 +116,8 @@ int main(unsigned int argc, char** argv) {
 					int err = execute(&machine, &global_chunk);
 					if (err) {
 						printf("\n***Runtime Error***\nError No. %d\n", err);
-						printf("\nERROR DUMP:\n");
-						print_dump(new_chunk, 0);
 						printf("\nGLOBAL DUMP:\n");
-						print_dump(global_chunk, 1);
+						print_dump(global_chunk);
 
 						global_build.size = ip;
 						reset_stack(&machine);
@@ -133,5 +131,5 @@ int main(unsigned int argc, char** argv) {
 		free_chunk(&global_chunk);
 	}
 	free_machine(&machine);
-	exit(EXIT_SUCCESS);
+   	exit(EXIT_SUCCESS);
 }

@@ -98,7 +98,7 @@ void print_value(struct value* value, const int print_mode) {
 		if (print_mode)
 			print_record(value->payload.object.ptr.record);
 		else
-			print("<%p>", value->payload.object.ptr.record);
+			printf("<%p>", value->payload.object.ptr.record);
 	else
 		printf("[Print Error]");
 }
@@ -142,5 +142,13 @@ struct value* get_input(struct value** argv, unsigned int argc) {
 		init_object_col(&obj, collection);
 		init_obj_value(toret, obj);
 	}
+	return toret;
+}
+
+struct value* get_length(struct value** argv, unsigned int argc) {
+	if (argc < 1 || argv[0]->type != value_type_object || argv[0]->payload.object.type != obj_type_collection)
+		return NULL;
+	struct value* toret = malloc(sizeof(struct value));
+	init_num_value(toret, argv[0]->payload.object.ptr.collection->size);
 	return toret;
 }

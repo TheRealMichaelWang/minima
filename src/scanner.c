@@ -89,7 +89,7 @@ struct token read_tok(struct scanner* scanner) {
 	const char* start = &scanner->source[scanner->pos - 1];
 	unsigned long length = 0;
 	if (isalpha(scanner->last_char)) {
-		while (isalpha(scanner->last_char) || scanner->last_char == '_') {
+		while (isalpha(scanner->last_char) || isalnum(scanner->last_char) || scanner->last_char == '_') {
 			read_char(scanner);
 			length++;
 		}
@@ -113,6 +113,9 @@ struct token read_tok(struct scanner* scanner) {
 			break;
 		case 421984292:
 			tok.type = tok_record;
+			break;
+		case 5863225:
+			tok.type = tok_as;
 			break;
 		case 193500239:
 			tok.type = tok_new;
@@ -168,6 +171,12 @@ struct token read_tok(struct scanner* scanner) {
 		case 258723568: //false
 			tok.type = tok_primative;
 			init_num_value(&tok.payload.primative, 0);
+			break;
+		case 193504585: //remark
+			while (scanner->last_char != '\n')
+				read_char(scanner);
+			read_char(scanner);
+			tok.type = tok_remark;
 			break;
 		default:
 			tok.type = tok_identifier;
