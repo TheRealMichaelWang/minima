@@ -108,7 +108,7 @@ int main(unsigned int argc, char** argv) {
 				}
 				else {
 					struct chunk new_chunk = build_chunk(&compiler.chunk_builder);
-					write_chunk(&global_build, new_chunk);
+					write_chunk(&global_build, new_chunk, 1);
 
 					struct chunk global_chunk = build_chunk(&global_build);
 					global_chunk.pos = ip;

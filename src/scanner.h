@@ -32,6 +32,7 @@ struct token {
 		tok_goto,
 		tok_extern,
 		tok_return,
+		tok_remark,
 		tok_alloc,
 		tok_identifier,
 		tok_primative,

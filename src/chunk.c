@@ -91,9 +91,10 @@ const int write_value(struct chunk_builder* chunk_builder, struct value value) {
 	return 1;
 }
 
-void write_chunk(struct chunk_builder* dest, struct chunk src) {
+void write_chunk(struct chunk_builder* dest, struct chunk src, const int free_chunk) {
 	write_size(dest, src.code, src.size);
-	free(src.code);
+	if(free_chunk)
+		free(src.code);
 }
 
 void jump_to(struct chunk* chunk, const unsigned long pos) {

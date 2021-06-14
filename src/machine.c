@@ -58,6 +58,7 @@ void init_machine(struct machine* machine) {
 
 	declare_builtin_proc(&machine->global_cache, 271190290, print);
 	declare_builtin_proc(&machine->global_cache, 262752949, get_input);
+	declare_builtin_proc(&machine->global_cache, 193498052, get_length);
 }
 
 void reset_stack(struct machine* machine) {
@@ -240,6 +241,8 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 	if (!match_evals(machine, 2))
 		return 0;
 
+	unsigned long property = read_ulong(chunk);
+
 	struct value* set_val = machine->evaluation_stack[--machine->evals];
 	char set_flag = machine->eval_flags[machine->evals];
 	struct value* record_eval = machine->evaluation_stack[--machine->evals];
@@ -250,7 +253,6 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 		return 0;
 	}
 
-	unsigned long property = read_ulong(chunk);
 	struct record* record = record_eval->payload.object.ptr.record;
 	struct value* property_val = get_value_ref(record, property);
 	if (!property_val) {
@@ -537,7 +539,7 @@ const int execute(struct machine* machine, struct chunk* chunk) {
 			init_record_prototype(prototype, id);
 			while (properties--)
 				if (!append_record_property(prototype, read_ulong(chunk))) {
-					machine->last_err = error_property_undefined;
+					machine->last_err = error_property_redefine;
 					return 0;
 				}
 			if (!insert_prototype(&machine->global_cache, id, prototype))

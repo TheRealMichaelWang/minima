@@ -34,7 +34,10 @@ enum op_precedence precedence[14] = {
 };
 
 inline struct token read_ctok(struct compiler* compiler) {
-	compiler->last_tok = read_tok(&compiler->scanner);
+	do
+	{
+		compiler->last_tok = read_tok(&compiler->scanner);
+	} while (compiler->last_tok.type == tok_remark);
 	if (compiler->last_tok.type == tok_error) {
 		compiler->last_err = compiler->scanner.last_err;
 	}
@@ -207,7 +210,7 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 		if (is_proc) {
 			if (is_record_proc) {
 				struct chunk temp_chunk = build_chunk(&temp_builder);
-				write_chunk(&compiler->chunk_builder, temp_chunk);
+				write_chunk(&compiler->chunk_builder, temp_chunk, 1);
 				write(&compiler->chunk_builder, MACHINE_GOTO_AS);
 				write_ulong(&compiler->chunk_builder, combine_hash(proc_id, arguments));
 			}
@@ -438,7 +441,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		read_ctok(compiler);
 		struct chunk temp_expr_chunk = build_chunk(&temp_expr_builder);
 
-		write_chunk(&compiler->chunk_builder, temp_expr_chunk);
+		write_chunk(&compiler->chunk_builder, temp_expr_chunk, 0);
 		write(&compiler->chunk_builder, MACHINE_COND_SKIP);
 
 		write(&compiler->chunk_builder, MACHINE_MARK);
@@ -446,7 +449,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		if (!compile_body(compiler, func_encapsulated, NULL))
 			return 0;
 		
-		write_chunk(&compiler->chunk_builder, temp_expr_chunk);
+		write_chunk(&compiler->chunk_builder, temp_expr_chunk, 1);
 		
 		write(&compiler->chunk_builder, MACHINE_COND_RETURN);
 		write(&compiler->chunk_builder, MACHINE_END_SKIP);
@@ -614,7 +617,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 			return 0;
 		}
 		struct chunk compiled_chunk = build_chunk(&temp_compiler.chunk_builder);
-		write_chunk(&compiler->chunk_builder, compiled_chunk);
+		write_chunk(&compiler->chunk_builder, compiled_chunk, 1);
 		read_ctok(compiler);
 
 		free(source);

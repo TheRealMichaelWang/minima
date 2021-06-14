@@ -176,7 +176,7 @@ struct token read_tok(struct scanner* scanner) {
 			while (scanner->last_char != '\n')
 				read_char(scanner);
 			read_char(scanner);
-			return read_tok(scanner);
+			tok.type = tok_remark;
 			break;
 		default:
 			tok.type = tok_identifier;
