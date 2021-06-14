@@ -493,8 +493,6 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 		while (buffer_size--) {
 			write(&compiler->chunk_builder, MACHINE_TRACE);
-			write(&compiler->chunk_builder, MACHINE_STORE_VAR);
-			write_ulong(&compiler->chunk_builder, reverse_buffer[buffer_size]);
 		}
 		if (compiler->last_tok.type != tok_open_brace) {
 			compiler->last_err = error_unexpected_tok;

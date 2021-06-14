@@ -36,7 +36,7 @@ void gc_register_trace(struct garbage_collector* garbage_collector, struct value
 	top->to_trace[top->trace_values++] = value;
 }
 
-void gc_register_value(struct garbage_collector* garbage_collector, struct value* value, const int noreg_head) {
+void gc_register_value(struct garbage_collector* garbage_collector, struct value* value, const int noreg_head)
 	if (value->gc_flag != garbage_uninit)
 		return;
 	value->gc_flag = garbage_collect;
