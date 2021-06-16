@@ -2,15 +2,15 @@
 #include <string.h>
 #include "operators.h"
 #include "error.h"
-#include "io.h"
+#include "stdlib.h"
 #include "collection.h"
 #include "record.h"
 #include "hash.h"
 #include "machine.h"
 
-#define MAX_POSITIONS 2000
-#define MAX_EVALS 2000
-#define MAX_CALLS 1000
+#define MAX_POSITIONS 20000
+#define MAX_EVALS 10000
+#define MAX_CALLS 10000
 
 #define EVAL_FLAG_CPY 0
 #define EVAL_FLAG_REF 1
@@ -56,9 +56,12 @@ void init_machine(struct machine* machine) {
 	init_gcollect(&machine->garbage_collector);
 	init_global_cache(&machine->global_cache);
 
-	declare_builtin_proc(&machine->global_cache, 271190290, print);
-	declare_builtin_proc(&machine->global_cache, 262752949, get_input);
-	declare_builtin_proc(&machine->global_cache, 193498052, get_length);
+	declare_builtin_proc(&machine->global_cache, 271190290, builtin_print);
+	declare_builtin_proc(&machine->global_cache, 359345086, builtin_print_line);
+	declare_builtin_proc(&machine->global_cache, 485418122, builtin_system_cmd);
+	declare_builtin_proc(&machine->global_cache, 417623846, builtin_random);
+	declare_builtin_proc(&machine->global_cache, 262752949, builtin_get_input);
+	declare_builtin_proc(&machine->global_cache, 193498052, builtin_get_length);
 }
 
 void reset_stack(struct machine* machine) {

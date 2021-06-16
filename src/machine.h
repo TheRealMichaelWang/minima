@@ -69,8 +69,8 @@ struct machine {
 	char std_flag;
 	enum error last_err;
 
-	struct garbage_collector garbage_collector;
 	struct global_cache global_cache;
+	struct garbage_collector garbage_collector;
 };
 
 void init_machine(struct machine* machine);

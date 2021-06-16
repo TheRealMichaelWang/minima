@@ -63,7 +63,7 @@ int main(unsigned int argc, char** argv) {
 		}
 	}
 	else {
-		printf("North-Hollywood Minima, version 1.0\n");
+		printf("North-Hollywood Minima, version 0.1.1\n");
 		printf("Written by Michael Wang in 2021\n\n");
 		printf("Type \"dump\" to produce a bytecode dump of your current program.Type \"quit\" to exit...\n");
 		printf("READY\n");

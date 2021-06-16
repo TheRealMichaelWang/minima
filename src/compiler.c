@@ -154,8 +154,9 @@ const int compile_value(struct compiler* compiler, const int expr_optimize) {
 	}
 	else if (compiler->last_tok.type == tok_open_paren) {
 		read_ctok(compiler);
-		compile_expression(compiler, 0, 1);
-		if (read_ctok(compiler).type != tok_close_paren) {
+		if(!compile_expression(compiler, begin, 1))
+			return 0;
+		if (compiler->last_tok.type != tok_close_paren) {
 			compiler->last_err = error_unexpected_tok;
 			return 0;
 		}
@@ -273,7 +274,7 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 		}
 		return 1;
 	}
-	while (compiler->last_tok.type == tok_bin_op && precedence[compiler->last_tok.payload.bin_op] > min_prec)
+	while (compiler->last_tok.type == tok_bin_op && precedence[compiler->last_tok.payload.bin_op] >= min_prec)
 	{
 		enum binary_operator op = compiler->last_tok.payload.bin_op;
 		read_ctok(compiler);
@@ -506,7 +507,7 @@ const int compile_statement(struct compiler* compiler, const unsigned long calle
 		if (!compile_body(compiler, 1, &func_returned))
 			return 0;
 		if (!func_returned) {
-			if (callee) {
+			if (callee && proc_id == 2090370361) {
 				write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
 				write_ulong(&compiler->chunk_builder, 2090759133);
 				write(&compiler->chunk_builder, MACHINE_TRACE);

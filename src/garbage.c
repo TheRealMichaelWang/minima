@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include "object.h"
+#include "io.h"
 #include "garbage.h"
 
-#define MAX_GARBAGE 1000
-#define MAX_VALUES 20000
-#define MAX_TRACE 5000
+#define MAX_GARBAGE 10000
+#define MAX_VALUES 300000
+#define MAX_TRACE 25000
 
 void init_gcollect(struct garbage_collector* garbage_collector) {
 	garbage_collector->frame_stack = malloc(MAX_GARBAGE * sizeof(struct garbage_frame));
@@ -63,26 +64,39 @@ void gc_new_frame(struct garbage_collector* garbage_collector) {
 	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], begin, trace_begin);
 }
 
-void trace_value(struct value* value) {
+void trace_value(struct value* value, struct value** reset_stack, unsigned int* stack_top) {
 	if (value->gc_flag == garbage_keep)
 		return;
+
 	value->gc_flag = garbage_keep;
-	
+
+	reset_stack[*stack_top] = value;
+	(*stack_top)++;
+
 	if (value->type == value_type_object) {
 		unsigned long size = 0;
 		const struct value** children = get_children(&value->payload.object, &size);
 		for (unsigned long i = 0; i < size; i++)
-			trace_value(children[i]);
+			trace_value(children[i], reset_stack, stack_top);
 	}
 }
 
 void gc_collect(struct garbage_collector* garbage_collector) {
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
+
+	if (top->collect_values > 14) {
+		top->collect_values = top->collect_values;
+	}
+
 	for (unsigned long i = 0; i < top->collect_values; i++)
 		if (top->to_collect[i]->gc_flag != garbage_trace)
 			top->to_collect[i]->gc_flag = garbage_collect;
-	for (unsigned long i = 0; i < top->trace_values; i++)
-		trace_value(top->to_trace[i]);
+
+	struct value** reset_stack = &top->to_collect[top->collect_values];
+	unsigned int reset_top = 0;
+	while (top->trace_values--)
+		trace_value(top->to_trace[top->trace_values], reset_stack, &reset_top);
+
 	for (unsigned long i = 0; i < top->collect_values; i++) {
 		if (top->to_collect[i]->gc_flag == garbage_collect || garbage_collector->frames < 2) {
 			free_value(top->to_collect[i]);
@@ -93,55 +107,9 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 			prev->to_collect[prev->collect_values++] = top->to_collect[i];
 		}
 	}
+
+	while (reset_top--)
+		reset_stack[reset_top]->gc_flag = garbage_collect;
+
 	garbage_collector->frames--;
 }
-
-//void gc_protect(struct value* value) {
-//	if (value->gc_flag == garbage_protected)
-//		return;
-//	if(value->gc_flag != garbage_uninit)
-//		value->gc_flag = garbage_protected;
-//	if (value->type == value_type_object) {
-//		unsigned long size = 0;
-//		const struct value** children = get_children(&value->payload.object, &size);
-//		for (unsigned long i = 0; i < size; i++)
-//			gc_protect(children[i]);
-//	}
-//}
-
-//void reset_flags(struct garbage_frame* garbage_frame) {
-//	for (unsigned long i = 0; i < garbage_frame->collect_values; i++)
-//		if (garbage_frame->to_collect[i]->gc_flag != garbage_protected)
-//			garbage_frame->to_collect[i]->gc_flag = garbage_collect;
-//}
-
-//
-//void trace_frame(struct garbage_frame* garbage_frame) {
-//	for (unsigned long i = 0; i < garbage_frame->collect_values; i++)
-//		trace_value(garbage_frame->to_collect[i]);
-//}
-
-//void gc_collect(struct garbage_collector* garbage_collector) {
-//	reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 1]);
-//	if (garbage_collector->frames > 1) {
-//		reset_flags(&garbage_collector->frame_stack[garbage_collector->frames - 2]); 
-//		trace_frame(&garbage_collector->frame_stack[garbage_collector->frames - 2]); 
-//	}
-//	for (unsigned long i = 0; i < garbage_collector->frame_stack[garbage_collector->frames - 1].collect_values; i++)
-//		if (garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]->gc_flag == garbage_collect) {
-//			free_value(garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]);
-//			free(garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]);
-//		}
-//		else { //transfer to prev garbage frame
-//			if (garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]->gc_flag == garbage_protected)
-//				garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]->gc_flag = garbage_collect;
-//			if (garbage_collector->frames > 1) {
-//				garbage_collector->frame_stack[garbage_collector->frames - 2].to_collect[garbage_collector->frame_stack[garbage_collector->frames - 2].collect_values++] = garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i];
-//			}
-//			else {
-//				free_value(garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]);
-//				free(garbage_collector->frame_stack[garbage_collector->frames - 1].to_collect[i]);
-//			}
-//		}
-//	garbage_collector->frames--;
-//}

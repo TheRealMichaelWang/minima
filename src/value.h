@@ -34,7 +34,7 @@ void init_char_value(struct value* value, const char c);
 void init_obj_value(struct value* value, struct object obj);
 
 const int copy_value(struct value* dest, struct value* src);
-const int compare_value(struct value* a, struct value* b);
+const double compare_value(struct value* a, struct value* b);
 
 void free_value(struct value* value);
 
