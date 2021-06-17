@@ -19,17 +19,13 @@ struct record {
 void init_record_prototype(struct record_prototype* prototype, unsigned long identifier);
 void free_record_prototype(struct record_prototype* prototype);
 
-const int append_record_property(struct record_prototype* prototype, unsigned long property);
-
-inline unsigned char retrieve_property_index(struct record_prototype* prototype, unsigned long property) {
-	return prototype->property_map[property & 255];
-}
+const int record_append_property(struct record_prototype* prototype, unsigned long property);
 
 void init_record(struct record* record, struct record_prototype* prototype);
 void free_record(struct record* record);
 
-struct value* get_value_ref(struct record* record, unsigned long property);
+struct value* record_get_ref(struct record* record, unsigned long property);
 
-const int set_value_ref(struct record* record, unsigned long property, struct value* value);
+const int record_set_ref(struct record* record, unsigned long property, struct value* value);
 
 #endif // !RECORD_H

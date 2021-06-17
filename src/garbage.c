@@ -30,7 +30,7 @@ void init_gframe(struct garbage_frame* garbage_frame, struct value** value_begin
 }
 
 void gc_register_trace(struct garbage_collector* garbage_collector, struct value* value) {
-	value->gc_flag = garbage_trace;
+	value->gc_flag = GARBAGE_TRACE;
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	if (top->to_trace == MAX_GARBAGE)
 		return 0;
@@ -38,44 +38,44 @@ void gc_register_trace(struct garbage_collector* garbage_collector, struct value
 }
 
 void gc_register_value(struct garbage_collector* garbage_collector, struct value* value, const int noreg_head) {
-	if (value->gc_flag != garbage_uninit)
+	if (value->gc_flag != GARBAGE_UNINIT)
 		return;
-	value->gc_flag = garbage_collect;
+	value->gc_flag = GARBAGE_COLLECT;
 	struct garbage_frame* gframe = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	if(!noreg_head)
 		gframe->to_collect[gframe->collect_values++] = value;
 	
-	if (value->type == value_type_object) {
+	if (value->type == VALUE_TYPE_OBJ) {
 		unsigned long size = 0;
-		const struct value** children = get_children(&value->payload.object,&size);
+		const struct value** children = object_get_children(&value->payload.object,&size);
 		for (unsigned long i = 0; i < size; i++)
 			gc_register_value(garbage_collector, children[i], 0);
 	}
 }
 
 void gc_new_frame(struct garbage_collector* garbage_collector) {
-	struct value** begin = garbage_collector->value_stack;
+	struct value** PREC_BEGIN = garbage_collector->value_stack;
 	struct value** trace_begin = garbage_collector->trace_stack;
 	if (garbage_collector->frames > 0) {
 		struct garbage_frame* prev_frame = &garbage_collector->frame_stack[garbage_collector->frames - 1];
-		begin = &prev_frame->to_collect[prev_frame->collect_values];
+		PREC_BEGIN = &prev_frame->to_collect[prev_frame->collect_values];
 		trace_begin = &prev_frame->to_trace[prev_frame->trace_values];
 	}
-	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], begin, trace_begin);
+	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], PREC_BEGIN, trace_begin);
 }
 
 void trace_value(struct value* value, struct value** reset_stack, unsigned int* stack_top) {
-	if (value->gc_flag == garbage_keep)
+	if (value->gc_flag == GARBAGE_KEEP)
 		return;
 
-	value->gc_flag = garbage_keep;
+	value->gc_flag = GARBAGE_KEEP;
 
 	reset_stack[*stack_top] = value;
 	(*stack_top)++;
 
-	if (value->type == value_type_object) {
+	if (value->type == VALUE_TYPE_OBJ) {
 		unsigned long size = 0;
-		const struct value** children = get_children(&value->payload.object, &size);
+		const struct value** children = object_get_children(&value->payload.object, &size);
 		for (unsigned long i = 0; i < size; i++)
 			trace_value(children[i], reset_stack, stack_top);
 	}
@@ -84,13 +84,9 @@ void trace_value(struct value* value, struct value** reset_stack, unsigned int* 
 void gc_collect(struct garbage_collector* garbage_collector) {
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 
-	if (top->collect_values > 14) {
-		top->collect_values = top->collect_values;
-	}
-
 	for (unsigned long i = 0; i < top->collect_values; i++)
-		if (top->to_collect[i]->gc_flag != garbage_trace)
-			top->to_collect[i]->gc_flag = garbage_collect;
+		if (top->to_collect[i]->gc_flag != GARBAGE_TRACE)
+			top->to_collect[i]->gc_flag = GARBAGE_COLLECT;
 
 	struct value** reset_stack = &top->to_collect[top->collect_values];
 	unsigned int reset_top = 0;
@@ -98,18 +94,18 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 		trace_value(top->to_trace[top->trace_values], reset_stack, &reset_top);
 
 	for (unsigned long i = 0; i < top->collect_values; i++) {
-		if (top->to_collect[i]->gc_flag == garbage_collect || garbage_collector->frames < 2) {
+		if (top->to_collect[i]->gc_flag == GARBAGE_COLLECT || garbage_collector->frames < 2) {
 			free_value(top->to_collect[i]);
 			free(top->to_collect[i]);
 		}
-		else if (top->to_collect[i]->gc_flag == garbage_keep) {
+		else if (top->to_collect[i]->gc_flag == GARBAGE_KEEP) {
 			struct garbage_frame* prev = &garbage_collector->frame_stack[garbage_collector->frames - 2];
 			prev->to_collect[prev->collect_values++] = top->to_collect[i];
 		}
 	}
 
 	while (reset_top--)
-		reset_stack[reset_top]->gc_flag = garbage_collect;
+		reset_stack[reset_top]->gc_flag = GARBAGE_COLLECT;
 
 	garbage_collector->frames--;
 }

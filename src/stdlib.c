@@ -21,7 +21,7 @@ struct value* builtin_print_line(struct value** argv, unsigned int argc) {
 }
 
 struct value* builtin_system_cmd(struct value** argv, unsigned int argc) {
-	if (argc < 1 || argv[0]->type != value_type_object || argv[0]->payload.object.type != obj_type_collection)
+	if (argc < 1 || argv[0]->type != VALUE_TYPE_OBJ || argv[0]->payload.object.type != obj_type_collection)
 		return NULL;
 	struct collection* collection = argv[0]->payload.object.ptr.collection;
 	char* buffer = malloc((collection->size + 1)* sizeof(char));
@@ -45,7 +45,7 @@ struct value* builtin_random(struct value** argv, unsigned int argc) {
 
 struct value* builtin_get_input(struct value** argv, unsigned int argc) {
 	char format_flag = 0;
-	if (argc > 0 && argv[0]->type == value_type_character)
+	if (argc > 0 && argv[0]->type == VALUE_TYPE_CHAR)
 		format_flag = argv[0]->payload.character;
 
 	char buffer[4096];
@@ -77,7 +77,7 @@ struct value* builtin_get_input(struct value** argv, unsigned int argc) {
 }
 
 struct value* builtin_get_length(struct value** argv, unsigned int argc) {
-	if (argc < 1 || argv[0]->type != value_type_object || argv[0]->payload.object.type != obj_type_collection)
+	if (argc < 1 || argv[0]->type != VALUE_TYPE_OBJ || argv[0]->payload.object.type != obj_type_collection)
 		return NULL;
 	struct value* toret = malloc(sizeof(struct value));
 	init_num_value(toret, argv[0]->payload.object.ptr.collection->size);

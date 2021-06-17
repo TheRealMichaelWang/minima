@@ -26,7 +26,7 @@ void init_object_col(struct object* object, struct collection* collection);
 void init_object_rec(struct object* object, struct record* record);
 void free_object(struct object* object);
 
-const int compare_object(struct object* a, struct object* b);
-const struct value** get_children(struct object* object, unsigned long* size);
+const int object_compare(struct object* a, struct object* b);
+const struct value** object_get_children(struct object* object, unsigned long* size);
 
 #endif // !OBJECT_H

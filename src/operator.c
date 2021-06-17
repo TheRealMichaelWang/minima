@@ -41,10 +41,10 @@ struct value* op_less_equal(struct value* a, struct value* b) {
 
 struct value* op_and(struct value* a, struct value* b) {
 	struct value* c = malloc(sizeof(struct value));
-	if (a->type == value_type_null || b->type == value_type_null)
+	if (a->type == VALUE_TYPE_NULL || b->type == VALUE_TYPE_NULL)
 		init_num_value(c, 0);
-	else if ((a->type == value_type_numerical && a->payload.numerical == 0) ||
-		(b->type == value_type_numerical && b->payload.numerical == 0)) {
+	else if ((a->type == VALUE_TYPE_NUM && a->payload.numerical == 0) ||
+		(b->type == VALUE_TYPE_NUM && b->payload.numerical == 0)) {
 		init_num_value(c, 0);
 	}
 	else
@@ -54,8 +54,8 @@ struct value* op_and(struct value* a, struct value* b) {
 
 struct value* op_or(struct value* a, struct value* b) {
 	struct value* c = malloc(sizeof(struct value)); 
-	if ((a->type == value_type_numerical && a->payload.numerical == 1) ||
-		(b->type == value_type_numerical && b->payload.numerical == 1)) {
+	if ((a->type == VALUE_TYPE_NUM && a->payload.numerical == 1) ||
+		(b->type == VALUE_TYPE_NUM && b->payload.numerical == 1)) {
 		init_num_value(c, 1);
 	}
 	else
@@ -110,7 +110,7 @@ struct value* op_power(struct value* a, struct value* b) {
 }
 
 struct value* op_copy(struct value* a) {
-	if (a->type == value_type_object)
+	if (a->type == VALUE_TYPE_OBJ)
 		return a;
 	struct value* c = malloc(sizeof(struct value));
 	copy_value(c, a);
@@ -119,7 +119,7 @@ struct value* op_copy(struct value* a) {
 
 struct value* op_invert(struct value* a) {
 	struct value* c = malloc(sizeof(struct value));
-	if (a->type == value_type_null || (a->type == value_type_numerical && a->payload.numerical == 0))
+	if (a->type == VALUE_TYPE_NULL || (a->type == VALUE_TYPE_NUM && a->payload.numerical == 0))
 		init_num_value(c, 1);
 	init_num_value(c, 0);
 	return c;

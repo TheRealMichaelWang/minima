@@ -3,27 +3,29 @@
 #ifndef ERROR_H
 
 enum error {
-	error_insufficient_memory,
-	error_insufficient_evals,
-	error_insufficient_calls,
+	ERROR_OUT_OF_MEMORY,
+	ERROR_INSUFFICIENT_EVALS,
+	ERROR_INSUFFICIENT_CALLS,
 
-	error_label_redefine,
-	error_label_undefined,
-	error_record_redefine,
-	error_record_undefined,
-	error_property_redefine,
-	error_property_undefined,
+	ERROR_LABEL_REDEFINE,
+	ERROR_LABEL_UNDEFINED,
+	ERROR_RECORD_REDEFINE,
+	ERROR_RECORD_UNDEFINED,
+	ERROR_PROPERTY_REDEFINE,
+	ERROR_PROPERTY_UNDEFINED,
 
-	error_unnexpected_type,
-	error_index_out_of_range,
-	error_stack_overflow,
-	error_variable_undefined,
+	ERROR_UNEXPECTED_TYPE,
+	ERROR_INDEX_OUT_OF_RANGE,
+	ERROR_STACK_OVERFLOW,
+	ERROR_VARIABLE_UNDEFINED,
 
-	error_unrecognized_tok,
-	error_unrecognized_control_seq,
-	error_unexpected_char,
-	error_unexpected_tok,
-	error_cannot_open_file,
+	ERROR_UNRECOGNIZED_TOKEN,
+	ERROR_UNRECOGNIZED_CONTROL_SEQ,
+	ERROR_UNEXPECTED_CHAR,
+	ERROR_UNEXPECTED_TOKEN,
+	ERROR_CANNOT_OPEN_FILE,
 };
+
+#define ERROR_ALLOC_CHECK(PTR) if(PTR == NULL) { return 0; }
 
 #endif // !ERROR_H

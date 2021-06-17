@@ -38,7 +38,7 @@ void print_data_char(const char data_char) {
 
 const int print_str(struct collection* str, const int print_mode) {
 	for (unsigned long i = 0; i < str->size; i++) {
-		if (str->inner_collection[i]->type != value_type_character)
+		if (str->inner_collection[i]->type != VALUE_TYPE_CHAR)
 			return 0;
 		if (print_mode)
 			printf("%c", str->inner_collection[i]->payload.character);
@@ -49,11 +49,11 @@ const int print_str(struct collection* str, const int print_mode) {
 }
 
 const int is_str(struct value* value) {
-	if (value->type != value_type_object || value->payload.object.type != obj_type_collection)
+	if (value->type != VALUE_TYPE_OBJ || value->payload.object.type != obj_type_collection)
 		return 0;
 	struct collection* collection = value->payload.object.ptr.collection;
 	for (unsigned long i = 0; i < collection->size; i++)
-		if (collection->inner_collection[i]->type != value_type_character)
+		if (collection->inner_collection[i]->type != VALUE_TYPE_CHAR)
 			return 0;
 	return 1;
 }
@@ -77,9 +77,9 @@ void print_record(struct record* record) {
 }
 
 void print_value(struct value* value, const int print_mode) {
-	if (value->type == value_type_numerical)
+	if (value->type == VALUE_TYPE_NUM)
 		printf("%lf", value->payload.numerical);
-	else if (value->type == value_type_character)
+	else if (value->type == VALUE_TYPE_CHAR)
 		if (print_mode)
 			printf("%c", value->payload.character);
 		else {
@@ -87,14 +87,14 @@ void print_value(struct value* value, const int print_mode) {
 			print_data_char(value->payload.character);
 			printf("\'");
 		}
-	else if (value->type == value_type_null)
+	else if (value->type == VALUE_TYPE_NULL)
 		printf("null");
-	else if (value->type == value_type_object && value->payload.object.type == obj_type_collection)
+	else if (value->type == VALUE_TYPE_OBJ && value->payload.object.type == obj_type_collection)
 		if (is_str(value))
 			print_str(value->payload.object.ptr.collection, print_mode);
 		else
 			print_collection(value->payload.object.ptr.collection);
-	else if (value->type == value_type_object && value->payload.object.type == obj_type_record)
+	else if (value->type == VALUE_TYPE_OBJ && value->payload.object.type == obj_type_record)
 		if (print_mode)
 			print_record(value->payload.object.ptr.record);
 		else

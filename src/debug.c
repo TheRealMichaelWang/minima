@@ -3,7 +3,7 @@
 #include "io.h"
 #include "debug.h"
 
-void print_last_line(struct scanner scanner) {
+void debug_print_scanner(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)
 		scanner.pos = scanner.size - 1;
 	scanner.pos--;
@@ -27,7 +27,7 @@ void print_last_line(struct scanner scanner) {
 
 void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	printf("%d", chunk->pos);
-	char op_code = read(chunk);
+	char op_code = chunk_read(chunk);
 
 	for (unsigned int i = 0; i < *indent; i++)
 		printf("\t");
@@ -35,20 +35,20 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	switch (op_code)
 	{
 	case MACHINE_LOAD_VAR:
-		printf("LOAD VAR, id:%d", read_ulong(chunk));
+		printf("LOAD VAR, id:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_STORE_VAR:
-		printf("STORE VAR, id:%d", read_ulong(chunk));
+		printf("STORE VAR, id:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_LOAD_CONST:
 		printf("LOAD CONST, const:");
-		print_value(read_value(chunk), 0);
+		print_value(chunk_read_value(chunk), 0);
 		break;
 	case MACHINE_EVAL_BIN_OP:
-		printf("EVAL BIN OP, op: %d", read(chunk));
+		printf("EVAL BIN OP, op: %d", chunk_read(chunk));
 		break;
 	case MACHINE_EVAL_UNI_OP:
-		printf("EVAL UNI OP, op: %d", read(chunk));
+		printf("EVAL UNI OP, op: %d", chunk_read(chunk));
 		break;
 	case MACHINE_END_SKIP:
 		printf("END_SKIP");
@@ -61,13 +61,13 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("RETURN");
 		break;
 	case MACHINE_GOTO:
-		printf("GOTO, id:%d", read_ulong(chunk));
+		printf("GOTO, id:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_GOTO_AS:
-		printf("GOTO AS, id:%d", read_ulong(chunk));
+		printf("GOTO AS, id:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_LABEL:
-		printf("LABEL, id:%d", read_ulong(chunk));
+		printf("LABEL, id:%d", chunk_read_ulong(chunk));
 		(*indent)++;
 		break;
 	case MACHINE_COND_SKIP:
@@ -94,18 +94,18 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("GC CLEAN");
 		break;
 	case MACHINE_BUILD_COL:
-		printf("BUILD COL, size:%d", read_ulong(chunk));
+		printf("BUILD COL, size:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_BUILD_PROTO: {
-		printf("BUILD RECORD-PROTO, id:%d", read_ulong(chunk));
-		unsigned long properties = read_ulong(chunk);
+		printf("BUILD RECORD-PROTO, id:%d", chunk_read_ulong(chunk));
+		unsigned long properties = chunk_read_ulong(chunk);
 		printf(", properties:%d", properties);
 		while (properties--)
-			printf(", id:%d", read_ulong(chunk));
+			printf(", id:%d", chunk_read_ulong(chunk));
 		break;
 	}
 	case MACHINE_BUILD_RECORD:
-		printf("BUILD RECORD, proto-id:%d", read_ulong(chunk));
+		printf("BUILD RECORD, proto-id:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_SET_INDEX:
 		printf("SET INDEX");
@@ -114,10 +114,10 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("GET INDEX");
 		break;
 	case MACHINE_GET_PROPERTY:
-		printf("GET PROPERTY, property:%d", read_ulong(chunk));
+		printf("GET PROPERTY, property:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_SET_PROPERTY:
-		printf("SET PROPERTY, property:%d", read_ulong(chunk));
+		printf("SET PROPERTY, property:%d", chunk_read_ulong(chunk));
 		break;
 	case MACHINE_TRACE:
 		printf("GC SET TRACE");
@@ -126,13 +126,13 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		printf("POP EVAL");
 		break;
 	case MACHINE_CALL_EXTERN:
-		printf("CALL EXTERN, args:%d id:%d", read_ulong(chunk), read_ulong(chunk));
+		printf("CALL EXTERN, args:%d id:%d", chunk_read_ulong(chunk), chunk_read_ulong(chunk));
 		break;
 	}
 
 }
 
-void print_dump(struct chunk chunk) {
+void debug_print_dump(struct chunk chunk) {
 	unsigned long old_pos = chunk.pos;
 	chunk.pos = 0;
 	unsigned int indent = 1;

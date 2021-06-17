@@ -12,46 +12,48 @@
 
 //machine codes
 
-#define MACHINE_LOAD_VAR 1
-#define MACHINE_LOAD_CONST 2
+enum machine_op_code {
+	MACHINE_LOAD_VAR,
+    MACHINE_LOAD_CONST,
 
-#define MACHINE_STORE_VAR 3
+	MACHINE_STORE_VAR,
 
-#define MACHINE_EVAL_BIN_OP 4
-#define MACHINE_EVAL_UNI_OP 5
+	MACHINE_EVAL_BIN_OP,
+	MACHINE_EVAL_UNI_OP,
 
-#define MACHINE_END_SKIP 6
+	MACHINE_END_SKIP,
 
-#define MACHINE_MARK 7
+	MACHINE_MARK,
 
-#define MACHINE_GOTO 8
-#define MACHINE_GOTO_AS 9
-#define MACHINE_RETURN_GOTO 10
-#define MACHINE_LABEL 11
+	MACHINE_GOTO,
+	MACHINE_GOTO_AS,
+	MACHINE_RETURN_GOTO,
+	MACHINE_LABEL,
 
-#define MACHINE_COND_SKIP 12
-#define MACHINE_COND_RETURN 13
+	MACHINE_COND_SKIP,
+	MACHINE_COND_RETURN,
 
-#define MACHINE_FLAG 14
-#define MACHINE_RESET_FLAG 15
-#define MACHINE_FLAG_SKIP 16
+	MACHINE_FLAG,
+	MACHINE_RESET_FLAG,
+	MACHINE_FLAG_SKIP,
 
-#define MACHINE_NEW_FRAME 17
-#define MACHINE_CLEAN 18
+	MACHINE_NEW_FRAME,
+	MACHINE_CLEAN,
 
-#define MACHINE_BUILD_COL 19
-#define MACHINE_BUILD_PROTO 20
-#define MACHINE_BUILD_RECORD 21
+	MACHINE_BUILD_COL,
+	MACHINE_BUILD_PROTO,
+	MACHINE_BUILD_RECORD,
 
-#define MACHINE_GET_INDEX 22
-#define MACHINE_SET_INDEX 23
-#define MACHINE_GET_PROPERTY 24
-#define MACHINE_SET_PROPERTY 25
+	MACHINE_GET_INDEX,
+	MACHINE_SET_INDEX,
+	MACHINE_GET_PROPERTY,
+	MACHINE_SET_PROPERTY,
 
-#define MACHINE_TRACE 26
-#define MACHINE_POP 27
+	MACHINE_TRACE,
+	MACHINE_POP,
 
-#define MACHINE_CALL_EXTERN 28
+	MACHINE_CALL_EXTERN
+};
 
 struct machine {
 	unsigned long* position_stack;
@@ -76,8 +78,8 @@ struct machine {
 void init_machine(struct machine* machine);
 void free_machine(struct machine* machine);
 
-void reset_stack(struct machine* machine);
+void machine_reset_stack(struct machine* machine);
 
-const int execute(struct machine* machine, struct chunk* chunk);
+const int machine_execute(struct machine* machine, struct chunk* chunk);
 
 #endif // !MACHINE_H

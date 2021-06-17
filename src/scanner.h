@@ -17,38 +17,38 @@ struct scanner {
 
 struct token {
 	enum token_type {
-		tok_if,
-		tok_else,
-		tok_elif,
-		tok_while,
-		tok_proc,
-		tok_record,
-		tok_set,
-		tok_to,
-		tok_as,
-		tok_ref,
-		tok_new,
-		tok_include,
-		tok_goto,
-		tok_extern,
-		tok_return,
-		tok_remark,
-		tok_alloc,
-		tok_identifier,
-		tok_primative,
-		tok_bin_op,
-		tok_uni_op,
-		tok_open_paren,
-		tok_close_paren,
-		tok_open_brace,
-		tok_close_brace,
-		tok_open_bracket,
-		tok_close_bracket,
-		tok_comma,
-		tok_period,
-		tok_end,
-		tok_str,
-		tok_error
+		TOK_IF,
+		TOK_ELSE,
+		TOK_ELIF,
+		TOK_WHILE,
+		TOK_PROC,
+		TOK_RECORD,
+		TOK_SET,
+		TOK_TO,
+		TOK_AS,
+		TOK_REF,
+		TOK_NEW,
+		TOK_INCLUDE,
+		TOK_GOTO,
+		TOK_EXTERN,
+		TOK_RETURN,
+		TOK_REMARK,
+		TOK_ALLOC,
+		TOK_IDENTIFIER,
+		TOK_PRIMATIVE,
+		TOK_BINARY_OP,
+		TOK_UNARY_OP,
+		TOK_OPEN_PAREN,
+		TOK_CLOSE_PAREN,
+		TOK_OPEN_BRACE,
+		TOK_CLOSE_BRACE,
+		TOK_OPEN_BRACKET,
+		TOK_CLOSE_BRACKET,
+		TOK_COMMA,
+		TOK_PERIOD,
+		TOK_END,
+		TOK_STR,
+		TOK_ERROR
 	} type;
 
 	union token_type_payload
@@ -64,8 +64,8 @@ struct token {
 
 void init_scanner(struct scanner* scanner, const char* source);
 
-struct token read_tok(struct scanner* scanner);
+struct token scanner_read_tok(struct scanner* scanner);
 
-const int read_str(struct scanner* scanner, char* str, const int data_mode);
+const int scanner_read_str(struct scanner* scanner, char* str, const int data_mode);
 
 #endif // !SCANNER_H

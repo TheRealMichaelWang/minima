@@ -7,10 +7,10 @@
 
 struct value {
 	enum garbage_flag {
-		garbage_uninit,
-		garbage_collect,
-		garbage_trace,
-		garbage_keep
+		GARBAGE_UNINIT,
+		GARBAGE_COLLECT,
+		GARBAGE_TRACE,
+		GARBAGE_KEEP
 	}gc_flag;
 
 	union value_payload
@@ -21,10 +21,10 @@ struct value {
 	}payload;
 
 	enum value_type {
-		value_type_null,
-		value_type_numerical,
-		value_type_character,
-		value_type_object,
+		VALUE_TYPE_NULL,
+		VALUE_TYPE_NUM,
+		VALUE_TYPE_CHAR,
+		VALUE_TYPE_OBJ,
 	} type;
 };
 

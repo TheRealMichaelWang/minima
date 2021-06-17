@@ -17,8 +17,6 @@ struct compiler
 
 	unsigned long imported_file_hashes[255];
 	unsigned char imported_files;
-
-
 };
 
 void init_compiler(struct compiler* compiler, const char* source);

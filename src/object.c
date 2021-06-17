@@ -26,20 +26,20 @@ void free_object(struct object* object) {
 	}
 }
 
-const int compare_object(struct object* a, struct object* b) {
+const int object_compare(struct object* a, struct object* b) {
 	if (a->type != b->type)
 		return a->type = b->type;
 	switch (a->type)
 	{
 	case obj_type_collection:
-		return !compare_collection(a->ptr.collection, b->ptr.collection);
+		return !collection_compare(a->ptr.collection, b->ptr.collection);
 	case obj_type_record:
 		return !(a->ptr.record == b->ptr.record);
 	}
 	return 1;
 }
 
-const struct value** get_children(struct object* object, unsigned long* size) {
+const struct value** object_get_children(struct object* object, unsigned long* size) {
 	switch (object->type)
 	{
 	case obj_type_collection:

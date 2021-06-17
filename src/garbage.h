@@ -19,8 +19,6 @@ struct garbage_collector {
 	unsigned long frames;
 };
 
-void gc_collect(struct garbage_collector* garbage_collector);
-
 void init_gcollect(struct garbage_collector* garbage_collector);
 
 void free_gcollect(struct garbage_collector* garbage_collector);

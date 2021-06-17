@@ -10,9 +10,9 @@ struct global_cache {
 		unsigned long id;
 
 		enum cache_type {
-			cache_type_position,
-			cache_type_builtin,
-			cache_type_prototype
+			CACHE_TYPE_POS,
+			CACHE_TYPE_BUILTIN,
+			CACHE_TYPE_PROTO
 		}type;
 
 		union payload
@@ -29,13 +29,13 @@ struct global_cache {
 void init_global_cache(struct global_cache* global_cache);
 void free_global_cache(struct global_cache* global_cache);
 
-const int insert_label(struct global_cache* global_cache, unsigned long id, unsigned long pos);
-unsigned long retrieve_pos(struct global_cache* global_cache, unsigned long id);
+const int cache_insert_label(struct global_cache* global_cache, unsigned long id, unsigned long pos);
+unsigned long cache_retrieve_pos(struct global_cache* global_cache, unsigned long id);
 
-const int insert_prototype(struct global_cache* global_cache, unsigned long id, struct record_prototype* prototype);
-const int init_record_id(struct global_cache* global_cache, unsigned long proto_id, struct record* record);
+const int cache_insert_prototype(struct global_cache* global_cache, unsigned long id, struct record_prototype* prototype);
+const int cache_init_record(struct global_cache* global_cache, unsigned long proto_id, struct record* record);
 
-const int declare_builtin_proc(struct global_cache* global_cache, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc));
-struct value* invoke_builtin(struct global_cache* global_cache, unsigned long id, struct value** argv, unsigned int argc);
+const int cache_declare_builtin(struct global_cache* global_cache, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc));
+struct value* cache_invoke_builtin(struct global_cache* global_cache, unsigned long id, struct value** argv, unsigned int argc);
 
 #endif // !LABEL_H

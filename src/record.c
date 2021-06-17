@@ -4,6 +4,10 @@
 
 #define MAX_SIZE 255
 
+inline unsigned char retrieve_property_index(struct record_prototype* prototype, unsigned long property) {
+	return prototype->property_map[property & 255];
+}
+
 void init_record_prototype(struct record_prototype* prototype, unsigned long identifier) {
 	prototype->identifier = identifier;
 	prototype->property_map = calloc(MAX_SIZE, sizeof(unsigned char));
@@ -14,7 +18,7 @@ void free_record_prototype(struct record_prototype* prototype) {
 	free(prototype->property_map);
 }
 
-const int append_record_property(struct record_prototype* prototype, unsigned long property) {
+const int record_append_property(struct record_prototype* prototype, unsigned long property) {
 	unsigned char* slot = &prototype->property_map[property & 255];
 	if (*slot)
 		return 0;
@@ -29,14 +33,14 @@ void init_record(struct record* record, struct record_prototype* prototype) {
 
 void free_record(struct record* record) {
 	for (unsigned char i = 0; i < record->prototype->size; i++)
-		if (record->properties[i]->gc_flag == garbage_uninit) {
+		if (record->properties[i]->gc_flag == GARBAGE_UNINIT) {
 			free_value(record->properties[i]);
 			free(record->properties[i]);
 		}
 	free(record->properties);
 }
 
-struct value* get_value_ref(struct record* record, unsigned long property) {
+struct value* record_get_ref(struct record* record, unsigned long property) {
 	unsigned char i = retrieve_property_index(record->prototype, property);
 	if (i)
 		return record->properties[i - 1];
@@ -44,7 +48,7 @@ struct value* get_value_ref(struct record* record, unsigned long property) {
 		return NULL;
 }
 
-const int set_value_ref(struct record* record, unsigned long property, struct value* value) {
+const int record_set_ref(struct record* record, unsigned long property, struct value* value) {
 	unsigned char i = retrieve_property_index(record->prototype, property);
 	if (i) {
 		record->properties[i - 1] = value;

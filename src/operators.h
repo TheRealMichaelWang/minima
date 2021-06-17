@@ -4,29 +4,29 @@
 #define OPERATORS
 
 enum binary_operator {
-	operator_equals,
-	operator_not_equal,
-	operator_more,
-	operator_less,
-	operator_more_equal,
-	operator_less_equal,
-	operator_and,
-	operator_or,
-	operator_add,
-	operator_subtract,
-	operator_multiply,
-	operator_divide,
-	operator_modulo,
-	operator_power,
+	OPERATOR_EQUALS,
+	OPERATOR_NOT_EQUAL,
+	OPERATOR_MORE,
+	OPERATOR_LESS,
+	OPERATOR_MORE_EQUAL,
+	OPERATOR_LESS_EQUAL,
+	OPERATOR_AND,
+	OPERATOR_OR,
+	OPERATOR_ADD,
+	OPERATOR_SUBTRACT,
+	OPERATOR_MULTIPLY,
+	OPERATOR_DIVIDE,
+	OPERATOR_MODULO,
+	OPERATOR_POWER,
 };
 
 enum unary_operator {
-	operator_copy,
-	operator_invert,
-	operator_negate,
-	operator_alloc,
-	operator_increment,
-	operator_decriment
+	OPERATOR_COPY,
+	OPERATOR_INVERT,
+	OPERATOR_NEGATE,
+	OPERATOR_ALLOC,
+	OPERATOR_INCREMENT,
+	OPERATOR_DECRIMENT
 };
 
 struct value* op_equals(struct value* a, struct value* b);

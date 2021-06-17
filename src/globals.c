@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "error.h"
 #include "globals.h"
 
 #define MAX_SIZE 255
@@ -13,7 +14,7 @@ void free_global_cache(struct global_cache* global_cache) {
 		struct cache_bucket* bucket = global_cache->buckets[i];
 		while (bucket != NULL)
 		{
-			if (bucket->type == cache_type_prototype) {
+			if (bucket->type == CACHE_TYPE_PROTO) {
 				free_record_prototype(bucket->payload.prototype);
 				free(bucket->payload.prototype);
 			}
@@ -34,45 +35,44 @@ const int insert_bucket(struct global_cache* global_cache, struct cache_bucket t
 		bucket = &(*bucket)->next;
 	}
 	*bucket = malloc(sizeof(struct cache_bucket));
-	if (*bucket == NULL)
-		return 0;
+	ERROR_ALLOC_CHECK(*bucket);
 	memcpy(*bucket, &to_insert, sizeof(struct cache_bucket));
 	(*bucket)->next = NULL;
 	return 1;
 }
 
-const int insert_label(struct global_cache* global_cache, unsigned long id, unsigned long pos) {
+const int cache_insert_label(struct global_cache* global_cache, unsigned long id, unsigned long pos) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
-	to_insert.type = cache_type_position;
+	to_insert.type = CACHE_TYPE_POS;
 	to_insert.payload.pos = pos;
 	return insert_bucket(global_cache, to_insert);
 }
 
-unsigned long retrieve_pos(struct global_cache* global_cache, unsigned long id) {
+unsigned long cache_retrieve_pos(struct global_cache* global_cache, unsigned long id) {
 	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
 	while (bucket != NULL)
 	{
-		if (bucket->id == id && bucket->type == cache_type_position)
+		if (bucket->id == id && bucket->type == CACHE_TYPE_POS)
 			return bucket->payload.pos;
 		bucket = bucket->next;
 	}
 	return 0;
 }
 
-const int insert_prototype(struct global_cache* global_cache, unsigned long id, struct record_prototype* prototype) {
+const int cache_insert_prototype(struct global_cache* global_cache, unsigned long id, struct record_prototype* prototype) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
-	to_insert.type = cache_type_prototype;
+	to_insert.type = CACHE_TYPE_PROTO;
 	to_insert.payload.prototype = prototype;
 	return insert_bucket(global_cache, to_insert);
 }
 
-const int init_record_id(struct global_cache* global_cache, unsigned long proto_id, struct record* record) {
+const int cache_init_record(struct global_cache* global_cache, unsigned long proto_id, struct record* record) {
 	struct cache_bucket* bucket = global_cache->buckets[proto_id & MAX_SIZE];
 	while (bucket != NULL)
 	{
-		if (bucket->id == proto_id && bucket->type == cache_type_prototype) {
+		if (bucket->id == proto_id && bucket->type == CACHE_TYPE_PROTO) {
 			init_record(record, bucket->payload.prototype);
 			return 1;
 		}
@@ -81,19 +81,19 @@ const int init_record_id(struct global_cache* global_cache, unsigned long proto_
 	return 0;
 }
 
-const int declare_builtin_proc(struct global_cache* global_cache, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc)) {
+const int cache_declare_builtin(struct global_cache* global_cache, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc)) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
-	to_insert.type = cache_type_builtin;
+	to_insert.type = CACHE_TYPE_BUILTIN;
 	to_insert.payload.builtin_delegate = delegate;
 	return insert_bucket(global_cache, to_insert);
 }
 
-struct value* invoke_builtin(struct global_cache* global_cache, unsigned long id, struct value** argv, unsigned int argc) {
+struct value* cache_invoke_builtin(struct global_cache* global_cache, unsigned long id, struct value** argv, unsigned int argc) {
 	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
 	while (bucket != NULL)
 	{
-		if (bucket->id == id && bucket->type == cache_type_builtin)
+		if (bucket->id == id && bucket->type == CACHE_TYPE_BUILTIN)
 			return (*bucket->payload.builtin_delegate)(argv, argc);
 		bucket = bucket->next;
 	}

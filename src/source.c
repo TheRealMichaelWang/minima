@@ -49,17 +49,17 @@ int main(unsigned int argc, char** argv) {
 
 		if (!compile(&compiler, 0)) {
 			printf("\n***Syntax Error***\nError No. %d\n", compiler.last_err);
-			print_last_line(compiler.scanner);
+			debug_print_scanner(compiler.scanner);
 			printf("\n");
 			exit(EXIT_FAILURE);
 		}
 		free(source);
 		struct chunk source_chunk = build_chunk(&compiler.chunk_builder);
-		int err = execute(&machine, &source_chunk);
+		int err = machine_execute(&machine, &source_chunk);
 		if (err) {
 			printf("\n***Runtime Error***\nError No. %d\n", err);
 			printf("\nDUMP: \n");
-			print_dump(source_chunk, 1);
+			debug_print_dump(source_chunk, 1);
 		}
 	}
 	else {
@@ -71,7 +71,7 @@ int main(unsigned int argc, char** argv) {
 		struct chunk_builder global_build; //contains our source
 		unsigned long ip = 0;
 		init_chunk_builder(&global_build);
-		write(&global_build, MACHINE_NEW_FRAME);
+		chunk_write(&global_build, MACHINE_NEW_FRAME);
 
 		while (1)
 		{
@@ -96,31 +96,31 @@ int main(unsigned int argc, char** argv) {
 				printf("\nGLOBAL DUMP:\n");
 				struct chunk global_chunk = build_chunk(&global_build);
 				global_chunk.pos = ip;
-				print_dump(global_chunk, 1);
+				debug_print_dump(global_chunk, 1);
 			}
 			else {
 				init_compiler(&compiler, src_buf);
 
 				if (!compile(&compiler, 1)) {
 					printf("\n***Syntax Error***\nError No. %d\n", compiler.last_err);
-					print_last_line(compiler.scanner);
+					debug_print_scanner(compiler.scanner);
 					printf("\n");
 				}
 				else {
 					struct chunk new_chunk = build_chunk(&compiler.chunk_builder);
-					write_chunk(&global_build, new_chunk, 1);
+					chunk_write_chunk(&global_build, new_chunk, 1);
 
 					struct chunk global_chunk = build_chunk(&global_build);
 					global_chunk.pos = ip;
 
-					int err = execute(&machine, &global_chunk);
+					int err = machine_execute(&machine, &global_chunk);
 					if (err) {
 						printf("\n***Runtime Error***\nError No. %d\n", err);
 						printf("\nGLOBAL DUMP:\n");
-						print_dump(global_chunk);
+						debug_print_dump(global_chunk);
 
 						global_build.size = ip;
-						reset_stack(&machine);
+						machine_reset_stack(&machine);
 					}
 					else
 						ip = global_chunk.pos;

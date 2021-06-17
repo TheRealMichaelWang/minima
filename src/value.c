@@ -3,34 +3,34 @@
 #include "value.h"
 
 void init_null_value(struct value* value) {
-	value->gc_flag = garbage_uninit;
-	value->type = value_type_null;
+	value->gc_flag = GARBAGE_UNINIT;
+	value->type = VALUE_TYPE_NULL;
 }
 
 void init_num_value(struct value* value, const double num) {
-	value->gc_flag = garbage_uninit;
-	value->type = value_type_numerical;
+	value->gc_flag = GARBAGE_UNINIT;
+	value->type = VALUE_TYPE_NUM;
 	value->payload.numerical = num;
 }
 
 void init_char_value(struct value* value, const char c) {
-	value->gc_flag = garbage_uninit;
-	value->type = value_type_character;
+	value->gc_flag = GARBAGE_UNINIT;
+	value->type = VALUE_TYPE_CHAR;
 	value->payload.character = c;
 }
 
 void init_obj_value(struct value* value, struct object obj) {
-	value->gc_flag = garbage_uninit;
-	value->type = value_type_object;
+	value->gc_flag = GARBAGE_UNINIT;
+	value->type = VALUE_TYPE_OBJ;
 	value->payload.object = obj;
 }
 
 const int copy_value(struct value* dest, struct value* src) {
 	dest->type = src->type;
 	memcpy(dest, src, sizeof(struct value));
-	dest->gc_flag = garbage_uninit;
+	dest->gc_flag = GARBAGE_UNINIT;
 
-	return dest->type != value_type_object;
+	return dest->type != VALUE_TYPE_OBJ;
 }
 
 const double compare_value(struct value* a, struct value* b) {
@@ -39,19 +39,19 @@ const double compare_value(struct value* a, struct value* b) {
 
 	switch (a->type)
 	{
-	case value_type_numerical: {
+	case VALUE_TYPE_NUM: {
 		return a->payload.numerical - b->payload.numerical;
 	}
-	case value_type_character:
+	case VALUE_TYPE_CHAR:
 		return a->payload.character - b->payload.character;
-	case value_type_object: {
-		return !compare_object(a, b);
+	case VALUE_TYPE_OBJ: {
+		return !object_compare(a, b);
 	}
 	}
 	return 0;
 }
 
 void free_value(struct value* value) {
-	if (value->type == value_type_object)
+	if (value->type == VALUE_TYPE_OBJ)
 		free_object(&value->payload.object);
 }

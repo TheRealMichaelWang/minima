@@ -54,18 +54,18 @@ const char read_data_char(struct scanner* scanner)
 			return toret; 
 		}
 		default:
-			scanner->last_err = error_unrecognized_control_seq;
+			scanner->last_err = ERROR_UNRECOGNIZED_CONTROL_SEQ;
 		}
 	}
 	return c;
 }
 
-const int read_str(struct scanner* scanner, char* str, const int data_mode) {
+const int scanner_read_str(struct scanner* scanner, char* str, const int data_mode) {
 	unsigned int len = 0;
 	while (scanner->last_char == '\t' || scanner->last_char == '\r' || scanner->last_char == ' ' || scanner->last_char == '\n')
 		read_char(scanner);
 	if (scanner->last_char != '\"') {
-		scanner->last_err = error_unexpected_char;
+		scanner->last_err = ERROR_UNEXPECTED_CHAR;
 		return 0;
 	}
 	if (data_mode) {
@@ -82,7 +82,7 @@ const int read_str(struct scanner* scanner, char* str, const int data_mode) {
 	return 1;
 }
 
-struct token read_tok(struct scanner* scanner) {
+struct token scanner_read_tok(struct scanner* scanner) {
 	while (scanner->last_char == '\t' || scanner->last_char == '\r' || scanner->last_char == ' ' || scanner->last_char == '\n')
 		read_char(scanner);
 	struct token tok;
@@ -97,89 +97,89 @@ struct token read_tok(struct scanner* scanner) {
 		switch (id_hash)
 		{
 		case 5863476: //ifs
-			tok.type = tok_if;
+			tok.type = TOK_IF;
 			break;
 		case 2090224421: //elif
-			tok.type = tok_elif;
+			tok.type = TOK_ELIF;
 			break;
 		case 2090224750: //else
-			tok.type = tok_else;
+			tok.type = TOK_ELSE;
 			break;
 		case 279132286: //while
-			tok.type = tok_while;
+			tok.type = TOK_WHILE;
 			break;
 		case 2090626457: //proc
-			tok.type = tok_proc;
+			tok.type = TOK_PROC;
 			break;
 		case 421984292:
-			tok.type = tok_record;
+			tok.type = TOK_RECORD;
 			break;
 		case 5863225:
-			tok.type = tok_as;
+			tok.type = TOK_AS;
 			break;
 		case 193500239:
-			tok.type = tok_new;
+			tok.type = TOK_NEW;
 			break;
 		case 193505681: //set
-			tok.type = tok_set;
+			tok.type = TOK_SET;
 			break;
 		case 5863848: //to
-			tok.type = tok_to;
+			tok.type = TOK_TO;
 			break;
 		case 193504578://ref
-			tok.type = tok_ref;
+			tok.type = TOK_REF;
 			break;
 		case 3824527: //goproc
-			tok.type = tok_goto;
+			tok.type = TOK_GOTO;
 			break;
 		case 422601765: //return
-			tok.type = tok_return;
+			tok.type = TOK_RETURN;
 			break;
 		case 2654384009: //include
-			tok.type = tok_include;
+			tok.type = TOK_INCLUDE;
 			break;
 		case 253189136: //alloc
-			tok.type = tok_alloc;
+			tok.type = TOK_ALLOC;
 			break;
 		case 4231324027: //exterm
-			tok.type = tok_extern;
+			tok.type = TOK_EXTERN;
 			break;
 		case 193486360: //and
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_and;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_AND;
 			break;
 		case 5863686: //or
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_or;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_OR;
 			break;
 		case 193495071: //inc
-			tok.type = tok_uni_op;
-			tok.payload.uni_op = operator_increment;
+			tok.type = TOK_UNARY_OP;
+			tok.payload.uni_op = OPERATOR_INCREMENT;
 			break;
 		case 193489329: //dec
-			tok.type = tok_uni_op;
-			tok.payload.uni_op = operator_decriment;
+			tok.type = TOK_UNARY_OP;
+			tok.payload.uni_op = OPERATOR_DECRIMENT;
 			break;
 		case 2090557760: //null
-			tok.type = tok_primative;
+			tok.type = TOK_PRIMATIVE;
 			init_null_value(&tok.payload.primative);
 			break;
 		case 2090770405: //true
-			tok.type = tok_primative;
+			tok.type = TOK_PRIMATIVE;
 			init_num_value(&tok.payload.primative, 1);
 			break;
 		case 258723568: //false
-			tok.type = tok_primative;
+			tok.type = TOK_PRIMATIVE;
 			init_num_value(&tok.payload.primative, 0);
 			break;
 		case 193504585: //remark
 			while (scanner->last_char != '\n')
 				read_char(scanner);
 			read_char(scanner);
-			tok.type = tok_remark;
+			tok.type = TOK_REMARK;
 			break;
 		default:
-			tok.type = tok_identifier;
+			tok.type = TOK_IDENTIFIER;
 			tok.payload.identifier = id_hash;
 		}
 	}
@@ -188,125 +188,125 @@ struct token read_tok(struct scanner* scanner) {
 			length++;
 			read_char(scanner);
 		}
-		tok.type = tok_primative;
+		tok.type = TOK_PRIMATIVE;
 		init_num_value(&tok.payload.primative, strtod(start, NULL));
 	}
 	else if (scanner->last_char == '\'') {
 		read_char(scanner);
 		init_char_value(&tok.payload.primative, read_data_char(scanner));
-		if (scanner->last_err == error_unrecognized_control_seq) {
+		if (scanner->last_err == ERROR_UNRECOGNIZED_CONTROL_SEQ) {
 			free_value(&tok.payload.primative);
-			tok.type = tok_error;
+			tok.type = TOK_ERROR;
 			return tok;
 		}
 		if (scanner->last_char != '\'') {
 			free_value(&tok.payload.primative);
-			scanner->last_err = error_unexpected_char;
-			tok.type = tok_error;
+			scanner->last_err = ERROR_UNEXPECTED_CHAR;
+			tok.type = TOK_ERROR;
 			return tok;
 		}
-		tok.type = tok_primative;
+		tok.type = TOK_PRIMATIVE;
 		read_char(scanner);
 	}
 	else {
 		switch (scanner->last_char)
 		{
 		case ',':
-			tok.type = tok_comma;
+			tok.type = TOK_COMMA;
 			break;
 		case '.':
-			tok.type = tok_period;
+			tok.type = TOK_PERIOD;
 			break;
 		case '[': 
-			tok.type = tok_open_bracket;
+			tok.type = TOK_OPEN_BRACKET;
 			break;
 		case ']':
-			tok.type = tok_close_bracket;
+			tok.type = TOK_CLOSE_BRACKET;
 			break;
 		case '(':
-			tok.type = tok_open_paren;
+			tok.type = TOK_OPEN_PAREN;
 			break;
 		case ')':
-			tok.type = tok_close_paren;
+			tok.type = TOK_CLOSE_PAREN;
 			break;
 		case '{':
-			tok.type = tok_open_brace;
+			tok.type = TOK_OPEN_BRACE;
 			break;
 		case '}':
-			tok.type = tok_close_brace;
+			tok.type = TOK_CLOSE_BRACE;
 			break;
 		case '+':
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_add;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_ADD;
 			break;
 		case '-':
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_subtract;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_SUBTRACT;
 			break;
 		case '*':
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_multiply;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_MULTIPLY;
 			break;
 		case '/':
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_divide;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_DIVIDE;
 			break;
 		case '%':
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_modulo;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_MODULO;
 			break;
 		case '^':
-			tok.type = tok_bin_op;
-			tok.payload.bin_op = operator_power;
+			tok.type = TOK_BINARY_OP;
+			tok.payload.bin_op = OPERATOR_POWER;
 			break;
 		case '=':
 			if (read_char(scanner) != '=') {
-				tok.type = tok_error;
-				scanner->last_err = error_unexpected_char;
+				tok.type = TOK_ERROR;
+				scanner->last_err = ERROR_UNEXPECTED_CHAR;
 			}
 			else {
-				tok.type = tok_bin_op;
-				tok.payload.bin_op = operator_equals;
+				tok.type = TOK_BINARY_OP;
+				tok.payload.bin_op = OPERATOR_EQUALS;
 			}
 			break;
 		case '!':
 			if (peek_char(scanner) == '=') {
-				tok.type = tok_bin_op;
-				tok.payload.bin_op = operator_not_equal;
+				tok.type = TOK_BINARY_OP;
+				tok.payload.bin_op = OPERATOR_NOT_EQUAL;
 				read_char(scanner);
 			}
 			else {
-				tok.type = tok_uni_op;
-				tok.payload.uni_op = operator_invert;
+				tok.type = TOK_UNARY_OP;
+				tok.payload.uni_op = OPERATOR_INVERT;
 			}
 			break;
 		case '>':
-			tok.type = tok_bin_op;
+			tok.type = TOK_BINARY_OP;
 			if (peek_char(scanner) == '=') {
-				tok.payload.bin_op = operator_more_equal;
+				tok.payload.bin_op = OPERATOR_MORE_EQUAL;
 				read_char(scanner);
 			}
 			else
-				tok.payload.bin_op = operator_more;
+				tok.payload.bin_op = OPERATOR_MORE;
 			break;
 		case '<':
-			tok.type = tok_bin_op;
+			tok.type = TOK_BINARY_OP;
 			if (peek_char(scanner) == '=') {
-				tok.payload.bin_op = operator_less_equal;
+				tok.payload.bin_op = OPERATOR_LESS_EQUAL;
 				read_char(scanner);
 			}
 			else
-				tok.payload.bin_op = operator_less;
+				tok.payload.bin_op = OPERATOR_LESS;
 			break;
 		case '\"':
-			tok.type = tok_str;
+			tok.type = TOK_STR;
 			return tok;
 		case 0:
-			tok.type = tok_end;
+			tok.type = TOK_END;
 			break;
 		default:
-			tok.type = tok_error;
-			scanner->last_err = error_unrecognized_tok;
+			tok.type = TOK_ERROR;
+			scanner->last_err = ERROR_UNRECOGNIZED_TOKEN;
 		}
 		read_char(scanner);
 	}
