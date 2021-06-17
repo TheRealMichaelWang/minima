@@ -1,3 +1,9 @@
+rem Minima, written by Michael Wang 2020-21
+
+rem Purpose:	Implements basic array handling procedures
+
+rem Purpose:	Creates a copied, extended array with references to the original array's items.
+rem		Returns 
 proc realloc(buffer, len) {
 	if len < extern len(buffer) {
 		return null
@@ -12,6 +18,7 @@ proc realloc(buffer, len) {
 	return newbuffer
 }
 
+rem Purpose: 	Repeatedley sets a value to an array
 proc memset(buffer, value) {
 	set i to extern len(buffer)
 	while dec i {

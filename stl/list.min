@@ -28,6 +28,24 @@ record list {
 		set this.size to 0
 	}
 
+	rem Purpose:	Returns a reference to the fist element in the list.
+	rem		Returns null if the list is empty.
+	proc front {
+		if this.head == null {
+			return null
+		}
+		return ref this.head.value
+	}
+
+	rem Purpose: 	Returns a reference to the last element in the list
+	rem		Returns null if the list is empty.
+	proc back {
+		if this.tail == null {
+			return null
+		}
+		return ref this.tail.value
+	}
+
 	rem Purpose:	Constructs a new list from an array
 	rem				Calls the default initializer, then calls the push_front method on every item in the array
 	proc init(array){
