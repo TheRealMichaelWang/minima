@@ -128,6 +128,9 @@ void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	case MACHINE_CALL_EXTERN:
 		printf("CALL EXTERN, args:%d id:%d", chunk_read_ulong(chunk), chunk_read_ulong(chunk));
 		break;
+	case MACHINE_END:
+		printf("END-DUMP");
+		break;
 	}
 
 }
@@ -136,9 +139,10 @@ void debug_print_dump(struct chunk chunk) {
 	unsigned long old_pos = chunk.pos;
 	chunk.pos = 0;
 	unsigned int indent = 1;
-	while (!chunk.last_code == MACHINE_END) {
+
+	while (chunk.last_code != MACHINE_END) {
 		print_instruction_dump(&chunk, &indent);
-		if (chunk.pos == old_pos)
+		if (chunk.pos == old_pos && chunk.last_code != MACHINE_END)
 			printf(" <<< IP");
 		printf("\n");
 	}

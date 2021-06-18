@@ -18,7 +18,7 @@
 #define MATCH_EVALS(MIN_EVALS, MACHINE) if(MACHINE->evals < MIN_EVALS) { MACHINE->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
 #define FREE_EVAL(EVAL, FLAGS) if(!FLAGS) { free_value(EVAL); free(EVAL); }
 
-#define MACHINE_ERROR(ERROR, MACHINE) MACHINE->last_err = ERROR; return 0;
+#define MACHINE_ERROR(ERROR, MACHINE) {MACHINE->last_err = ERROR; return 0;}
 
 struct value* (*binary_operators[14])(struct value* a, struct value* b) = {
 	op_equals,
@@ -145,8 +145,9 @@ const int get_index(struct machine* machine) {
 	struct value* collection_val = machine->evaluation_stack[--machine->evals];
 	char collection_flag = machine->eval_flags[machine->evals];
 
-	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != obj_type_collection)
+	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != obj_type_collection) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
+	}
 
 	struct collection* collection = collection_val->payload.object.ptr.collection;
 	unsigned long index = index_val->payload.numerical;

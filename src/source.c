@@ -111,7 +111,8 @@ int main(unsigned int argc, char** argv) {
 					chunk_write_chunk(&global_build, new_chunk, 1);
 
 					struct chunk global_chunk = build_chunk(&global_build);
-					global_chunk.pos = ip;
+					chunk_jump_to(&global_chunk, ip);
+					chunk_read(&global_chunk);
 
 					int err = machine_execute(&machine, &global_chunk);
 					if (err) {

@@ -71,13 +71,13 @@ const char chunk_read(struct chunk* chunk) {
 }
 
 const void* chunk_read_size(struct chunk* chunk, const unsigned long size) {
-	if (chunk->pos + size > chunk->size) {
+	if (chunk->pos + size >= chunk->size) {
 		chunk->last_code = MACHINE_END;
-		return NULL;
+		if(chunk->pos + size > chunk->size)
+			return NULL;
 	}
 	const void* position = &chunk->code[chunk->pos];
 	chunk->pos += size;
-	//chunk->last_code = chunk->code[chunk->pos-1];
 	return position;
 }
 
@@ -101,6 +101,7 @@ void chunk_jump_to(struct chunk* chunk, const unsigned long pos) {
 		chunk->pos = chunk->size;
 		chunk->last_code = MACHINE_END;
 	}
+	//chunk->last_code = chunk->code[pos];
 	chunk->pos = pos;
 }
 

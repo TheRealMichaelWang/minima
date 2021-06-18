@@ -13,7 +13,6 @@
 //machine codes
 
 enum machine_op_code {
-	MACHINE_END,
 	MACHINE_LOAD_VAR,
     MACHINE_LOAD_CONST,
 
@@ -53,7 +52,8 @@ enum machine_op_code {
 	MACHINE_TRACE,
 	MACHINE_POP,
 
-	MACHINE_CALL_EXTERN
+	MACHINE_CALL_EXTERN,
+	MACHINE_END
 };
 
 struct machine {
