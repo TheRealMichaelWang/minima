@@ -370,9 +370,9 @@ const int goto_as(struct machine* machine, struct chunk* chunk) {
 }
 
 const int machine_execute(struct machine* machine, struct chunk* chunk) {
-	while (!end_chunk(chunk))
+	while (chunk->last_code != MACHINE_END)
 	{
-		switch (chunk_read(chunk))
+		switch (chunk->last_code)
 		{
 		case MACHINE_LOAD_VAR: {
 			struct value* var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], chunk_read_ulong(chunk));
@@ -540,6 +540,7 @@ const int machine_execute(struct machine* machine, struct chunk* chunk) {
 				return machine->last_err;
 			break;
 		}
+		chunk_read(chunk);
 	}
 	return 0;
 }

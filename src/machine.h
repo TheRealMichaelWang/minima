@@ -13,6 +13,7 @@
 //machine codes
 
 enum machine_op_code {
+	MACHINE_END,
 	MACHINE_LOAD_VAR,
     MACHINE_LOAD_CONST,
 

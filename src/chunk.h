@@ -49,8 +49,4 @@ void chunk_jump_to(struct chunk* chunk, const unsigned long pos);
 void chunk_skip_ins(struct chunk* chunk);
 void chunk_skip(struct chunk* chunk, unsigned long depth);
 
-inline const int end_chunk(const struct chunk* chunk) {
-	return chunk->pos == chunk->size;
-}
-
 #endif // !CHUNK_H

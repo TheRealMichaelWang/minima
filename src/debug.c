@@ -136,7 +136,7 @@ void debug_print_dump(struct chunk chunk) {
 	unsigned long old_pos = chunk.pos;
 	chunk.pos = 0;
 	unsigned int indent = 1;
-	while (!end_chunk(&chunk)) {
+	while (!chunk.last_code == MACHINE_END) {
 		print_instruction_dump(&chunk, &indent);
 		if (chunk.pos == old_pos)
 			printf(" <<< IP");

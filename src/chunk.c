@@ -8,13 +8,13 @@ void init_chunk(struct chunk* chunk, char* code, const unsigned long size) {
 	chunk->pos = 0;
 	chunk->size = size;
 	chunk->code = code;
-	chunk->last_code = 66;
+	chunk_read(chunk);
 }
 
 void free_chunk(struct chunk* chunk) {
 	chunk->pos = 0;
 	chunk_read(chunk);
-	while (chunk->last_code != 0)
+	while (chunk->last_code != MACHINE_END)
 	{
 		char op_code = chunk->last_code;
 		if (op_code == MACHINE_LOAD_CONST) {
@@ -66,13 +66,13 @@ const int chunk_write_size(struct chunk_builder* chunk_builder, const void* ptr,
 
 const char chunk_read(struct chunk* chunk) {
 	if (chunk->pos == chunk->size)
-		return chunk->last_code = 0;
+		return chunk->last_code = MACHINE_END;
 	return chunk->last_code = chunk->code[chunk->pos++];
 }
 
 const void* chunk_read_size(struct chunk* chunk, const unsigned long size) {
 	if (chunk->pos + size > chunk->size) {
-		chunk->last_code = 0;
+		chunk->last_code = MACHINE_END;
 		return NULL;
 	}
 	const void* position = &chunk->code[chunk->pos];
@@ -99,7 +99,7 @@ void chunk_write_chunk(struct chunk_builder* dest, struct chunk src, const int f
 void chunk_jump_to(struct chunk* chunk, const unsigned long pos) {
 	if (pos >= chunk->size) {
 		chunk->pos = chunk->size;
-		chunk->last_code = 0;
+		chunk->last_code = MACHINE_END;
 	}
 	chunk->pos = pos;
 }
@@ -140,7 +140,7 @@ void chunk_skip_ins(struct chunk* chunk) {
 }
 
 void chunk_skip(struct chunk* chunk, unsigned long depth) {
-	while (chunk->last_code != 0)
+	while (chunk->last_code != MACHINE_END)
 	{
 		char op_code = chunk->last_code;
 		if (op_code == MACHINE_FLAG_SKIP || op_code == MACHINE_COND_SKIP || op_code == MACHINE_LABEL)
