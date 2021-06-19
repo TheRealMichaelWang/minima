@@ -4,7 +4,7 @@
 
 #define MAX_SIZE 255
 
-inline unsigned char retrieve_property_index(struct record_prototype* prototype, unsigned long property) {
+inline static const unsigned char retrieve_property_index(struct record_prototype* prototype, unsigned long property) {
 	return prototype->property_map[property & 255];
 }
 

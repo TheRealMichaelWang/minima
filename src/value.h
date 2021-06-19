@@ -5,6 +5,9 @@
 
 #include "object.h"
 
+#define IS_COLLECTION(VALUE) (VALUE->type == VALUE_TYPE_OBJ && VALUE->payload.object.type == OBJ_TYPE_COL)
+#define IS_RECORD(VALUE) (VALUE->type == VALUE_TYPE_OBJ && VALUE->payload.object.type == OBJ_TYPE_REC)
+
 struct value {
 	enum garbage_flag {
 		GARBAGE_UNINIT,

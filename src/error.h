@@ -1,6 +1,7 @@
 #pragma once
 
 #ifndef ERROR_H
+#define ERROR_H
 
 enum error {
 	ERROR_OUT_OF_MEMORY,
@@ -23,7 +24,7 @@ enum error {
 	ERROR_UNRECOGNIZED_CONTROL_SEQ,
 	ERROR_UNEXPECTED_CHAR,
 	ERROR_UNEXPECTED_TOKEN,
-	ERROR_CANNOT_OPEN_FILE,
+	ERROR_CANNOT_OPEN_FILE
 };
 
 #define ERROR_ALLOC_CHECK(PTR) if(PTR == NULL) { return 0; }

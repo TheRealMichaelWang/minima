@@ -9,7 +9,9 @@
 #include "hash.h"
 #include "compiler.h"
 
-unsigned int block_check(const char* src, unsigned int length) {
+static struct machine machine;
+
+static unsigned int block_check(const char* src, unsigned int length) {
 	unsigned int blocks = 0;
 	for (unsigned int i = 0; i < length; i++) {
 		if (src[i] == '{')
@@ -21,7 +23,6 @@ unsigned int block_check(const char* src, unsigned int length) {
 }
 
 int main(unsigned int argc, char** argv) {
-	struct machine machine;
 	init_machine(&machine);
 	struct compiler compiler;
 
@@ -114,14 +115,14 @@ int main(unsigned int argc, char** argv) {
 					chunk_jump_to(&global_chunk, ip);
 					chunk_read(&global_chunk);
 
-					int err = machine_execute(&machine, &global_chunk);
+ 					int err = machine_execute(&machine, &global_chunk);
 					if (err) {
 						printf("\n***Runtime Error***\nError No. %d\n", err);
 						printf("\nGLOBAL DUMP:\n");
 						debug_print_dump(global_chunk);
 
 						global_build.size = ip;
-						machine_reset_stack(&machine);
+						machine_reset(&machine);
 					}
 					else
 						ip = global_chunk.pos;

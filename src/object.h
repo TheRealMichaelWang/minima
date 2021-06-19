@@ -17,8 +17,8 @@ struct object {
 
 	enum obj_type
 	{
-		obj_type_collection,
-		obj_type_record
+		OBJ_TYPE_COL,
+		OBJ_TYPE_REC
 	} type;
 };
 

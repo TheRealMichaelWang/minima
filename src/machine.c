@@ -12,39 +12,13 @@
 #define MAX_EVALS 10000
 #define MAX_CALLS 10000
 
-#define NULL_CHECK(PTR, MACHINE, ERROR) if(PTR == NULL) { MACHINE->last_err = ERROR; return 0; }
-#define STACK_CHECK(MACHINE) if(MACHINE->evals == MAX_EVALS || MACHINE->positions == MAX_POSITIONS || machine->call_size == MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
+#define NULL_CHECK(PTR, ERROR) if(PTR == NULL) { machine->last_err = ERROR; return 0; }
+#define STACK_CHECK if(machine->evals == MAX_EVALS || machine->positions == MAX_POSITIONS || machine->call_size == MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 
-#define MATCH_EVALS(MIN_EVALS, MACHINE) if(MACHINE->evals < MIN_EVALS) { MACHINE->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
+#define MATCH_EVALS(MIN_EVALS) if(machine->evals < MIN_EVALS) { machine->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
 #define FREE_EVAL(EVAL, FLAGS) if(!FLAGS) { free_value(EVAL); free(EVAL); }
 
-#define MACHINE_ERROR(ERROR, MACHINE) {MACHINE->last_err = ERROR; return 0;}
-
-struct value* (*binary_operators[14])(struct value* a, struct value* b) = {
-	op_equals,
-	op_not_equals,
-	op_more,
-	op_less,
-	op_more_equal,
-	op_less_equal,
-	op_and,
-	op_or,
-	op_add,
-	op_subtract,
-	op_multiply,
-	op_divide,
-	op_modulo,
-	op_power
-};
-
-struct value* (*unary_operators[6])(struct value* a) = {
-	op_copy,
-	op_invert,
-	op_negate,
-	op_alloc,
-	op_increment,
-	op_decriment
-};
+#define MACHINE_ERROR(ERROR) {machine->last_err = ERROR; return 0;}
 
 void init_machine(struct machine* machine) {
 	machine->position_stack = malloc(MAX_POSITIONS * sizeof(unsigned long));
@@ -69,7 +43,7 @@ void init_machine(struct machine* machine) {
 	cache_declare_builtin(&machine->global_cache, 193498052, builtin_get_length);
 }
 
-void machine_reset_stack(struct machine* machine) {
+void machine_reset(struct machine* machine) {
 	while (machine->evals) {
 		if (!machine->eval_flags[machine->evals - 1]) {
 			free_value(machine->evaluation_stack[machine->evals - 1]);
@@ -82,7 +56,7 @@ void machine_reset_stack(struct machine* machine) {
 }
 
 void free_machine(struct machine* machine) {
-	machine_reset_stack(machine);
+	machine_reset(machine);
 	if (machine->call_size > 0)
 		free_var_context(&machine->var_stack[--machine->call_size]);
 	
@@ -96,7 +70,7 @@ void free_machine(struct machine* machine) {
 	free_global_cache(&machine->global_cache);
 }
 
-inline const int push_eval(struct machine* machine, struct value* value, char flags) {
+inline static const int push_eval(struct machine* machine, struct value* value, char flags) {
 	STACK_CHECK(machine);
 	machine->evaluation_stack[machine->evals] = value;
 	machine->eval_flags[machine->evals++] = flags;
@@ -105,8 +79,8 @@ inline const int push_eval(struct machine* machine, struct value* value, char fl
 	return 1;
 }
 
-const int condition_check(struct machine* machine) {
-	MATCH_EVALS(1, machine);
+inline static const int condition_check(struct machine* machine) {
+	MATCH_EVALS(1);
 	struct value* valptr = machine->evaluation_stack[--machine->evals];
 	int cond = 1;
 	if (valptr->type == VALUE_TYPE_NULL || (valptr->type == VALUE_TYPE_NUM && valptr->payload.numerical == 0))
@@ -115,8 +89,8 @@ const int condition_check(struct machine* machine) {
 	return cond;
 }
 
-const int store_var(struct machine* machine, struct chunk* chunk) {
-	MATCH_EVALS(1, machine);
+static const int store_var(struct machine* machine, struct chunk* chunk) {
+	MATCH_EVALS(1);
 	unsigned long id = chunk_read_ulong(chunk);
 	struct value* setptr = machine->evaluation_stack[--machine->evals];
 	if (machine->eval_flags[machine->evals])
@@ -137,23 +111,22 @@ const int store_var(struct machine* machine, struct chunk* chunk) {
 	return 1;
 }
 
-const int get_index(struct machine* machine) {
-	MATCH_EVALS(2, machine);
+static const int get_index(struct machine* machine) {
+	MATCH_EVALS(2);
 
 	struct value* index_val = machine->evaluation_stack[--machine->evals];
 	char index_flag = machine->eval_flags[machine->evals];
 	struct value* collection_val = machine->evaluation_stack[--machine->evals];
 	char collection_flag = machine->eval_flags[machine->evals];
 
-	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != obj_type_collection) {
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
-	}
+	if (index_val->type != VALUE_TYPE_NUM || !IS_COLLECTION(collection_val))
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct collection* collection = collection_val->payload.object.ptr.collection;
 	unsigned long index = index_val->payload.numerical;
 
-	if (index > collection->size)
-		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE, machine);
+	if (index >= collection->size)
+		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
 
 	struct value* toreturn = NULL;
 
@@ -175,8 +148,8 @@ const int get_index(struct machine* machine) {
 	return 1;
 }
 
-const int set_index(struct machine* machine) {
-	MATCH_EVALS(3, machine);
+static const int set_index(struct machine* machine) {
+	MATCH_EVALS(3);
 
 	struct value* set_val = machine->evaluation_stack[--machine->evals];
 	char set_flag = machine->eval_flags[machine->evals];
@@ -185,14 +158,14 @@ const int set_index(struct machine* machine) {
 	struct value* collection_val = machine->evaluation_stack[--machine->evals];
 	char collection_flag = machine->eval_flags[machine->evals];
 
-	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != obj_type_collection)
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
+	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != OBJ_TYPE_COL)
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct collection* collection = collection_val->payload.object.ptr.collection;
 	unsigned long index = index_val->payload.numerical;
 
-	if (index > collection->size)
-		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE, machine);
+	if (index >= collection->size)
+		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
 
 	if (set_flag) {
 		if (collection->inner_collection[index]->gc_flag == GARBAGE_UNINIT) {
@@ -216,8 +189,8 @@ const int set_index(struct machine* machine) {
 	return 1;
 }
 
-const int set_property(struct machine* machine, struct chunk* chunk) {
-	MATCH_EVALS(2, machine);
+static const int set_property(struct machine* machine, struct chunk* chunk) {
+	MATCH_EVALS(2);
 
 	unsigned long property = chunk_read_ulong(chunk);
 
@@ -226,13 +199,13 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 	struct value* record_eval = machine->evaluation_stack[--machine->evals];
 	char record_flag = machine->eval_flags[machine->evals];
 
-	if (record_eval->type != VALUE_TYPE_OBJ || record_eval->payload.object.type != obj_type_record)
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
+	if (!IS_RECORD(record_eval))
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct record* record = record_eval->payload.object.ptr.record;
 	struct value* property_val = record_get_ref(record, property);
 	if (!property_val)
-		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED, machine);
+		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 
 	if (set_flag) {
 		if (property_val->gc_flag == GARBAGE_UNINIT) {
@@ -240,7 +213,7 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 			free(property_val);
 		}
 		if (!record_set_ref(record, property, set_val))
-			MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED, machine);
+			MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 	}
 	else {
 		free_value(property_val);
@@ -254,19 +227,19 @@ const int set_property(struct machine* machine, struct chunk* chunk) {
 	return 1;
 }
 
-const int get_property(struct machine* machine, struct chunk* chunk) {
-	MATCH_EVALS(1, machine);
+static const int get_property(struct machine* machine, struct chunk* chunk) {
+	MATCH_EVALS(1);
 
 	struct value* record_eval = machine->evaluation_stack[--machine->evals];
 	char record_flag = machine->eval_flags[machine->evals];
 
-	if (record_eval->type != VALUE_TYPE_OBJ || record_eval->payload.object.type != obj_type_record)
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
+	if (!IS_RECORD(record_eval))
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct value* toreturn = NULL;
 	struct value* property_val = record_get_ref(record_eval->payload.object.ptr.record, chunk_read_ulong(chunk));
 	if (!property_val)
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	if (property_val->gc_flag == GARBAGE_UNINIT) {
 		toreturn = malloc(sizeof(struct value));
@@ -284,8 +257,8 @@ const int get_property(struct machine* machine, struct chunk* chunk) {
 	return 1;
 }
 
-int eval_bin_op(struct machine* machine, struct chunk* chunk) {
-	MATCH_EVALS(2, machine);
+static const int eval_bin_op(struct machine* machine, struct chunk* chunk) {
+	MATCH_EVALS(2);
 
 	struct value* value_b = machine->evaluation_stack[--machine->evals];
 	char flag_b = machine->eval_flags[machine->evals];
@@ -300,8 +273,8 @@ int eval_bin_op(struct machine* machine, struct chunk* chunk) {
 	return 1;
 }
 
-int eval_uni_op(struct machine* machine, struct chunk* chunk) {
-	MATCH_EVALS(1, machine);
+static const int eval_uni_op(struct machine* machine, struct chunk* chunk) {
+	MATCH_EVALS(1);
 
 	char uni_op = chunk_read(chunk);
 	struct value* result = (*unary_operators[uni_op])(machine->evaluation_stack[--machine->evals]);
@@ -319,29 +292,29 @@ const int eval_builtin(struct machine* machine, struct chunk* chunk) {
 	unsigned long id = chunk_read_ulong(chunk);
 	unsigned long arguments = chunk_read_ulong(chunk);
 
-	MATCH_EVALS(arguments, machine);
+	MATCH_EVALS(arguments);
 
 	struct value* result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments);
-	NULL_CHECK(result, machine, ERROR_LABEL_UNDEFINED);
+	NULL_CHECK(result, ERROR_LABEL_UNDEFINED);
 	for (unsigned long i = machine->evals - arguments; i < machine->evals; i++)
 		FREE_EVAL(machine->evaluation_stack[i], machine->eval_flags[i]);
 	machine->evals -= arguments;
 	return push_eval(machine, result, 0);
 }
 
-const int build_collection(struct machine* machine, struct chunk* chunk) {
+static const int build_collection(struct machine* machine, struct chunk* chunk) {
 	unsigned long req_size = chunk_read_ulong(chunk);
-	MATCH_EVALS(req_size, machine);
+	MATCH_EVALS(req_size);
 
 	struct collection* collection = malloc(sizeof(struct collection));
-	NULL_CHECK(collection, machine, ERROR_OUT_OF_MEMORY);
-	NULL_CHECK(init_collection(collection, req_size), machine, ERROR_OUT_OF_MEMORY);
+	NULL_CHECK(collection, ERROR_OUT_OF_MEMORY);
+	NULL_CHECK(init_collection(collection, req_size), ERROR_OUT_OF_MEMORY);
 
 	while (req_size--)
 		collection->inner_collection[req_size] = machine->evaluation_stack[--machine->evals];
 
 	struct value* new_val = malloc(sizeof(struct value));
-	NULL_CHECK(new_val, machine, ERROR_OUT_OF_MEMORY);
+	NULL_CHECK(new_val, ERROR_OUT_OF_MEMORY);
 
 	struct object obj;
 	init_object_col(&obj, collection);
@@ -350,14 +323,14 @@ const int build_collection(struct machine* machine, struct chunk* chunk) {
 	return push_eval(machine, new_val, 0);
 }
 
-const int goto_as(struct machine* machine, struct chunk* chunk) {
-	MATCH_EVALS(1, machine);
+static const int goto_as(struct machine* machine, struct chunk* chunk) {
+	MATCH_EVALS(1);
 
 	struct value* record_eval = machine->evaluation_stack[machine->evals - 1];
 	char record_flag = machine->eval_flags[machine->evals - 1];
 
-	if (record_eval->type != VALUE_TYPE_OBJ || record_eval->payload.object.type != obj_type_record)
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE, machine);
+	if (!IS_RECORD(record_eval))
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	STACK_CHECK(machine);
 
@@ -365,7 +338,7 @@ const int goto_as(struct machine* machine, struct chunk* chunk) {
 	machine->position_flags[machine->positions++] = 1;
 	unsigned long pos = cache_retrieve_pos(&machine->global_cache, combine_hash(chunk_read_ulong(chunk), record_eval->payload.object.ptr.record->prototype->identifier));
 	if (!pos)
-		MACHINE_ERROR(ERROR_LABEL_UNDEFINED, machine);
+		MACHINE_ERROR(ERROR_LABEL_UNDEFINED);
 	chunk_jump_to(chunk, pos);
 	return 1;
 }

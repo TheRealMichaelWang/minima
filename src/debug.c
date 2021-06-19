@@ -25,7 +25,7 @@ void debug_print_scanner(struct scanner scanner) {
 	printf("^");
 }
 
-void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
+static void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 	printf("%d", chunk->pos);
 	char op_code = chunk_read(chunk);
 

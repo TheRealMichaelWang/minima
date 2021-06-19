@@ -2,6 +2,7 @@
 #include <string.h>
 #include "error.h"
 #include "machine.h"
+#include "value.h"
 #include "chunk.h"
 
 void init_chunk(struct chunk* chunk, char* code, const unsigned long size) {
@@ -101,11 +102,10 @@ void chunk_jump_to(struct chunk* chunk, const unsigned long pos) {
 		chunk->pos = chunk->size;
 		chunk->last_code = MACHINE_END;
 	}
-	//chunk->last_code = chunk->code[pos];
 	chunk->pos = pos;
 }
 
-void chunk_skip_ins(struct chunk* chunk) {
+static void chunk_skip_ins(struct chunk* chunk) {
 	char op_code = chunk->last_code;
 	switch (op_code)
 	{

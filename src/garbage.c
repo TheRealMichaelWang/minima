@@ -22,7 +22,7 @@ void free_gcollect(struct garbage_collector* garbage_collector) {
 	free(garbage_collector->trace_stack);
 }
 
-void init_gframe(struct garbage_frame* garbage_frame, struct value** value_begin, struct value** trace_begin) {
+static void init_gframe(struct garbage_frame* garbage_frame, struct value** value_begin, struct value** trace_begin) {
 	garbage_frame->to_collect = value_begin;
 	garbage_frame->to_trace = trace_begin;
 	garbage_frame->collect_values = 0;
@@ -64,7 +64,7 @@ void gc_new_frame(struct garbage_collector* garbage_collector) {
 	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], PREC_BEGIN, trace_begin);
 }
 
-void trace_value(struct value* value, struct value** reset_stack, unsigned int* stack_top) {
+static void trace_value(struct value* value, struct value** reset_stack, unsigned int* stack_top) {
 	if (value->gc_flag == GARBAGE_KEEP)
 		return;
 

@@ -26,7 +26,7 @@ void free_global_cache(struct global_cache* global_cache) {
 	free(global_cache->buckets);
 }
 
-const int insert_bucket(struct global_cache* global_cache, struct cache_bucket to_insert) {
+static const int insert_bucket(struct global_cache* global_cache, struct cache_bucket to_insert) {
 	struct cache_bucket** bucket = &global_cache->buckets[to_insert.id & MAX_SIZE];
 	while (*bucket != NULL)
 	{

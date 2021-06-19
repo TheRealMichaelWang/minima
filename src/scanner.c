@@ -5,7 +5,7 @@
 #include "error.h"
 #include "scanner.h"
 
-const char read_char(struct scanner* scanner) {
+static const char read_char(struct scanner* scanner) {
 	if (scanner->pos == scanner->size)
 		return scanner->last_char = 0;
 	return scanner->last_char = scanner->source[scanner->pos++];
@@ -18,13 +18,13 @@ void init_scanner(struct scanner* scanner, const char* source) {
 	read_char(scanner);
 }
 
-const char peek_char(struct scanner* scanner) {
+static const char peek_char(struct scanner* scanner) {
 	if (scanner->pos == scanner->size)
 		return 0;
 	return scanner->source[scanner->pos];
 }
 
-const char read_data_char(struct scanner* scanner)
+static const char read_data_char(struct scanner* scanner)
 {
 	char c = scanner->last_char;
 	read_char(scanner);

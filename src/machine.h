@@ -53,7 +53,7 @@ enum machine_op_code {
 	MACHINE_POP,
 
 	MACHINE_CALL_EXTERN,
-	MACHINE_END
+	MACHINE_END //last one isn't really an opcode, just an end signal
 };
 
 struct machine {
@@ -79,7 +79,7 @@ struct machine {
 void init_machine(struct machine* machine);
 void free_machine(struct machine* machine);
 
-void machine_reset_stack(struct machine* machine);
+void machine_reset(struct machine* machine);
 
 const int machine_execute(struct machine* machine, struct chunk* chunk);
 

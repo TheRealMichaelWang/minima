@@ -3,23 +3,23 @@
 #include "object.h"
 
 void init_object_col(struct object* object, struct collection* collection) {
-	object->type = obj_type_collection;
+	object->type = OBJ_TYPE_COL;
 	object->ptr.collection = collection;
 }
 
 void init_object_rec(struct object* object, struct record* record) {
-	object->type = obj_type_record;
+	object->type = OBJ_TYPE_REC;
 	object->ptr.record = record;
 }
 
 void free_object(struct object* object) {
 	switch (object->type)
 	{
-	case obj_type_collection:
+	case OBJ_TYPE_COL:
 		free_collection(object->ptr.collection);
 		free(object->ptr.collection);
 		break;
-	case obj_type_record:
+	case OBJ_TYPE_REC:
 		free_record(object->ptr.record);
 		free(object->ptr.record);
 		break;
@@ -31,9 +31,9 @@ const int object_compare(struct object* a, struct object* b) {
 		return a->type = b->type;
 	switch (a->type)
 	{
-	case obj_type_collection:
+	case OBJ_TYPE_COL:
 		return !collection_compare(a->ptr.collection, b->ptr.collection);
-	case obj_type_record:
+	case OBJ_TYPE_REC:
 		return !(a->ptr.record == b->ptr.record);
 	}
 	return 1;
@@ -42,10 +42,10 @@ const int object_compare(struct object* a, struct object* b) {
 const struct value** object_get_children(struct object* object, unsigned long* size) {
 	switch (object->type)
 	{
-	case obj_type_collection:
+	case OBJ_TYPE_COL:
 		*size = object->ptr.collection->size;
 		return object->ptr.collection->inner_collection;
-	case obj_type_record:
+	case OBJ_TYPE_REC:
 		*size = object->ptr.record->prototype->size;
 		return object->ptr.record->properties;
 	}

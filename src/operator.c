@@ -3,43 +3,43 @@
 #include "value.h"
 #include "operators.h"
 
-struct value* op_equals(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_equals) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, !compare_value(a, b));
 	return c;
 }
 
-struct value* op_not_equals(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_not_equals) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, compare_value(a, b));
 	return c;
 }
 
-struct value* op_more(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_more) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, compare_value(a, b) > 0);
 	return c;
 }
 
-struct value* op_less(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_less) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, compare_value(a, b) < 0);
 	return c;
 }
 
-struct value* op_more_equal(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_more_equal) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, compare_value(a, b) >= 0);
 	return c;
 }
 
-struct value* op_less_equal(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_less_equal) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, compare_value(a, b) <= 0);
 	return c;
 }
 
-struct value* op_and(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_and) {
 	struct value* c = malloc(sizeof(struct value));
 	if (a->type == VALUE_TYPE_NULL || b->type == VALUE_TYPE_NULL)
 		init_num_value(c, 0);
@@ -52,7 +52,7 @@ struct value* op_and(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_or(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_or) {
 	struct value* c = malloc(sizeof(struct value)); 
 	if ((a->type == VALUE_TYPE_NUM && a->payload.numerical == 1) ||
 		(b->type == VALUE_TYPE_NUM && b->payload.numerical == 1)) {
@@ -63,13 +63,13 @@ struct value* op_or(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_add(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_add) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, a->payload.numerical + b->payload.numerical);
 	return c;
 }
 
-struct value* op_subtract(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_subtract) {
 	struct value* c = malloc(sizeof(struct value));
 	double a_num = a->payload.numerical;
 	double b_num = b->payload.numerical;
@@ -77,7 +77,7 @@ struct value* op_subtract(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_multiply(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_multiply) {
 	struct value* c = malloc(sizeof(struct value));
 	double a_num = a->payload.numerical;
 	double b_num = b->payload.numerical;
@@ -85,7 +85,7 @@ struct value* op_multiply(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_divide(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_divide) {
 	struct value* c = malloc(sizeof(struct value));
 	double a_num = a->payload.numerical;
 	double b_num = b->payload.numerical;
@@ -93,7 +93,7 @@ struct value* op_divide(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_modulo(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_modulo) {
 	struct value* c = malloc(sizeof(struct value));
 	double a_num = a->payload.numerical;
 	double b_num = b->payload.numerical;
@@ -101,7 +101,7 @@ struct value* op_modulo(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_power(struct value* a, struct value* b) {
+DECL_BINARY_OPERATOR(op_power) {
 	struct value* c = malloc(sizeof(struct value));
 	double a_num = a->payload.numerical;
 	double b_num = b->payload.numerical;
@@ -109,7 +109,7 @@ struct value* op_power(struct value* a, struct value* b) {
 	return c;
 }
 
-struct value* op_copy(struct value* a) {
+DECL_UNARY_OPERATOR(op_copy) {
 	if (a->type == VALUE_TYPE_OBJ)
 		return a;
 	struct value* c = malloc(sizeof(struct value));
@@ -117,7 +117,7 @@ struct value* op_copy(struct value* a) {
 	return c;
 }
 
-struct value* op_invert(struct value* a) {
+DECL_UNARY_OPERATOR(op_invert) {
 	struct value* c = malloc(sizeof(struct value));
 	if (a->type == VALUE_TYPE_NULL || (a->type == VALUE_TYPE_NUM && a->payload.numerical == 0))
 		init_num_value(c, 1);
@@ -125,13 +125,13 @@ struct value* op_invert(struct value* a) {
 	return c;
 }
 
-struct value* op_negate(struct value* a) {
+DECL_UNARY_OPERATOR(op_negate) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, -a->payload.numerical);
 	return c;
 }
 
-struct value* op_alloc(struct value* a) {
+DECL_UNARY_OPERATOR(op_alloc) {
 	struct value* c = malloc(sizeof(struct value));
 	unsigned long i = a->payload.numerical;
 	if (i > 1000000) {
@@ -151,14 +151,14 @@ struct value* op_alloc(struct value* a) {
 	return c;
 }
 
-struct value* op_increment(struct value* a) {
+DECL_UNARY_OPERATOR(op_increment) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, a->payload.numerical);
 	a->payload.numerical++;
 	return c;
 }
 
-struct value* op_decriment(struct value* a) {
+DECL_UNARY_OPERATOR(op_decriment) {
 	struct value* c = malloc(sizeof(struct value));
 	init_num_value(c, a->payload.numerical);
 	a->payload.numerical--;
