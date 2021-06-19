@@ -3,9 +3,10 @@
 #include "object.h"
 #include "collection.h"
 #include "io.h"
+#include "error.h"
 #include "stdlib.h"
 
-struct value* builtin_print(struct value** argv, unsigned int argc) {
+DECL_BUILT_IN(builtin_print) {
 	for (unsigned long i = 0; i < argc; i++) {
 		print_value(argv[i], 1);
 	}
@@ -14,17 +15,18 @@ struct value* builtin_print(struct value** argv, unsigned int argc) {
 	return nullvalue;
 }
 
-struct value* builtin_print_line(struct value** argv, unsigned int argc) {
+DECL_BUILT_IN(builtin_print_line) {
 	struct value* toreturn = builtin_print(argv, argc);
 	printf("\n");
 	return toreturn;
 }
 
-struct value* builtin_system_cmd(struct value** argv, unsigned int argc) {
+DECL_BUILT_IN(builtin_system_cmd) {
 	if (argc < 1 || !IS_COLLECTION(argv[0]))
 		return NULL;
 	struct collection* collection = argv[0]->payload.object.ptr.collection;
 	char* buffer = malloc((collection->size + 1)* sizeof(char));
+	ERROR_ALLOC_CHECK(buffer);
 	for (unsigned long i = 0; i < collection->size; i++) {
 		buffer[i] = collection->inner_collection[i]->payload.character;
 	}
@@ -36,14 +38,15 @@ struct value* builtin_system_cmd(struct value** argv, unsigned int argc) {
 	return nullvalue;
 }
 
-struct value* builtin_random(struct value** argv, unsigned int argc) {
+DECL_BUILT_IN(builtin_random) {
 	double random_double = (double)rand() / RAND_MAX;
 	struct value* numvalue = malloc(sizeof(struct value));
+	ERROR_ALLOC_CHECK(numvalue);
 	init_num_value(numvalue,random_double);
 	return numvalue;
 }
 
-struct value* builtin_get_input(struct value** argv, unsigned int argc) {
+DECL_BUILT_IN(builtin_get_input) {
 	char format_flag = 0;
 	if (argc > 0 && argv[0]->type == VALUE_TYPE_CHAR)
 		format_flag = argv[0]->payload.character;
@@ -59,11 +62,13 @@ struct value* builtin_get_input(struct value** argv, unsigned int argc) {
 	length--;
 
 	struct value* toret = malloc(sizeof(struct value));
+	ERROR_ALLOC_CHECK(toret);
 	if (format_flag == 'n' || format_flag == 'N') {
 		init_num_value(toret, strtod(buffer, NULL));
 	}
 	else {
 		struct collection* collection = malloc(sizeof(struct collection));
+		ERROR_ALLOC_CHECK(collection);
 		init_collection(collection, length);
 		while (length--) {
 			collection->inner_collection[length] = malloc(sizeof(struct value));
@@ -76,7 +81,7 @@ struct value* builtin_get_input(struct value** argv, unsigned int argc) {
 	return toret;
 }
 
-struct value* builtin_get_length(struct value** argv, unsigned int argc) {
+DECL_BUILT_IN(builtin_get_length) {
 	if (argc < 1 || !IS_COLLECTION(argv[0]))
 		return NULL;
 	struct value* toret = malloc(sizeof(struct value));
