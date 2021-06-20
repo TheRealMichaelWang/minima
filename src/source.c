@@ -49,17 +49,20 @@ int main(unsigned int argc, char** argv) {
 		compiler.imported_file_hashes[compiler.imported_files++] = hash(argv[1], strlen(argv[1]));
 
 		if (!compile(&compiler, 0)) {
-			printf("\n***Syntax Error***\nError No. %d\n", compiler.last_err);
+			printf("\n***Syntax Error***\n");
+			error_info(compiler.last_err);
+			printf("\n\n");
 			debug_print_scanner(compiler.scanner);
 			printf("\n");
 			exit(EXIT_FAILURE);
 		}
 		free(source);
 		struct chunk source_chunk = build_chunk(&compiler.chunk_builder);
-		int err = machine_execute(&machine, &source_chunk);
+		enum error err = machine_execute(&machine, &source_chunk);
 		if (err) {
-			printf("\n***Runtime Error***\nError No. %d\n", err);
-			printf("\nDUMP: \n");
+			printf("\n***Runtime Error***\n");
+			error_info(err);
+			printf("\n\nDUMP: \n");
 			debug_print_dump(source_chunk, 1);
 		}
 	}
@@ -103,7 +106,9 @@ int main(unsigned int argc, char** argv) {
 				init_compiler(&compiler, src_buf);
 
 				if (!compile(&compiler, 1)) {
-					printf("\n***Syntax Error***\nError No. %d\n", compiler.last_err);
+					printf("\n***Syntax Error***\n");
+					error_info(compiler.last_err);
+					printf("\n\n");
 					debug_print_scanner(compiler.scanner);
 					printf("\n");
 				}
@@ -115,10 +120,11 @@ int main(unsigned int argc, char** argv) {
 					chunk_jump_to(&global_chunk, ip);
 					chunk_read(&global_chunk);
 
- 					int err = machine_execute(&machine, &global_chunk);
+ 					enum error err = machine_execute(&machine, &global_chunk);
 					if (err) {
-						printf("\n***Runtime Error***\nError No. %d\n", err);
-						printf("\nGLOBAL DUMP:\n");
+						printf("\n***Runtime Error***\n");
+						error_info(err);
+						printf("\n\nGLOBAL DUMP:\n");
 						debug_print_dump(global_chunk);
 
 						global_build.size = ip;

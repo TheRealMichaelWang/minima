@@ -1,8 +1,38 @@
+#define _CRT_SECURE_NO_DEPRECATE
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "collection.h"
 #include "record.h"
+#include "error.h"
 #include "io.h"
+
+static const char* error_names[] = {
+	"Program Success",
+	"Out of Memory",
+	"Insufficient Evaluations",
+	"Insufficient Call Size",
+
+	"Attempted Label Redefine",
+	"Undefined Label",
+	"Attempted Record-Prototype Redefine",
+	"Undefined Record-Prototype",
+	"Attempted Record-Property Redefine",
+	"Unedfined Record-Property",
+
+	"Unexpected Type",
+	"Index out of Range",
+	"Stack Overflow",
+	"Undefined Variable",
+	
+	"Unrecognized Token",
+	"Unrecognized Control-Sequence",
+	"Unexpected Character",
+	"Unexpected Token",
+
+	"Cannot Open File"
+};
 
 static void print_data_char(const char data_char) {
 	switch (data_char)
@@ -101,4 +131,31 @@ void print_value(struct value* value, const int print_mode) {
 			printf("<%p>", value->payload.object.ptr.record);
 	else
 		printf("[Print Error]");
+}
+
+void error_info(enum error error) {
+	printf("Error: %s",error_names[error]);
+	char* doc_path = malloc(25);
+	ERROR_ALLOC_CHECK(doc_path);
+
+	sprintf(doc_path, "docs/error%d.txt", error);
+	
+	FILE* infile = fopen(doc_path, "rb");
+	free(doc_path);
+
+	if (infile) {
+		fseek(infile, 0, SEEK_END);
+		unsigned long fsize = ftell(infile);
+		fseek(infile, 0, SEEK_SET);
+		char* source = malloc(fsize + 1);
+		ERROR_ALLOC_CHECK(source);
+		fread(source, 1, fsize, infile);
+		fclose(infile);
+		source[fsize] = 0;
+		printf("\n%s",source);
+		free(source);
+		fclose(infile);
+	}
+	else
+		printf("\nNo local help documentation found. Please refer to, https://github.com/TheRealMichaelWang/minima/wiki/Lists, for more information.");
 }

@@ -343,7 +343,7 @@ static const int goto_as(struct machine* machine, struct chunk* chunk) {
 	return 1;
 }
 
-const int machine_execute(struct machine* machine, struct chunk* chunk) {
+const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 	while (chunk->last_code != MACHINE_END)
 	{
 		switch (chunk->last_code)
@@ -389,10 +389,8 @@ const int machine_execute(struct machine* machine, struct chunk* chunk) {
 			machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
 			machine->position_flags[machine->positions++] = 1;
 			unsigned long pos = cache_retrieve_pos(&machine->global_cache, chunk_read_ulong(chunk));
-			if (!pos) {
-				machine->last_err = ERROR_LABEL_UNDEFINED;
-				return 0;
-			}
+			if (!pos)
+				return machine->last_err = ERROR_LABEL_UNDEFINED;
 			chunk_jump_to(chunk, pos);
 			break; 
 		}
@@ -453,10 +451,8 @@ const int machine_execute(struct machine* machine, struct chunk* chunk) {
 			struct record_prototype* prototype = malloc(sizeof(struct record_prototype));
 			init_record_prototype(prototype, id);
 			while (properties--)
-				if (!record_append_property(prototype, chunk_read_ulong(chunk))) {
-					machine->last_err = ERROR_PROPERTY_REDEFINE;
-					return 0;
-				}
+				if (!record_append_property(prototype, chunk_read_ulong(chunk)))
+					return machine->last_err = ERROR_PROPERTY_REDEFINE;
 			if (!cache_insert_prototype(&machine->global_cache, id, prototype))
 				return machine->last_err = ERROR_RECORD_REDEFINE;
 			break;
@@ -516,5 +512,5 @@ const int machine_execute(struct machine* machine, struct chunk* chunk) {
 		}
 		chunk_read(chunk);
 	}
-	return 0;
+	return ERROR_SUCCESS;
 }

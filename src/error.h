@@ -4,6 +4,7 @@
 #define ERROR_H
 
 enum error {
+	ERROR_SUCCESS,
 	ERROR_OUT_OF_MEMORY,
 	ERROR_INSUFFICIENT_EVALS,
 	ERROR_INSUFFICIENT_CALLS,
@@ -28,5 +29,7 @@ enum error {
 };
 
 #define ERROR_ALLOC_CHECK(PTR) if(PTR == NULL) { return 0; }
+
+void error_info(enum error error);
 
 #endif // !ERROR_H
