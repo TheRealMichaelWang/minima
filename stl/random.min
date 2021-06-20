@@ -13,3 +13,8 @@ rem Purpose:	Generates a random value that's either true/false
 proc randbit {
 	return extern random < 0.5
 }
+
+rem Purpose:	Randomly selects an item from an collection/array
+proc select_random(array) {
+	return array[goproc random(0, extern len(array))]
+}

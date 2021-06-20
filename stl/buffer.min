@@ -25,3 +25,14 @@ proc memset(buffer, value) {
 		set buffer[i] to value
 	}
 }
+
+rem Purpose:	Reverses the order of the elements in an array
+proc reverse(buffer) {
+	set len to extern len(buffer)
+	set i to len / 2
+	while dec i {
+		set temp to ref buffer[i]
+		set buffer[i] to ref buffer[len - i - 1]
+		set buffer[len - i - 1] to ref temp
+	}
+}
