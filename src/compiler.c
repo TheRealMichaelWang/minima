@@ -14,6 +14,7 @@
 
 enum op_precedence {
 	PREC_BEGIN,
+	PREC_LOGIC,
 	PREC_COMP,
 	PREC_ADD,
 	PREC_MULTIPLY,
@@ -27,8 +28,8 @@ enum op_precedence op_precedence[14] = {
 	PREC_COMP,
 	PREC_COMP,
 	PREC_COMP,
-	PREC_BEGIN,
-	PREC_BEGIN,
+	PREC_LOGIC,
+	PREC_LOGIC,
 	PREC_ADD,
 	PREC_ADD,
 	PREC_MULTIPLY,
@@ -241,7 +242,7 @@ static const int compile_expression(struct compiler* compiler, enum op_precedenc
 		}
 		return 1;
 	}
-	while (compiler->last_tok.type == TOK_BINARY_OP && op_precedence[compiler->last_tok.payload.bin_op] >= min_prec)
+	while (compiler->last_tok.type == TOK_BINARY_OP && op_precedence[compiler->last_tok.payload.bin_op] > min_prec)
 	{
 		enum binary_operator op = compiler->last_tok.payload.bin_op;
 		read_ctok(compiler);
