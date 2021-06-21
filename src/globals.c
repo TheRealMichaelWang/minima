@@ -10,7 +10,7 @@ void init_global_cache(struct global_cache* global_cache) {
 }
 
 void free_global_cache(struct global_cache* global_cache) {
-	for (unsigned char i = 0; i < MAX_SIZE; i++) {
+	for (uint_fast8_t i = 0; i < MAX_SIZE; i++) {
 		struct cache_bucket* bucket = global_cache->buckets[i];
 		while (bucket != NULL)
 		{

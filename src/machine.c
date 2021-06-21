@@ -296,7 +296,7 @@ const int eval_builtin(struct machine* machine, struct chunk* chunk) {
 
 	struct value* result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments);
 	NULL_CHECK(result, ERROR_LABEL_UNDEFINED);
-	for (uint64_t i = machine->evals - arguments; i < machine->evals; i++)
+	for (uint_fast64_t i = machine->evals - arguments; i < machine->evals; i++)
 		FREE_EVAL(machine->evaluation_stack[i], machine->eval_flags[i]);
 	machine->evals -= arguments;
 	return push_eval(machine, result, 0);
@@ -464,7 +464,7 @@ const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 				return machine->last_err = ERROR_OUT_OF_MEMORY;
 			if (!cache_init_record(&machine->global_cache, id, new_rec))
 				return machine->last_err = ERROR_RECORD_UNDEFINED;
-			for (unsigned char i = 0; i < new_rec->prototype->size; i++) {
+			for (uint_fast8_t i = 0; i < new_rec->prototype->size; i++) {
 				struct value* property = malloc(sizeof(struct value));
 				if(property == NULL)
 					return machine->last_err = ERROR_OUT_OF_MEMORY;

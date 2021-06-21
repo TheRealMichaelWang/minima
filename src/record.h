@@ -9,8 +9,8 @@ struct value; //forward declare value.
 
 struct record_prototype {
 	uint64_t identifier;
-	unsigned char* property_map;
-	unsigned char size;
+	uint_fast8_t* property_map;
+	uint_fast8_t size;
 };
 
 struct record {

@@ -71,7 +71,7 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 			return 0;
 		}
 		uint64_t len = strlen(buffer);
-		for (uint64_t i = 0; i < len; i++) {
+		for (uint_fast64_t i = 0; i < len; i++) {
 			chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
 			struct value char_val;
 			init_char_value(&char_val, buffer[i]);
@@ -517,7 +517,7 @@ static const int compile_statement(struct compiler* compiler, const uint64_t cal
 		NULL_CHECK(infile);
 
 		uint64_t path_hash = hash(file_path, strlen(file_path));
-		for (unsigned char i = 0; i < compiler->imported_files; i++)
+		for (uint_fast8_t i = 0; i < compiler->imported_files; i++)
 			if (compiler->imported_file_hashes[i] == path_hash)
 				return 1;
 		compiler->imported_file_hashes[compiler->imported_files++] = path_hash;

@@ -67,7 +67,7 @@ static void print_data_char(const char data_char) {
 }
 
 static const int print_str(struct collection* str, const int print_mode) {
-	for (uint64_t i = 0; i < str->size; i++) {
+	for (uint_fast64_t i = 0; i < str->size; i++) {
 		if (str->inner_collection[i]->type != VALUE_TYPE_CHAR)
 			return 0;
 		if (print_mode)
@@ -82,7 +82,7 @@ static const int is_str(struct value* value) {
 	if (IS_COLLECTION(value))
 		return 0;
 	struct collection* collection = value->payload.object.ptr.collection;
-	for (uint64_t i = 0; i < collection->size; i++)
+	for (uint_fast64_t i = 0; i < collection->size; i++)
 		if (collection->inner_collection[i]->type != VALUE_TYPE_CHAR)
 			return 0;
 	return 1;
@@ -90,7 +90,7 @@ static const int is_str(struct value* value) {
 
 static void print_collection(struct collection* collection) {
 	printf("%c", '[');
-	for (uint64_t i = 0; i < collection->size; i++) {
+	for (uint_fast64_t i = 0; i < collection->size; i++) {
 		if(i)
 			printf(", ");
 		print_value(collection->inner_collection[i], 0);
@@ -100,7 +100,7 @@ static void print_collection(struct collection* collection) {
 
 static void print_record(struct record* record) {
 	printf("<%p>", record);
-	for (unsigned char i = 0; i < record->prototype->size; i++) {
+	for (uint_fast8_t i = 0; i < record->prototype->size; i++) {
 		printf("\n\t");
 		print_value(record->properties[i], 0);
 	}

@@ -11,7 +11,7 @@ int init_var_context(struct var_context* var_context, struct garbage_collector* 
 }
 
 void free_var_context(struct var_context* var_context) {
-	for (unsigned char i = 0; i < MAX_SIZE; i++) {
+	for (uint_fast8_t i = 0; i < MAX_SIZE; i++) {
 		struct var_bucket* current = var_context->buckets[i];
 		while (current != NULL)
 		{

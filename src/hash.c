@@ -1,7 +1,7 @@
 #include "hash.h"
 
 uint64_t hash(const char* str, uint64_t len) {
-    uint32_t hash = 5381;
+    uint32_t hash = 5381; //DO NOT CHANGE THE HASH SIZE, otherwise pre-computed hashes WILL NOT WORK
     for (uint64_t i = 0; i < len; i++)
         hash = hash * 33 + str[i];
     return hash;
