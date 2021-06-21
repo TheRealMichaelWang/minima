@@ -4,11 +4,11 @@
 
 #define MAX_SIZE 255
 
-inline static const unsigned char retrieve_property_index(struct record_prototype* prototype, unsigned long property) {
+inline static const unsigned char retrieve_property_index(struct record_prototype* prototype, uint64_t property) {
 	return prototype->property_map[property & 255];
 }
 
-void init_record_prototype(struct record_prototype* prototype, unsigned long identifier) {
+void init_record_prototype(struct record_prototype* prototype, uint64_t identifier) {
 	prototype->identifier = identifier;
 	prototype->property_map = calloc(MAX_SIZE, sizeof(unsigned char));
 	prototype->size = 0;
@@ -18,7 +18,7 @@ void free_record_prototype(struct record_prototype* prototype) {
 	free(prototype->property_map);
 }
 
-const int record_append_property(struct record_prototype* prototype, unsigned long property) {
+const int record_append_property(struct record_prototype* prototype, uint64_t property) {
 	unsigned char* slot = &prototype->property_map[property & 255];
 	if (*slot)
 		return 0;
@@ -40,7 +40,7 @@ void free_record(struct record* record) {
 	free(record->properties);
 }
 
-struct value* record_get_ref(struct record* record, unsigned long property) {
+struct value* record_get_ref(struct record* record, uint64_t property) {
 	unsigned char i = retrieve_property_index(record->prototype, property);
 	if (i)
 		return record->properties[i - 1];
@@ -48,7 +48,7 @@ struct value* record_get_ref(struct record* record, unsigned long property) {
 		return NULL;
 }
 
-const int record_set_ref(struct record* record, unsigned long property, struct value* value) {
+const int record_set_ref(struct record* record, uint64_t property, struct value* value) {
 	unsigned char i = retrieve_property_index(record->prototype, property);
 	if (i) {
 		record->properties[i - 1] = value;

@@ -6,9 +6,11 @@
 #ifndef VARIABLE_H
 #define VARIABLE_H
 
+#include <stdint.h>
+
 struct var_context {
 	struct var_bucket {
-		unsigned long id_hash;
+		uint64_t id_hash;
 		const struct value* value;
 		struct var_bucket* next;
 	} **buckets;
@@ -18,9 +20,9 @@ struct var_context {
 int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector);
 void free_var_context(struct var_context* var_context);
 
-const struct value* retrieve_var(struct var_context* var_context, const unsigned long id);
+const struct value* retrieve_var(struct var_context* var_context, const uint64_t id);
 
-int emplace_var(struct var_context* var_context,const unsigned long id, const struct value* value);
+int emplace_var(struct var_context* var_context,const uint64_t id, const struct value* value);
 
 
 #endif // !VARIABLE_H

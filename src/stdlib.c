@@ -7,7 +7,7 @@
 #include "stdlib.h"
 
 DECL_BUILT_IN(builtin_print) {
-	for (unsigned long i = 0; i < argc; i++) {
+	for (uint64_t i = 0; i < argc; i++) {
 		print_value(argv[i], 1);
 	}
 	struct value* nullvalue = malloc(sizeof(struct value));
@@ -27,7 +27,7 @@ DECL_BUILT_IN(builtin_system_cmd) {
 	struct collection* collection = argv[0]->payload.object.ptr.collection;
 	char* buffer = malloc((collection->size + 1)* sizeof(char));
 	ERROR_ALLOC_CHECK(buffer);
-	for (unsigned long i = 0; i < collection->size; i++) {
+	for (uint64_t i = 0; i < collection->size; i++) {
 		buffer[i] = collection->inner_collection[i]->payload.character;
 	}
 	buffer[collection->size] = 0;
@@ -52,7 +52,7 @@ DECL_BUILT_IN(builtin_get_input) {
 		format_flag = argv[0]->payload.character;
 
 	char buffer[4096];
-	unsigned int length = 0;
+	uint32_t length = 0;
 	while (scanf_s("%c", &buffer[length], 1)) {
 		if (buffer[length] == '\n')
 			break;

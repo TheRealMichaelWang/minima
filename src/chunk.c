@@ -5,7 +5,7 @@
 #include "value.h"
 #include "chunk.h"
 
-void init_chunk(struct chunk* chunk, char* code, const unsigned long size) {
+void init_chunk(struct chunk* chunk, char* code, const uint64_t size) {
 	chunk->pos = 0;
 	chunk->size = size;
 	chunk->code = code;
@@ -52,7 +52,7 @@ const int chunk_write(struct chunk_builder* chunk_builder, const char code) {
 }
 
 
-const int chunk_write_size(struct chunk_builder* chunk_builder, const void* ptr, const unsigned long size) {
+const int chunk_write_size(struct chunk_builder* chunk_builder, const void* ptr, const uint64_t size) {
 	if (chunk_builder->size + size >= chunk_builder->alloc_size) {
 		void* new_ptr = realloc(chunk_builder->code_buf, chunk_builder->alloc_size * 2 + size);
 		ERROR_ALLOC_CHECK(new_ptr);
@@ -71,7 +71,7 @@ const char chunk_read(struct chunk* chunk) {
 	return chunk->last_code = chunk->code[chunk->pos++];
 }
 
-const void* chunk_read_size(struct chunk* chunk, const unsigned long size) {
+const void* chunk_read_size(struct chunk* chunk, const uint64_t size) {
 	if (chunk->pos + size >= chunk->size) {
 		chunk->last_code = MACHINE_END;
 		if(chunk->pos + size > chunk->size)
@@ -97,7 +97,7 @@ void chunk_write_chunk(struct chunk_builder* dest, struct chunk src, const int f
 		free(src.code);
 }
 
-void chunk_jump_to(struct chunk* chunk, const unsigned long pos) {
+void chunk_jump_to(struct chunk* chunk, const uint64_t pos) {
 	if (pos >= chunk->size) {
 		chunk->pos = chunk->size;
 		chunk->last_code = MACHINE_END;
@@ -110,7 +110,7 @@ static void chunk_skip_ins(struct chunk* chunk) {
 	switch (op_code)
 	{
 	case MACHINE_CALL_EXTERN:
-		chunk_read_size(chunk, sizeof(unsigned long));
+		chunk_read_size(chunk, sizeof(uint64_t));
 	case MACHINE_LABEL:
 	case MACHINE_GOTO:
 	case MACHINE_GOTO_AS:
@@ -120,7 +120,7 @@ static void chunk_skip_ins(struct chunk* chunk) {
 	case MACHINE_SET_PROPERTY:
 	case MACHINE_GET_PROPERTY:
 	case MACHINE_BUILD_RECORD:
-		chunk_read_size(chunk, sizeof(unsigned long));
+		chunk_read_size(chunk, sizeof(uint64_t));
 		break;
 	case MACHINE_LOAD_CONST:
 		chunk_read_size(chunk, sizeof(struct value));
@@ -131,7 +131,7 @@ static void chunk_skip_ins(struct chunk* chunk) {
 		break;
 	case MACHINE_BUILD_PROTO: {
 		chunk_read_ulong(chunk);
-		unsigned long i = chunk_read_ulong(chunk);
+		uint64_t i = chunk_read_ulong(chunk);
 		while (i--)
 			chunk_read_ulong(chunk);
 		break;
@@ -140,7 +140,7 @@ static void chunk_skip_ins(struct chunk* chunk) {
 	chunk_read(chunk);
 }
 
-void chunk_skip(struct chunk* chunk, unsigned long depth) {
+void chunk_skip(struct chunk* chunk, uint64_t depth) {
 	while (chunk->last_code != MACHINE_END)
 	{
 		char op_code = chunk->last_code;

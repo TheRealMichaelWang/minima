@@ -46,9 +46,9 @@ void gc_register_value(struct garbage_collector* garbage_collector, struct value
 		gframe->to_collect[gframe->collect_values++] = value;
 	
 	if (value->type == VALUE_TYPE_OBJ) {
-		unsigned long size = 0;
+		uint64_t size = 0;
 		const struct value** children = object_get_children(&value->payload.object,&size);
-		for (unsigned long i = 0; i < size; i++)
+		for (uint64_t i = 0; i < size; i++)
 			gc_register_value(garbage_collector, children[i], 0);
 	}
 }
@@ -64,7 +64,7 @@ void gc_new_frame(struct garbage_collector* garbage_collector) {
 	init_gframe(&garbage_collector->frame_stack[garbage_collector->frames++], PREC_BEGIN, trace_begin);
 }
 
-static void trace_value(struct value* value, struct value** reset_stack, unsigned int* stack_top) {
+static void trace_value(struct value* value, struct value** reset_stack, uint32_t* stack_top) {
 	if (value->gc_flag == GARBAGE_KEEP)
 		return;
 
@@ -74,9 +74,9 @@ static void trace_value(struct value* value, struct value** reset_stack, unsigne
 	(*stack_top)++;
 
 	if (value->type == VALUE_TYPE_OBJ) {
-		unsigned long size = 0;
+		uint64_t size = 0;
 		const struct value** children = object_get_children(&value->payload.object, &size);
-		for (unsigned long i = 0; i < size; i++)
+		for (uint64_t i = 0; i < size; i++)
 			trace_value(children[i], reset_stack, stack_top);
 	}
 }
@@ -84,16 +84,16 @@ static void trace_value(struct value* value, struct value** reset_stack, unsigne
 void gc_collect(struct garbage_collector* garbage_collector) {
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 
-	for (unsigned long i = 0; i < top->collect_values; i++)
+	for (uint64_t i = 0; i < top->collect_values; i++)
 		if (top->to_collect[i]->gc_flag != GARBAGE_TRACE)
 			top->to_collect[i]->gc_flag = GARBAGE_COLLECT;
 
 	struct value** reset_stack = &top->to_collect[top->collect_values];
-	unsigned int reset_top = 0;
+	uint32_t reset_top = 0;
 	while (top->trace_values--)
 		trace_value(top->to_trace[top->trace_values], reset_stack, &reset_top);
 
-	for (unsigned long i = 0; i < top->collect_values; i++) {
+	for (uint64_t i = 0; i < top->collect_values; i++) {
 		if (top->to_collect[i]->gc_flag == GARBAGE_COLLECT || garbage_collector->frames < 2) {
 			free_value(top->to_collect[i]);
 			free(top->to_collect[i]);

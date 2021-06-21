@@ -67,7 +67,7 @@ static void print_data_char(const char data_char) {
 }
 
 static const int print_str(struct collection* str, const int print_mode) {
-	for (unsigned long i = 0; i < str->size; i++) {
+	for (uint64_t i = 0; i < str->size; i++) {
 		if (str->inner_collection[i]->type != VALUE_TYPE_CHAR)
 			return 0;
 		if (print_mode)
@@ -82,7 +82,7 @@ static const int is_str(struct value* value) {
 	if (IS_COLLECTION(value))
 		return 0;
 	struct collection* collection = value->payload.object.ptr.collection;
-	for (unsigned long i = 0; i < collection->size; i++)
+	for (uint64_t i = 0; i < collection->size; i++)
 		if (collection->inner_collection[i]->type != VALUE_TYPE_CHAR)
 			return 0;
 	return 1;
@@ -90,7 +90,7 @@ static const int is_str(struct value* value) {
 
 static void print_collection(struct collection* collection) {
 	printf("%c", '[');
-	for (unsigned long i = 0; i < collection->size; i++) {
+	for (uint64_t i = 0; i < collection->size; i++) {
 		if(i)
 			printf(", ");
 		print_value(collection->inner_collection[i], 0);
@@ -145,7 +145,7 @@ void error_info(enum error error) {
 
 	if (infile) {
 		fseek(infile, 0, SEEK_END);
-		unsigned long fsize = ftell(infile);
+		uint64_t fsize = ftell(infile);
 		fseek(infile, 0, SEEK_SET);
 		char* source = malloc(fsize + 1);
 		ERROR_ALLOC_CHECK(source);

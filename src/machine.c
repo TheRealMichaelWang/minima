@@ -21,7 +21,7 @@
 #define MACHINE_ERROR(ERROR) {machine->last_err = ERROR; return 0;}
 
 void init_machine(struct machine* machine) {
-	machine->position_stack = malloc(MAX_POSITIONS * sizeof(unsigned long));
+	machine->position_stack = malloc(MAX_POSITIONS * sizeof(uint64_t));
 	machine->position_flags = malloc(MAX_POSITIONS * sizeof(char));
 	machine->evaluation_stack = malloc(MAX_EVALS * sizeof(struct value));
 	machine->eval_flags = malloc(MAX_EVALS * sizeof(char));
@@ -91,7 +91,7 @@ inline static const int condition_check(struct machine* machine) {
 
 static const int store_var(struct machine* machine, struct chunk* chunk) {
 	MATCH_EVALS(1);
-	unsigned long id = chunk_read_ulong(chunk);
+	uint64_t id = chunk_read_ulong(chunk);
 	struct value* setptr = machine->evaluation_stack[--machine->evals];
 	if (machine->eval_flags[machine->evals])
 		emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr);
@@ -123,7 +123,7 @@ static const int get_index(struct machine* machine) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct collection* collection = collection_val->payload.object.ptr.collection;
-	unsigned long index = index_val->payload.numerical;
+	uint64_t index = index_val->payload.numerical;
 
 	if (index >= collection->size)
 		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
@@ -162,7 +162,7 @@ static const int set_index(struct machine* machine) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct collection* collection = collection_val->payload.object.ptr.collection;
-	unsigned long index = index_val->payload.numerical;
+	uint64_t index = index_val->payload.numerical;
 
 	if (index >= collection->size)
 		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
@@ -192,7 +192,7 @@ static const int set_index(struct machine* machine) {
 static const int set_property(struct machine* machine, struct chunk* chunk) {
 	MATCH_EVALS(2);
 
-	unsigned long property = chunk_read_ulong(chunk);
+	uint64_t property = chunk_read_ulong(chunk);
 
 	struct value* set_val = machine->evaluation_stack[--machine->evals];
 	char set_flag = machine->eval_flags[machine->evals];
@@ -289,21 +289,21 @@ static const int eval_uni_op(struct machine* machine, struct chunk* chunk) {
 }
 
 const int eval_builtin(struct machine* machine, struct chunk* chunk) {
-	unsigned long id = chunk_read_ulong(chunk);
-	unsigned long arguments = chunk_read_ulong(chunk);
+	uint64_t id = chunk_read_ulong(chunk);
+	uint64_t arguments = chunk_read_ulong(chunk);
 
 	MATCH_EVALS(arguments);
 
 	struct value* result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments);
 	NULL_CHECK(result, ERROR_LABEL_UNDEFINED);
-	for (unsigned long i = machine->evals - arguments; i < machine->evals; i++)
+	for (uint64_t i = machine->evals - arguments; i < machine->evals; i++)
 		FREE_EVAL(machine->evaluation_stack[i], machine->eval_flags[i]);
 	machine->evals -= arguments;
 	return push_eval(machine, result, 0);
 }
 
 static const int build_collection(struct machine* machine, struct chunk* chunk) {
-	unsigned long req_size = chunk_read_ulong(chunk);
+	uint64_t req_size = chunk_read_ulong(chunk);
 	MATCH_EVALS(req_size);
 
 	struct collection* collection = malloc(sizeof(struct collection));
@@ -334,9 +334,9 @@ static const int goto_as(struct machine* machine, struct chunk* chunk) {
 
 	STACK_CHECK(machine);
 
-	machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
+	machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
 	machine->position_flags[machine->positions++] = 1;
-	unsigned long pos = cache_retrieve_pos(&machine->global_cache, combine_hash(chunk_read_ulong(chunk), record_eval->payload.object.ptr.record->prototype->identifier));
+	uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(chunk_read_ulong(chunk), record_eval->payload.object.ptr.record->prototype->identifier));
 	if (!pos)
 		MACHINE_ERROR(ERROR_LABEL_UNDEFINED);
 	chunk_jump_to(chunk, pos);
@@ -386,9 +386,9 @@ const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 		case MACHINE_GOTO: {
 			if (machine->positions == MAX_POSITIONS)
 				return machine->last_err = ERROR_STACK_OVERFLOW;
-			machine->position_stack[machine->positions] = chunk->pos + sizeof(unsigned long);
+			machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
 			machine->position_flags[machine->positions++] = 1;
-			unsigned long pos = cache_retrieve_pos(&machine->global_cache, chunk_read_ulong(chunk));
+			uint64_t pos = cache_retrieve_pos(&machine->global_cache, chunk_read_ulong(chunk));
 			if (!pos)
 				return machine->last_err = ERROR_LABEL_UNDEFINED;
 			chunk_jump_to(chunk, pos);
@@ -404,7 +404,7 @@ const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 			chunk_jump_to(chunk, machine->position_stack[--machine->positions]);
 			break;
 		case MACHINE_LABEL: {
-			unsigned long id = chunk_read_ulong(chunk);
+			uint64_t id = chunk_read_ulong(chunk);
 			if (!cache_insert_label(&machine->global_cache, id, chunk->pos))
 				return machine->last_err = ERROR_LABEL_REDEFINE;
 			chunk_read(chunk);
@@ -446,8 +446,8 @@ const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 				return machine->last_err;
 			break;
 		case MACHINE_BUILD_PROTO: {
-			unsigned long id = chunk_read_ulong(chunk);
-			unsigned long properties = chunk_read_ulong(chunk);
+			uint64_t id = chunk_read_ulong(chunk);
+			uint64_t properties = chunk_read_ulong(chunk);
 			struct record_prototype* prototype = malloc(sizeof(struct record_prototype));
 			init_record_prototype(prototype, id);
 			while (properties--)
@@ -458,7 +458,7 @@ const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 			break;
 		}
 		case MACHINE_BUILD_RECORD: {
-			unsigned long id = chunk_read_ulong(chunk);
+			uint64_t id = chunk_read_ulong(chunk);
 			struct record* new_rec = malloc(sizeof(struct record));
 			if (new_rec == NULL)
 				return machine->last_err = ERROR_OUT_OF_MEMORY;

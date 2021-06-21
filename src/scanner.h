@@ -3,13 +3,14 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
+#include <stdint.h>
 #include "operators.h"
 #include "value.h"
 
 struct scanner {
 	const char* source;
-	unsigned long size;
-	unsigned long pos;
+	uint64_t size;
+	uint64_t pos;
 
 	char last_char;
 	char last_err;
@@ -58,7 +59,7 @@ struct token {
 
 		struct value primative;
 
-		unsigned long identifier;
+		uint64_t identifier;
 	} payload;
 };
 

@@ -49,7 +49,7 @@ inline static struct token read_ctok(struct compiler* compiler) {
 	return compiler->last_tok;
 }
 
-inline static unsigned long format_label(unsigned long identifier, unsigned long callee, unsigned long arguments) {
+inline static uint64_t format_label(uint64_t identifier, uint64_t callee, uint64_t arguments) {
 	return combine_hash(combine_hash(identifier, arguments), callee);
 }
 
@@ -70,8 +70,8 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 			free(buffer);
 			return 0;
 		}
-		unsigned long len = strlen(buffer);
-		for (unsigned long i = 0; i < len; i++) {
+		uint64_t len = strlen(buffer);
+		for (uint64_t i = 0; i < len; i++) {
 			chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
 			struct value char_val;
 			init_char_value(&char_val, buffer[i]);
@@ -113,7 +113,7 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 		}
 	}
 	else if (compiler->last_tok.type == TOK_OPEN_BRACE) {
-		unsigned long array_size = 0;
+		uint64_t array_size = 0;
 		do {
 			read_ctok(compiler);
 			compile_expression(compiler, 0, 0);
@@ -152,8 +152,8 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 	else if (compiler->last_tok.type == TOK_GOTO || compiler->last_tok.type == TOK_EXTERN) {
 		int is_proc = compiler->last_tok.type == TOK_GOTO;
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-		unsigned long proc_id = compiler->last_tok.payload.identifier;
-		unsigned long arguments = 0;
+		uint64_t proc_id = compiler->last_tok.payload.identifier;
+		uint64_t arguments = 0;
 		int is_record_proc = 0;
 		struct chunk_builder temp_builder;
 		struct chunk_builder og_builder;
@@ -203,8 +203,8 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 	}
 	else if (compiler->last_tok.type == TOK_NEW) {
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-		unsigned long arguments = 1;
-		unsigned long record_id = compiler->last_tok.payload.identifier;
+		uint64_t arguments = 1;
+		uint64_t record_id = compiler->last_tok.payload.identifier;
 		if (read_ctok(compiler).type == TOK_OPEN_PAREN) {
 			while (1)
 			{
@@ -254,7 +254,7 @@ static const int compile_expression(struct compiler* compiler, enum op_precedenc
 	return 1;
 }
 
-static const int compile_statement(struct compiler* compiler, const unsigned long callee, const int encapsulated, const int func_encapsulated, int* returned) {
+static const int compile_statement(struct compiler* compiler, const uint64_t callee, const int encapsulated, const int func_encapsulated, int* returned) {
 	switch (compiler->last_tok.type)
 	{
 	case TOK_UNARY_OP:
@@ -267,7 +267,7 @@ static const int compile_statement(struct compiler* compiler, const unsigned lon
 	}
 	case TOK_SET: {
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-		unsigned long var_id = compiler->last_tok.payload.identifier;
+		uint64_t var_id = compiler->last_tok.payload.identifier;
 		if (read_ctok(compiler).type == TOK_TO) {
 			read_ctok(compiler);
 			if (!compile_expression(compiler, PREC_BEGIN, 0))
@@ -298,7 +298,7 @@ static const int compile_statement(struct compiler* compiler, const unsigned lon
 				}
 				else if (compiler->last_tok.type == TOK_PERIOD) {
 					MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-					unsigned long property = compiler->last_tok.payload.identifier;
+					uint64_t property = compiler->last_tok.payload.identifier;
 					if (read_ctok(compiler).type == TOK_TO) {
 						read_ctok(compiler);
 						if (!compile_expression(compiler, PREC_BEGIN, 0))
@@ -411,10 +411,10 @@ static const int compile_statement(struct compiler* compiler, const unsigned lon
 		}
 
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-		unsigned long proc_id = compiler->last_tok.payload.identifier;
+		uint64_t proc_id = compiler->last_tok.payload.identifier;
 		chunk_write(&compiler->chunk_builder, MACHINE_LABEL);
-		unsigned long reverse_buffer[50];
-		unsigned int buffer_size = 0;
+		uint64_t reverse_buffer[50];
+		uint32_t buffer_size = 0;
 		if (read_ctok(compiler).type == TOK_OPEN_PAREN) {
 			while (1)
 			{
@@ -462,10 +462,10 @@ static const int compile_statement(struct compiler* compiler, const unsigned lon
 	}
 	case TOK_RECORD: {
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-		unsigned long record_id = compiler->last_tok.payload.identifier;
+		uint64_t record_id = compiler->last_tok.payload.identifier;
 		MATCH_TOK(read_ctok(compiler), TOK_OPEN_BRACE);
-		unsigned long property_buffer[500];
-		unsigned long properties = 0;
+		uint64_t property_buffer[500];
+		uint64_t properties = 0;
 		read_ctok(compiler);
 		while (compiler->last_tok.type != TOK_CLOSE_BRACE)
 		{
@@ -516,14 +516,14 @@ static const int compile_statement(struct compiler* compiler, const unsigned lon
 		FILE* infile = fopen(file_path, "rb");
 		NULL_CHECK(infile);
 
-		unsigned long path_hash = hash(file_path, strlen(file_path));
+		uint64_t path_hash = hash(file_path, strlen(file_path));
 		for (unsigned char i = 0; i < compiler->imported_files; i++)
 			if (compiler->imported_file_hashes[i] == path_hash)
 				return 1;
 		compiler->imported_file_hashes[compiler->imported_files++] = path_hash;
 
 		fseek(infile, 0, SEEK_END);
-		unsigned long fsize = ftell(infile);
+		uint64_t fsize = ftell(infile);
 		fseek(infile, 0, SEEK_SET);
 		char* source = malloc(fsize + 1);
 		NULL_CHECK(source);

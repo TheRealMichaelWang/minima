@@ -3,6 +3,7 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
+#include <stdint.h>
 #include "error.h"
 #include "scanner.h"
 #include "machine.h"
@@ -15,7 +16,7 @@ struct compiler
 	struct chunk_builder chunk_builder;
 	enum error last_err;
 
-	unsigned long imported_file_hashes[255];
+	uint64_t imported_file_hashes[255];
 	unsigned char imported_files;
 };
 

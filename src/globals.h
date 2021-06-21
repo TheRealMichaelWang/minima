@@ -3,11 +3,12 @@
 #ifndef LABEL_H
 #define LABEL_H
 
+#include <stdint.h>
 #include "record.h"
 
 struct global_cache {
 	struct cache_bucket {
-		unsigned long id;
+		uint64_t id;
 
 		enum cache_type {
 			CACHE_TYPE_POS,
@@ -17,9 +18,9 @@ struct global_cache {
 
 		union payload
 		{
-			unsigned long pos;
+			uint64_t pos;
 			struct record_prototype* prototype; 
-			struct value* (*builtin_delegate)(struct value** argv, unsigned int argc);
+			struct value* (*builtin_delegate)(struct value** argv, uint32_t argc);
 		}payload;
 
 		struct cache_bucket* next;
@@ -29,13 +30,13 @@ struct global_cache {
 void init_global_cache(struct global_cache* global_cache);
 void free_global_cache(struct global_cache* global_cache);
 
-const int cache_insert_label(struct global_cache* global_cache, unsigned long id, unsigned long pos);
-unsigned long cache_retrieve_pos(struct global_cache* global_cache, unsigned long id);
+const int cache_insert_label(struct global_cache* global_cache, uint64_t id, uint64_t pos);
+uint64_t cache_retrieve_pos(struct global_cache* global_cache, uint64_t id);
 
-const int cache_insert_prototype(struct global_cache* global_cache, unsigned long id, struct record_prototype* prototype);
-const int cache_init_record(struct global_cache* global_cache, unsigned long proto_id, struct record* record);
+const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id, struct record_prototype* prototype);
+const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record);
 
-const int cache_declare_builtin(struct global_cache* global_cache, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc));
-struct value* cache_invoke_builtin(struct global_cache* global_cache, unsigned long id, struct value** argv, unsigned int argc);
+const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, struct value* (*delegate)(struct value** argv, uint32_t argc));
+struct value* cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc);
 
 #endif // !LABEL_H

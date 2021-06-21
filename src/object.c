@@ -39,7 +39,7 @@ const int object_compare(struct object* a, struct object* b) {
 	return 1;
 }
 
-const struct value** object_get_children(struct object* object, unsigned long* size) {
+const struct value** object_get_children(struct object* object, uint64_t* size) {
 	switch (object->type)
 	{
 	case OBJ_TYPE_COL:

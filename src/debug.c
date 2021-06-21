@@ -7,7 +7,7 @@ void debug_print_scanner(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)
 		scanner.pos = scanner.size - 1;
 	scanner.pos--;
-	unsigned int pos = scanner.pos - 1;
+	uint32_t pos = scanner.pos - 1;
 	while (scanner.pos != 0)
 	{
 		if (scanner.source[scanner.pos] == '\n') {
@@ -25,11 +25,11 @@ void debug_print_scanner(struct scanner scanner) {
 	printf("^");
 }
 
-static void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
+static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 	printf("%d", chunk->pos);
 	char op_code = chunk_read(chunk);
 
-	for (unsigned int i = 0; i < *indent; i++)
+	for (uint32_t i = 0; i < *indent; i++)
 		printf("\t");
 
 	switch (op_code)
@@ -98,7 +98,7 @@ static void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 		break;
 	case MACHINE_BUILD_PROTO: {
 		printf("BUILD RECORD-PROTO, id:%d", chunk_read_ulong(chunk));
-		unsigned long properties = chunk_read_ulong(chunk);
+		uint64_t properties = chunk_read_ulong(chunk);
 		printf(", properties:%d", properties);
 		while (properties--)
 			printf(", id:%d", chunk_read_ulong(chunk));
@@ -136,9 +136,9 @@ static void print_instruction_dump(struct chunk* chunk, unsigned int* indent) {
 }
 
 void debug_print_dump(struct chunk chunk) {
-	unsigned long old_pos = chunk.pos;
+	uint64_t old_pos = chunk.pos;
 	chunk.pos = 0;
-	unsigned int indent = 1;
+	uint32_t indent = 1;
 
 	while (chunk.last_code != MACHINE_END) {
 		print_instruction_dump(&chunk, &indent);

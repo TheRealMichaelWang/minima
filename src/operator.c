@@ -133,7 +133,7 @@ DECL_UNARY_OPERATOR(op_negate) {
 
 DECL_UNARY_OPERATOR(op_alloc) {
 	struct value* c = malloc(sizeof(struct value));
-	unsigned long i = a->payload.numerical;
+	uint64_t i = a->payload.numerical;
 	if (i > 1000000) {
 		init_null_value(c);
 		return c;

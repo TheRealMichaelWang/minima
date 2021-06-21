@@ -3,17 +3,18 @@
 #ifndef COLLECTION_H
 #define COLLECTION_H
 
+#include <stdint.h>
+
 struct value; //foward declare value
 
 struct collection {
 	struct value** inner_collection;
-	unsigned long size;
+	uint64_t size;
 };
 
-const int init_collection(struct collection* collection, unsigned long size);
+const int init_collection(struct collection* collection, uint64_t size);
 void free_collection(struct collection* collection);
 
-//const int copy_collection(struct collection* dest, struct collection* src);
 const int collection_compare(struct collection* a, struct collection* b);
 
 #endif // !COLLECTION_H

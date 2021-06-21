@@ -24,7 +24,7 @@ void free_var_context(struct var_context* var_context) {
 	free(var_context->buckets);
 }
 
-const struct value* retrieve_var(struct var_context* var_context, const unsigned long id) {
+const struct value* retrieve_var(struct var_context* var_context, const uint64_t id) {
 	struct var_bucket* bucket = var_context->buckets[id & MAX_SIZE];
 	while (bucket != NULL) {
 		if (bucket->id_hash == id)
@@ -34,7 +34,7 @@ const struct value* retrieve_var(struct var_context* var_context, const unsigned
 	return NULL;
 }
 
-int emplace_var(struct var_context* var_context, const unsigned long id, const struct value* value) {
+int emplace_var(struct var_context* var_context, const uint64_t id, const struct value* value) {
 	struct var_bucket** current_bucket = &var_context->buckets[id & MAX_SIZE];
 	while (*current_bucket != NULL)
 	{

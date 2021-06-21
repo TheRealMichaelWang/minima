@@ -3,6 +3,7 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
+#include <stdint.h>
 #include "value.h"
 #include "garbage.h"
 #include "chunk.h"
@@ -57,7 +58,7 @@ enum machine_op_code {
 };
 
 struct machine {
-	unsigned long* position_stack;
+	uint64_t* position_stack;
 	char* position_flags;
 
 	struct value** evaluation_stack;
@@ -65,9 +66,9 @@ struct machine {
 
 	struct var_context* var_stack;
 
-	unsigned long positions;
-	unsigned long evals;
-	unsigned long call_size;
+	uint64_t positions;
+	uint64_t evals;
+	uint64_t call_size;
 
 	char std_flag;
 	enum error last_err;

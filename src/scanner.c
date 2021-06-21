@@ -61,7 +61,7 @@ static const char read_data_char(struct scanner* scanner)
 }
 
 const int scanner_read_str(struct scanner* scanner, char* str, const int data_mode) {
-	unsigned int len = 0;
+	uint32_t len = 0;
 	while (scanner->last_char == '\t' || scanner->last_char == '\r' || scanner->last_char == ' ' || scanner->last_char == '\n')
 		read_char(scanner);
 	if (scanner->last_char != '\"') {
@@ -87,13 +87,13 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		read_char(scanner);
 	struct token tok;
 	const char* start = &scanner->source[scanner->pos - 1];
-	unsigned long length = 0;
+	uint64_t length = 0;
 	if (isalpha(scanner->last_char)) {
 		while (isalpha(scanner->last_char) || isalnum(scanner->last_char) || scanner->last_char == '_') {
 			read_char(scanner);
 			length++;
 		}
-		unsigned long id_hash = hash(start, length);
+		uint64_t id_hash = hash(start, length);
 		switch (id_hash)
 		{
 		case 5863476: //ifs

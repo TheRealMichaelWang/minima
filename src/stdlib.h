@@ -1,9 +1,10 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
+#include <stdint.h>
 #include "value.h"
 
-#define DECL_BUILT_IN(METHOD_NAME) struct value* METHOD_NAME(struct value** argv, unsigned int argc)
+#define DECL_BUILT_IN(METHOD_NAME) struct value* METHOD_NAME(struct value** argv, uint32_t argc)
 
 DECL_BUILT_IN(builtin_print);
 DECL_BUILT_IN(builtin_print_line);

@@ -41,7 +41,7 @@ static const int insert_bucket(struct global_cache* global_cache, struct cache_b
 	return 1;
 }
 
-const int cache_insert_label(struct global_cache* global_cache, unsigned long id, unsigned long pos) {
+const int cache_insert_label(struct global_cache* global_cache, uint64_t id, uint64_t pos) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
 	to_insert.type = CACHE_TYPE_POS;
@@ -49,7 +49,7 @@ const int cache_insert_label(struct global_cache* global_cache, unsigned long id
 	return insert_bucket(global_cache, to_insert);
 }
 
-unsigned long cache_retrieve_pos(struct global_cache* global_cache, unsigned long id) {
+uint64_t cache_retrieve_pos(struct global_cache* global_cache, uint64_t id) {
 	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
 	while (bucket != NULL)
 	{
@@ -60,7 +60,7 @@ unsigned long cache_retrieve_pos(struct global_cache* global_cache, unsigned lon
 	return 0;
 }
 
-const int cache_insert_prototype(struct global_cache* global_cache, unsigned long id, struct record_prototype* prototype) {
+const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id, struct record_prototype* prototype) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
 	to_insert.type = CACHE_TYPE_PROTO;
@@ -68,7 +68,7 @@ const int cache_insert_prototype(struct global_cache* global_cache, unsigned lon
 	return insert_bucket(global_cache, to_insert);
 }
 
-const int cache_init_record(struct global_cache* global_cache, unsigned long proto_id, struct record* record) {
+const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record) {
 	struct cache_bucket* bucket = global_cache->buckets[proto_id & MAX_SIZE];
 	while (bucket != NULL)
 	{
@@ -81,7 +81,7 @@ const int cache_init_record(struct global_cache* global_cache, unsigned long pro
 	return 0;
 }
 
-const int cache_declare_builtin(struct global_cache* global_cache, unsigned long id, struct value* (*delegate)(struct value** argv, unsigned int argc)) {
+const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, struct value* (*delegate)(struct value** argv, uint32_t argc)) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
 	to_insert.type = CACHE_TYPE_BUILTIN;
@@ -89,7 +89,7 @@ const int cache_declare_builtin(struct global_cache* global_cache, unsigned long
 	return insert_bucket(global_cache, to_insert);
 }
 
-struct value* cache_invoke_builtin(struct global_cache* global_cache, unsigned long id, struct value** argv, unsigned int argc) {
+struct value* cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc) {
 	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
 	while (bucket != NULL)
 	{

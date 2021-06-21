@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "debug.h"
 #include "hash.h"
@@ -11,9 +12,9 @@
 
 static struct machine machine;
 
-static unsigned int block_check(const char* src, unsigned int length) {
-	unsigned int blocks = 0;
-	for (unsigned int i = 0; i < length; i++) {
+static uint32_t block_check(const char* src, uint32_t length) {
+	uint32_t blocks = 0;
+	for (uint32_t i = 0; i < length; i++) {
 		if (src[i] == '{')
 			blocks++;
 		else if (src[i] == '}')
@@ -22,7 +23,7 @@ static unsigned int block_check(const char* src, unsigned int length) {
 	return blocks;
 }
 
-int main(unsigned int argc, char** argv) {
+int main(uint32_t argc, char** argv) {
 	init_machine(&machine);
 	struct compiler compiler;
 
@@ -33,7 +34,7 @@ int main(unsigned int argc, char** argv) {
 			exit(EXIT_FAILURE);
 		}
 		fseek(infile, 0, SEEK_END);
-		unsigned long fsize = ftell(infile);
+		uint64_t fsize = ftell(infile);
 		fseek(infile, 0, SEEK_SET);
 		char* source = malloc(fsize + 1);
 		if (source == NULL) {
@@ -73,14 +74,14 @@ int main(unsigned int argc, char** argv) {
 		printf("READY\n");
 
 		struct chunk_builder global_build; //contains our source
-		unsigned long ip = 0;
+		uint64_t ip = 0;
 		init_chunk_builder(&global_build);
 		chunk_write(&global_build, MACHINE_NEW_FRAME);
 
 		while (1)
 		{
 			char src_buf[4096];
-			unsigned int index = 0;
+			uint32_t index = 0;
 			printf("\n");
 			while (block_check(src_buf, index) || !index)
 			{
