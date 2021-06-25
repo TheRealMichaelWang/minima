@@ -41,6 +41,17 @@ static const int insert_bucket(struct global_cache* global_cache, struct cache_b
 	return 1;
 }
 
+static struct cache_bucket* get_cache_bucket(struct global_cache* global_cache, uint64_t id, enum cache_type type) {
+	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
+	while (bucket != NULL)
+	{
+		if (bucket->id == id && bucket->type == type)
+			return bucket;
+		bucket = bucket->next;
+	}
+	return NULL;
+}
+
 const int cache_insert_label(struct global_cache* global_cache, uint64_t id, uint64_t pos) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
@@ -50,13 +61,9 @@ const int cache_insert_label(struct global_cache* global_cache, uint64_t id, uin
 }
 
 uint64_t cache_retrieve_pos(struct global_cache* global_cache, uint64_t id) {
-	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
-	while (bucket != NULL)
-	{
-		if (bucket->id == id && bucket->type == CACHE_TYPE_POS)
-			return bucket->payload.pos;
-		bucket = bucket->next;
-	}
+	struct cache_bucket* bucket = get_cache_bucket(global_cache, id, CACHE_TYPE_POS);
+	if (bucket)
+		return bucket->payload.pos;
 	return 0;
 }
 
@@ -69,14 +76,20 @@ const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id,
 }
 
 const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record) {
-	struct cache_bucket* bucket = global_cache->buckets[proto_id & MAX_SIZE];
-	while (bucket != NULL)
-	{
-		if (bucket->id == proto_id && bucket->type == CACHE_TYPE_PROTO) {
-			init_record(record, bucket->payload.prototype);
-			return 1;
-		}
-		bucket = bucket->next;
+	struct cache_bucket* bucket = get_cache_bucket(global_cache, proto_id, CACHE_TYPE_PROTO);
+	if (bucket) {
+		init_record(record, bucket->payload.prototype);
+		return 1;
+	}
+	return 0;
+}
+
+const int cache_merge_proto(struct global_cache* global_cache, uint64_t child, uint64_t parent) {
+	struct cache_bucket* child_bucket = get_cache_bucket(global_cache, child, CACHE_TYPE_PROTO);
+	struct cache_bucket* parent_bucket = get_cache_bucket(global_cache, parent, CACHE_TYPE_PROTO);
+	if (child_bucket && parent_bucket) {
+		record_inherit(child_bucket->payload.prototype, parent_bucket->payload.prototype);
+		return 1;
 	}
 	return 0;
 }
@@ -90,12 +103,8 @@ const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, 
 }
 
 struct value* cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc) {
-	struct cache_bucket* bucket = global_cache->buckets[id & MAX_SIZE];
-	while (bucket != NULL)
-	{
-		if (bucket->id == id && bucket->type == CACHE_TYPE_BUILTIN)
-			return (*bucket->payload.builtin_delegate)(argv, argc);
-		bucket = bucket->next;
-	}
+	struct cache_bucket* bucket = get_cache_bucket(global_cache, id, CACHE_TYPE_BUILTIN);
+	if (bucket)
+		return (*bucket->payload.builtin_delegate)(argv, argc);
 	return NULL;
 }

@@ -80,7 +80,7 @@ static const int print_str(struct collection* str, const int print_mode) {
 }
 
 static const int is_str(struct value* value) {
-	if (IS_COLLECTION(value))
+	if (!IS_COLLECTION(value))
 		return 0;
 	struct collection* collection = value->payload.object.ptr.collection;
 	for (uint_fast64_t i = 0; i < collection->size; i++)

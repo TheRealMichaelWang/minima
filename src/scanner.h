@@ -32,6 +32,7 @@ struct token {
 		TOK_INCLUDE,
 		TOK_GOTO,
 		TOK_EXTERN,
+		TOK_EXTEND,
 		TOK_RETURN,
 		TOK_REMARK,
 		TOK_ALLOC,

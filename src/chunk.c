@@ -110,6 +110,7 @@ static void chunk_skip_ins(struct chunk* chunk) {
 	switch (op_code)
 	{
 	case MACHINE_CALL_EXTERN:
+	case MACHINE_INHERIT_REC:
 		chunk_read_size(chunk, sizeof(uint64_t));
 	case MACHINE_LABEL:
 	case MACHINE_GOTO:

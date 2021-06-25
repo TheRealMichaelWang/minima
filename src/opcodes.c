@@ -35,10 +35,6 @@ inline static const int condition_check(struct machine* machine) {
 	return cond;
 }
 
-DECL_OPCODE_HANDLER(opcode_no_handler) {
-	return 1; //MACHINE_ERROR(ERROR_UNRECOGNIZED_OPCODE);
-}
-
 DECL_OPCODE_HANDLER(opcode_load_const) {
 	struct value* to_push = malloc(sizeof(struct value));
 	NULL_CHECK(to_push, ERROR_OUT_OF_MEMORY);
@@ -89,6 +85,7 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	struct value* result = invoke_binary_op(op, value_a, value_b);
 	FREE_EVAL(value_a, flag_a);
 	FREE_EVAL(value_b, flag_b);
+	NULL_CHECK(result, ERROR_UNEXPECTED_TYPE);
 	if (!push_eval(machine, result, 0))
 		return 0;
 	return 1;
@@ -98,6 +95,7 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	MATCH_EVALS(1);
 	enum unary_operator op = chunk_read(chunk);
 	struct value* result = invoke_unary_op(op, machine->evaluation_stack[--machine->evals]);
+	NULL_CHECK(result, ERROR_UNEXPECTED_TYPE);
 	if (result != machine->evaluation_stack[machine->evals]) {
 		FREE_EVAL(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
 		if (!push_eval(machine, result, 0))
@@ -135,14 +133,26 @@ DECL_OPCODE_HANDLER(opcode_goto_as) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	STACK_CHECK;
-
 	machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
 	machine->position_flags[machine->positions++] = 1;
-	uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(chunk_read_ulong(chunk), record_eval->payload.object.ptr.record->prototype->identifier));
-	if (!pos)
-		MACHINE_ERROR(ERROR_LABEL_UNDEFINED);
-	chunk_jump_to(chunk, pos);
-	return 1;
+
+	struct record* current_record = record_eval->payload.object.ptr.record;
+	unsigned long id = chunk_read_ulong(chunk);
+	while (record_eval != NULL)
+	{
+		uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(id, current_record->prototype->identifier));
+		if (pos) {
+			chunk_jump_to(chunk, pos);
+			return 1;
+		}
+		record_eval = record_get_property(current_record, RECORD_BASE_PROPERTY);
+		if (record_eval)
+			if(!IS_RECORD(record_eval))
+				MACHINE_ERROR(ERROR_UNEXPECTED_TYPE)
+			else
+				current_record = record_eval->payload.object.ptr.record;
+	}
+	MACHINE_ERROR(ERROR_LABEL_UNDEFINED);
 }
 
 DECL_OPCODE_HANDLER(opcode_return_goto) {
@@ -215,6 +225,7 @@ DECL_OPCODE_HANDLER(opcode_pop) {
 		MACHINE_ERROR(ERROR_INSUFFICIENT_EVALS);
 	machine->evals--;
 	FREE_EVAL(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
+	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_get_index) {
@@ -309,7 +320,7 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct record* record = record_eval->payload.object.ptr.record;
-	struct value* property_val = record_get_ref(record, property);
+	struct value* property_val = record_get_property(record, property);
 	if (!property_val)
 		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 
@@ -318,7 +329,7 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 			free_value(property_val);
 			free(property_val);
 		}
-		if (!record_set_ref(record, property, set_val))
+		if (!record_set_property(record, property, set_val))
 			MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 	}
 	else {
@@ -343,7 +354,7 @@ DECL_OPCODE_HANDLER(opcode_get_property) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct value* toreturn = NULL;
-	struct value* property_val = record_get_ref(record_eval->payload.object.ptr.record, chunk_read_ulong(chunk));
+	struct value* property_val = record_get_property(record_eval->payload.object.ptr.record, chunk_read_ulong(chunk));
 	if (!property_val)
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
@@ -418,12 +429,6 @@ DECL_OPCODE_HANDLER(opcode_build_record) {
 	NULL_CHECK(new_rec, ERROR_OUT_OF_MEMORY);
 	if (!cache_init_record(&machine->global_cache, id, new_rec))
 		MACHINE_ERROR(ERROR_RECORD_UNDEFINED);
-	for (uint_fast8_t i = 0; i < new_rec->prototype->size; i++) {
-		struct value* property = malloc(sizeof(struct value));
-		NULL_CHECK(property, ERROR_OUT_OF_MEMORY);
-		init_null_value(property);
-		new_rec->properties[i] = property;
-	}
 	struct value* rec_val = malloc(sizeof(struct value));
 	NULL_CHECK(rec_val, ERROR_OUT_OF_MEMORY);
 	struct object obj;
@@ -433,7 +438,16 @@ DECL_OPCODE_HANDLER(opcode_build_record) {
 	return 1;
 }
 
-DECL_OPCODE_HANDLER((*opcode_handler[29])) = {
+DECL_OPCODE_HANDLER(opcode_inherit_record) {
+	uint64_t child_id = chunk_read_ulong(chunk);
+	uint64_t parent_id = chunk_read_ulong(chunk);
+	
+	if (!cache_merge_proto(&machine->global_cache, child_id, parent_id))
+		MACHINE_ERROR(ERROR_RECORD_UNDEFINED);
+	return 1;
+}
+
+DECL_OPCODE_HANDLER((*opcode_handler[30])) = {
 	opcode_load_const,
 	opcode_load_var,
 
@@ -442,7 +456,7 @@ DECL_OPCODE_HANDLER((*opcode_handler[29])) = {
 	opcode_eval_bin_op,
 	opcode_eval_uni_op,
 
-	opcode_no_handler,
+	NULL,
 
 	opcode_mark,
 
@@ -466,6 +480,7 @@ DECL_OPCODE_HANDLER((*opcode_handler[29])) = {
 	opcode_build_collection,
 	opcode_build_record_proto,
 	opcode_build_record,
+	opcode_inherit_record,
 
 	opcode_get_index,
 	opcode_set_index,
@@ -473,11 +488,13 @@ DECL_OPCODE_HANDLER((*opcode_handler[29])) = {
 	opcode_set_property,
 
 	opcode_eval_builtin,
-	opcode_no_handler
+	NULL
 };
 
 const int handle_opcode(enum op_code op, struct machine* machine, struct chunk* chunk) {
-	if (op >= 28 || op < 0)
+	if (op >= MACHINE_END || op < 0)
 		MACHINE_ERROR(ERROR_UNRECOGNIZED_OPCODE);
-	return (*opcode_handler[op])(machine, chunk);
+	if(opcode_handler[op])
+		return (*opcode_handler[op])(machine, chunk);
+	return 1;
 }
