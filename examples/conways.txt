@@ -1,0 +1,103 @@
+include "random.min"
+
+rem	Instance of one game of conways game of life
+record cell_batch {
+	matrix
+	epoch
+
+	rem initializes an instance with a specified number of cells and rows
+	proc init (rows, cols) {
+		set this.epoch to 0
+		set this.matrix to alloc[rows]
+		set ri to rows
+		while dec ri {
+			set this.matrix[ri] to alloc[cols]
+			set ci to cols
+			while dec ci {
+				set this.matrix[ri][ci] to goproc randbit
+			}
+		}
+	}
+
+	rem default initializer
+	proc init {
+		goproc init as this(10, 10)
+	}
+
+	rem prints the cell_game onto the console
+	proc print {
+		set ri to extern len(this.matrix)
+		while dec ri {
+			set cols to extern len(this.matrix[ri])
+			set ci to 0
+			while ci < cols {
+				if this.matrix[ri][ci] {
+					extern print('#')
+				}
+				else {
+					extern print(' ')
+				}
+				inc ci
+			}
+			extern printl
+		}
+	}
+
+	rem calculates the amount of living neighboors of a cell
+	proc neighboors(row, col) {
+		set dx to {0 - 1, 0, 1}
+		set dy to {0 - 1, 0, 1}
+		set neighboors to 0
+
+		set dxi to 3
+		while dec dxi {
+			set crow to row + dx[dxi]
+			if crow >= 0 and crow < extern len(this.matrix) {
+				set dyi to 3
+				set cols to extern len(this.matrix[crow])
+				while dec dyi {
+					set ccol to col + dy[dyi]
+					if ccol >= 0 and ccol < cols {
+						set neighboors to neighboors + this.matrix[crow][ccol]
+					}
+				}
+			}
+		}
+		return neighboors
+	}
+
+	rem evolves the cell game by one generation, according to the rules of conways game of life
+	proc evolve {
+		set ri to extern len(this.matrix)
+		set next_gen to alloc[ri]
+		while dec ri {
+			set next_gen[ri] to alloc[extern len(this.matrix[ri])]
+		}
+
+		set ri to extern len(this.matrix)
+		while dec ri {
+			set ci to extern len(this.matrix[ri])
+			while dec ci {
+				set neighboors to goproc neighboors as this(ri, ci)
+				if this.matrix[ri][ci] {
+					if neighboors < 2 or neighboors > 3 {
+						set next_gen[ri][ci] to false
+					}
+					else {
+						set next_gen[ri][ci] to true
+					}
+				}
+				else {
+					if neighboors == 3 {
+						set next_gen[ri][ci] to true
+					}
+					else {
+						set next_gen[ri][ci] to false
+					}
+				}
+			}
+		}
+		set this.matrix to next_gen
+		inc this.epoch
+	}
+}

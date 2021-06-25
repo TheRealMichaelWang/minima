@@ -1,0 +1,144 @@
+rem Minima, written by Michael Wang 2020-21
+
+rem Purpose: 	Implements a generic, dynamically sized collection as a doubly-linked list.
+rem				Note that list does not have a fixed capacity, as additional nodes 
+rem				record can be allocated/freed on demand, depending on the requested
+rem				operation.
+
+record node {
+	next
+	prev
+	value
+
+	proc init(value, next, prev){
+		set this.value to value
+		set this.next to next
+		set this.prev to prev
+	}
+}
+
+record list {
+	head
+	tail
+	size
+
+	rem Purpose:	Constructs a new list
+	rem				The list is initally empty.
+	proc init {
+		set this.size to 0
+	}
+
+	rem Purpose:	Returns a reference to the fist element in the list.
+	rem		Returns null if the list is empty.
+	proc front {
+		if this.head == null {
+			return null
+		}
+		return ref this.head.value
+	}
+
+	rem Purpose: 	Returns a reference to the last element in the list
+	rem		Returns null if the list is empty.
+	proc back {
+		if this.tail == null {
+			return null
+		}
+		return ref this.tail.value
+	}
+
+	rem Purpose:	Constructs a new list from an array
+	rem				Calls the default initializer, then calls the push_front method on every item in the array
+	proc init(array){
+		goproc init as this
+		set i to extern len(array)
+		while dec i {
+			goproc push_front as this(array[i])
+		}
+	}
+
+	rem Purpose:	Pushes an item to the end of the list
+	proc push_back(value) {
+		set node to new node(value, null, null)
+		if this.size == 0 {
+			set this.head to node
+			set this.tail to node
+		}
+		else {
+			set node.prev to this.tail
+			set this.tail.next to node
+			set this.tail to node
+		}
+		inc this.size
+	}
+
+	rem Purpose:	Pushes an item to the front of the list
+	proc push_front(value) {
+		set node to new node(value, null, null)
+		if this.size == 0 {
+			set this.head to node
+			set this.tail to node
+		}
+		else {
+			set node.next to this.head
+			set this.head.prev to node
+			set this.head to node
+		}
+		inc this.size
+	}
+
+	rem Purpose:	Removes the back of the list and returns it's value
+	rem			Returns null if the list is empty
+	proc pop_back {
+		if this.size == 0 {
+			return null
+		}
+		elif this.size == 1 {
+			dec this.size
+			set value to this.head.value
+			set this.head to null
+			set this.tail to null
+			return value
+		}
+		dec this.size
+		set value to this.tail.value
+		set prev to this.tail.prev
+		set prev.next to null
+		set this.tail to prev
+		return value
+	}
+	
+	rem Purpose:	Removes the front of the list and returns it's value
+	rem				Returns null if the list is empty
+	proc pop_front {
+		if this.size == 0 {
+			return null
+		}
+		elif this.size == 1 {
+			dec this.size
+			set value to this.head.value
+			set this.head to null
+			set this.tail to null
+			return value
+		}
+		dec this.size
+		set value to this.head.value
+		set next to this.head.next
+		set next.prev to null
+		set this.head to next
+		return value
+	}
+
+	rem Purpose:	Converts a list to an array
+	rem				The array is a copy, however each element is a reference to it's original list element
+	proc array {
+		set array to alloc[this.size]
+		set current to this.head
+		set i to 0
+		while current {
+			set array[i] to ref current.value
+			inc i
+			set current to ref current.next
+		}
+		return array
+	}
+}

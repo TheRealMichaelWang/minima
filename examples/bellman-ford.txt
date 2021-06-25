@@ -1,0 +1,24 @@
+include "list.min"
+
+record edge {
+	src
+	dest
+	weight
+
+	proc init(src, dest, weight) {
+		set this.src to src
+		set this.dest to dest
+		set this.weight to weight
+	}
+}
+
+record node {
+	distance
+	edges
+
+	proc init {
+		set this.distance to 0
+		set this.edges to new list
+	}
+
+	proc init (

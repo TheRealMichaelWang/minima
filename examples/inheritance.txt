@@ -1,0 +1,18 @@
+record person {
+    name
+    age
+    proc init(name, age) {
+           set this.name to name
+           set this.age to age
+    }
+}
+record student extends person {
+    gpa
+    school
+    proc init(name, age, gpa, school) {
+            goproc init as this.base(name, age)
+            set this.gpa to gpa
+            set this.school to school
+    }
+}
+set michael to new student("Michael", 15, 4, "North Hollywood")

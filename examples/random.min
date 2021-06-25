@@ -1,0 +1,15 @@
+rem Minima, written by Michael Wang 2020-21
+
+rem Purpose:	Implements basic random value generation procedures
+
+rem Purpose: 	Generates a random value between a minimum and maximum
+rem	   	Note that while the minimum is included within the output range, the maximum isn't
+proc random(min, max) {
+	set range to max - min
+	return (extern random * range) + min
+}
+
+rem Purpose:	Generates a random value that's either true/false
+proc randbit {
+	return extern random < 0.5
+}
