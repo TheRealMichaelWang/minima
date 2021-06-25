@@ -26,6 +26,19 @@ proc memset(buffer, value) {
 	}
 }
 
+rem Purpose:	Copies elements to another collection/array
+proc memcpy(dest, src, dest_offset, src_offset, length){
+	set i to length
+	while dec i {
+		set dest[i + dest_offset] to src[i + src_offset]
+	}
+}
+
+rem Purpose:	Copies elements to another collection/array
+proc memcpy(dest, src, length){
+	goproc memcpy(dest, src, 0, 0, length)
+}
+
 rem Purpose:	Reverses the order of the elements in an array
 proc reverse(buffer) {
 	set len to extern len(buffer)

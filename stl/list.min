@@ -136,8 +136,8 @@ record list {
 		set i to 0
 		while current {
 			set array[i] to ref current.value
-			inc i
 			set current to ref current.next
+			inc i
 		}
 		return array
 	}
