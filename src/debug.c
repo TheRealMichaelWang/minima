@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 #include "opcodes.h"
 #include "io.h"
 #include "debug.h"
@@ -26,7 +27,7 @@ void debug_print_scanner(struct scanner scanner) {
 }
 
 static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
-	printf("%d", chunk->pos);
+	printf("%" PRIu64, chunk->pos);
 	char op_code = chunk_read(chunk);
 
 	for (uint32_t i = 0; i < *indent; i++)
@@ -35,10 +36,10 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 	switch (op_code)
 	{
 	case MACHINE_LOAD_VAR:
-		printf("LOAD VAR, id:%d", chunk_read_ulong(chunk));
+		printf("LOAD VAR, id:%"PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_STORE_VAR:
-		printf("STORE VAR, id:%d", chunk_read_ulong(chunk));
+		printf("STORE VAR, id:%"PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_LOAD_CONST:
 		printf("LOAD CONST, const:");
@@ -61,13 +62,13 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("RETURN");
 		break;
 	case MACHINE_GOTO:
-		printf("GOTO, id:%d", chunk_read_ulong(chunk));
+		printf("GOTO, id:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_GOTO_AS:
-		printf("GOTO AS, id:%d", chunk_read_ulong(chunk));
+		printf("GOTO AS, id:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_LABEL:
-		printf("LABEL, id:%d", chunk_read_ulong(chunk));
+		printf("LABEL, id:%" PRIu64, chunk_read_ulong(chunk));
 		(*indent)++;
 		break;
 	case MACHINE_COND_SKIP:
@@ -94,18 +95,21 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("GC CLEAN");
 		break;
 	case MACHINE_BUILD_COL:
-		printf("BUILD COL, size:%d", chunk_read_ulong(chunk));
+		printf("BUILD COL, size:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_BUILD_PROTO: {
-		printf("BUILD RECORD-PROTO, id:%d", chunk_read_ulong(chunk));
+		printf("BUILD RECORD-PROTO, id:%" PRIu64, chunk_read_ulong(chunk));
 		uint64_t properties = chunk_read_ulong(chunk);
-		printf(", properties:%d", properties);
+		printf(", properties:%" PRIu64, properties);
 		while (properties--)
-			printf(", id:%d", chunk_read_ulong(chunk));
+			printf(", id:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	}
 	case MACHINE_BUILD_RECORD:
-		printf("BUILD RECORD, proto-id:%d", chunk_read_ulong(chunk));
+		printf("BUILD RECORD, proto-id:%" PRIu64, chunk_read_ulong(chunk));
+		break;
+	case MACHINE_INHERIT_REC:
+		printf("INHERIT RECORD, child:%" PRIu64 ", parent:%"PRIu64, chunk_read_ulong(chunk), chunk_read_ulong(chunk));
 		break;
 	case MACHINE_SET_INDEX:
 		printf("SET INDEX");
@@ -114,10 +118,10 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("GET INDEX");
 		break;
 	case MACHINE_GET_PROPERTY:
-		printf("GET PROPERTY, property:%d", chunk_read_ulong(chunk));
+		printf("GET PROPERTY, property:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_SET_PROPERTY:
-		printf("SET PROPERTY, property:%d", chunk_read_ulong(chunk));
+		printf("SET PROPERTY, property:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_TRACE:
 		printf("GC SET TRACE");
@@ -126,7 +130,7 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("POP EVAL");
 		break;
 	case MACHINE_CALL_EXTERN:
-		printf("CALL EXTERN, args:%d id:%d", chunk_read_ulong(chunk), chunk_read_ulong(chunk));
+		printf("CALL EXTERN, args:% " PRIu64 " id:%" PRIu64, chunk_read_ulong(chunk), chunk_read_ulong(chunk));
 		break;
 	case MACHINE_END:
 		printf("END-DUMP");

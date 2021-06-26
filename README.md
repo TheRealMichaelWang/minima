@@ -12,6 +12,8 @@ while dec i {
 }
 ```
 
+## Some Examples
+
 Fizz Buzz
 ```
 set i to 0

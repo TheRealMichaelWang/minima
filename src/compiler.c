@@ -204,8 +204,8 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 	}
 	else if (compiler->last_tok.type == TOK_NEW) {
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
-		uint64_t arguments = 1;
 		uint64_t record_id = compiler->last_tok.payload.identifier;
+		uint64_t arguments = 1;
 		if (read_ctok(compiler).type == TOK_OPEN_PAREN) {
 			while (1)
 			{
@@ -222,7 +222,7 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 		chunk_write(&compiler->chunk_builder, MACHINE_BUILD_RECORD);
 		chunk_write_ulong(&compiler->chunk_builder, record_id);
 		chunk_write(&compiler->chunk_builder, MACHINE_GOTO_AS);
-		chunk_write_ulong(&compiler->chunk_builder, combine_hash(2090370361, arguments));
+		chunk_write_ulong(&compiler->chunk_builder, combine_hash(RECORD_INIT_PROC, arguments));
 		chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	}
 	else {
@@ -429,7 +429,7 @@ static const int compile_statement(struct compiler* compiler, const uint64_t cal
 			read_ctok(compiler);
 		}
 		if (callee)
-			reverse_buffer[buffer_size++] = 2090759133;
+			reverse_buffer[buffer_size++] = RECORD_THIS;
 		chunk_write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
 		chunk_write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 		while (buffer_size--) {
@@ -444,9 +444,9 @@ static const int compile_statement(struct compiler* compiler, const uint64_t cal
 		if (!compile_body(compiler, 1, &func_returned))
 			return 0;
 		if (!func_returned) {
-			if (callee && proc_id == 2090370361) {
+			if (callee && proc_id == RECORD_INIT_PROC) {
 				chunk_write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
-				chunk_write_ulong(&compiler->chunk_builder, 2090759133);
+				chunk_write_ulong(&compiler->chunk_builder, RECORD_THIS);
 				chunk_write(&compiler->chunk_builder, MACHINE_TRACE);
 			}
 			else {
@@ -464,7 +464,13 @@ static const int compile_statement(struct compiler* compiler, const uint64_t cal
 	case TOK_RECORD: {
 		MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
 		uint64_t record_id = compiler->last_tok.payload.identifier;
-		MATCH_TOK(read_ctok(compiler), TOK_OPEN_BRACE);
+		uint64_t base_record_id = 0;
+		if (read_ctok(compiler).type == TOK_EXTEND) {
+			MATCH_TOK(read_ctok(compiler), TOK_IDENTIFIER);
+			base_record_id = compiler->last_tok.payload.identifier;
+			read_ctok(compiler);
+		}
+		MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 		uint64_t property_buffer[500];
 		uint64_t properties = 0;
 		read_ctok(compiler);
@@ -488,6 +494,11 @@ static const int compile_statement(struct compiler* compiler, const uint64_t cal
 		chunk_write_ulong(&compiler->chunk_builder, properties);
 		while (properties--)
 			chunk_write_ulong(&compiler->chunk_builder, property_buffer[properties]);
+		if (base_record_id) {
+			chunk_write(&compiler->chunk_builder, MACHINE_INHERIT_REC);
+			chunk_write_ulong(&compiler->chunk_builder, record_id);
+			chunk_write_ulong(&compiler->chunk_builder, base_record_id);
+		}
 		read_ctok(compiler);
 		break;
 	}

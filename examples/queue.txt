@@ -1,0 +1,14 @@
+include "list.min"
+record queue extends list {
+	proc enqueue(value) {
+		goproc push_back as this.base(value)
+	}
+	proc dequeue {
+		return goproc pop_front as this.base
+	}
+}
+set i to 1000
+set queue to new queue
+while dec i {
+	goproc enqueue as queue(i)
+}

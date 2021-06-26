@@ -9,7 +9,8 @@ uint64_t hash(const char* str, uint64_t len) {
 }
 
 uint64_t combine_hash(uint64_t hash_a, uint64_t hash_b) {
-    return (5381 + hash_a) << 5 + hash_b;
+    uint32_t hash = (5381 + hash_a) * 33 + hash_b;
+    return hash;
 }
 
 uint64_t value_hash(struct value value) {

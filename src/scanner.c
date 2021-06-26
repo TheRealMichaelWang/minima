@@ -144,6 +144,9 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		case 4231324027: //exterm
 			tok.type = TOK_EXTERN;
 			break;
+		case 2194734848: //extend
+			tok.type = TOK_EXTEND;
+			break;
 		case 193486360: //and
 			tok.type = TOK_BINARY_OP;
 			tok.payload.bin_op = OPERATOR_AND;
