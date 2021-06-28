@@ -19,7 +19,7 @@ enum op_precedence {
 	PREC_COMP,
 	PREC_ADD,
 	PREC_MULTIPLY,
-	PREC_EXP
+	PREC_EXP,
 };
 
 enum op_precedence op_precedence[14] = {
@@ -163,7 +163,7 @@ const static int compile_value(struct compiler* compiler, const int expr_optimiz
 			init_chunk_builder(&temp_builder);
 			og_builder = compiler->chunk_builder;
 			compiler->chunk_builder = temp_builder;
-			if (!compile_expression(compiler, PREC_BEGIN, 1))
+			if (!compile_value(compiler, 0))
 				return 0;
 			temp_builder = compiler->chunk_builder;
 			compiler->chunk_builder = og_builder;
