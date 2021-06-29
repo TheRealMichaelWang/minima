@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include "object.h"
-#include "io.h"
-#include "garbage.h"
+#include "include/io.h"
+#include "include/runtime/object/object.h"
+#include "include/runtime/garbage.h"
 
 #define MAX_GARBAGE 10000
 #define MAX_VALUES 300000

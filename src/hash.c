@@ -1,5 +1,5 @@
-#include "object.h"
-#include "hash.h"
+#include "include/runtime/object/object.h"
+#include "include/hash.h"
 
 uint64_t hash(const char* str, uint64_t len) {
     uint32_t hash = 5381; //DO NOT CHANGE THE HASH SIZE, otherwise pre-computed hashes WILL NOT WORK

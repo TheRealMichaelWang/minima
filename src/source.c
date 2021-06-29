@@ -6,11 +6,11 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "debug.h"
-#include "hash.h"
-#include "opcodes.h"
-#include "compiler.h"
-#include "machine.h"
+#include "include/debug.h"
+#include "include/hash.h"
+#include "include/compiler/compiler.h"
+#include "include/runtime/opcodes.h"
+#include "include/runtime/machine.h"
 
 static struct machine machine;
 

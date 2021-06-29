@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "hash.h"
-#include "error.h"
-#include "scanner.h"
+#include "include/hash.h"
+#include "include/error.h"
+#include "include/compiler/scanner.h"
 
 static const char read_char(struct scanner* scanner) {
 	if (scanner->pos == scanner->size)

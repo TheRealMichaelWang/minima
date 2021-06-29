@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
-#include "machine.h"
-#include "operators.h"
-#include "error.h"
-#include "hash.h"
-#include "opcodes.h"
+#include "include/error.h"
+#include "include/hash.h"
+#include "include/runtime/machine.h"
+#include "include/runtime/operators.h"
+#include "include/runtime/opcodes.h"
 
 #define NULL_CHECK(PTR, ERROR) if(PTR == NULL) { machine->last_err = ERROR; return 0; }
 #define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }

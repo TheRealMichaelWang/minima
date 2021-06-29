@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <inttypes.h>
-#include "opcodes.h"
-#include "io.h"
-#include "debug.h"
+#include "include/runtime/opcodes.h"
+#include "include/io.h"
+#include "include/debug.h"
 
 void debug_print_scanner(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)

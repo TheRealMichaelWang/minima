@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "object.h"
+#include "include/runtime/object/object.h"
 
 void init_object_col(struct object* object, struct collection* collection) {
 	object->type = OBJ_TYPE_COL;

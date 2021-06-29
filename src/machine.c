@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
-#include "error.h"
-#include "builtins.h"
-#include "opcodes.h"
-#include "machine.h"
+#include "include/error.h"
+#include "include/runtime/builtins/builtins.h"
+#include "include/runtime/opcodes.h"
+#include "include/runtime/machine.h"
 
 const int init_machine(struct machine* machine) {
 	ERROR_ALLOC_CHECK(machine->position_stack = malloc(MACHINE_MAX_POSITIONS * sizeof(uint64_t)));

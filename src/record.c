@@ -1,7 +1,6 @@
 #include <stdlib.h>
-#include "error.h"
-#include "value.h"
-#include "record.h"
+#include "include/error.h"
+#include "include/runtime/value.h"
 
 #define MAX_SIZE 255
 

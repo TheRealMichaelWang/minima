@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include "error.h"
-#include "globals.h"
+#include "include/error.h"
+#include "include/runtime/globals.h"
 
 #define MAX_SIZE 255
 

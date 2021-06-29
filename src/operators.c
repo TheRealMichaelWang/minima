@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <math.h>
-#include "value.h"
-#include "error.h"
-#include "operators.h"
+#include "include/error.h"
+#include "include/runtime/operators.h"
+#include "include/runtime/value.h"
 
 #define DECL_BINARY_OPERATOR(METHOD_NAME) static struct value* METHOD_NAME(struct value* a, struct value* b)
 #define DECL_UNARY_OPERATOR(METHOD_NAME) static struct value* METHOD_NAME(struct value* a)

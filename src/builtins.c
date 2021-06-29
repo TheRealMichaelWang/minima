@@ -1,11 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "object.h"
-#include "collection.h"
-#include "io.h"
-#include "hash.h"
-#include "error.h"
-#include "builtins.h"
+#include "include/io.h"
+#include "include/hash.h"
+#include "include/error.h"
+#include "include/runtime/object/object.h"
+#include "include/runtime/builtins/builtins.h"
 
 DECL_BUILT_IN(builtin_print) {
 	for (uint64_t i = 0; i < argc; i++) {

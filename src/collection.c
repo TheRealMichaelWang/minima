@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include "error.h"
-#include "value.h"
-#include "collection.h"
+#include "include/error.h"
+#include "include/runtime/value.h"
+#include "include/runtime/object/collection.h"
 
 const int init_collection(struct collection* collection, uint64_t size) {
 	collection->inner_collection = malloc(size * sizeof(struct value*));

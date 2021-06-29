@@ -3,10 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "collection.h"
-#include "record.h"
-#include "error.h"
-#include "io.h"
+#include "include/error.h"
+#include "include/io.h"
 
 static const char* error_names[] = {
 	"Program Success",

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "value.h"
+#include "include/runtime/value.h"
 
 void init_null_value(struct value* value) {
 	value->gc_flag = GARBAGE_UNINIT;
