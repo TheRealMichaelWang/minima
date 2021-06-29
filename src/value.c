@@ -33,9 +33,9 @@ const int copy_value(struct value* dest, struct value* src) {
 	return dest->type != VALUE_TYPE_OBJ;
 }
 
-const double compare_value(struct value* a, struct value* b) {
+const double compare_value(const struct value* a, const struct value* b) {
 	if (a->type != b->type)
-		return a->type - b->type;
+		return (double)a->type - (double)b->type;
 
 	switch (a->type)
 	{
@@ -43,7 +43,7 @@ const double compare_value(struct value* a, struct value* b) {
 		return a->payload.numerical - b->payload.numerical;
 	}
 	case VALUE_TYPE_CHAR:
-		return a->payload.character - b->payload.character;
+		return (double)a->payload.character - (double)b->payload.character;
 	case VALUE_TYPE_OBJ: {
 		return !object_compare(a, b);
 	}

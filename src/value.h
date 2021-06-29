@@ -31,13 +31,17 @@ struct value {
 	} type;
 };
 
+static const struct value const_value_null = { GARBAGE_UNINIT, 0, VALUE_TYPE_NULL };
+static const struct value const_value_true = { GARBAGE_UNINIT, 1, VALUE_TYPE_NUM };
+static const struct value const_value_false = { GARBAGE_UNINIT, 0, VALUE_TYPE_NUM };
+
 void init_null_value(struct value* value);
 void init_num_value(struct value* value, const double d);
 void init_char_value(struct value* value, const char c);
 void init_obj_value(struct value* value, struct object obj);
 
 const int copy_value(struct value* dest, struct value* src);
-const double compare_value(struct value* a, struct value* b);
+const double compare_value(const struct value* a, const struct value* b);
 
 void free_value(struct value* value);
 

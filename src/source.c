@@ -56,17 +56,22 @@ int main(uint32_t argc, char** argv) {
 			error_info(compiler.last_err);
 			printf("\n\n");
 			debug_print_scanner(compiler.scanner);
-			printf("\n");
-			exit(EXIT_FAILURE);
+		}
+		else {
+			struct chunk source_chunk = build_chunk(&compiler.chunk_builder);
+			enum error err = machine_execute(&machine, &source_chunk);
+			if (err) {
+				printf("\n***Runtime Error***\n");
+				error_info(err);
+				printf("\n\nDUMP: \n");
+				debug_print_dump(source_chunk, 1);
+			}
 		}
 		free(source);
-		struct chunk source_chunk = build_chunk(&compiler.chunk_builder);
-		enum error err = machine_execute(&machine, &source_chunk);
-		if (err) {
-			printf("\n***Runtime Error***\n");
-			error_info(err);
-			printf("\n\nDUMP: \n");
-			debug_print_dump(source_chunk, 1);
+
+		if (argc > 2 && !strcmp(argv[2], "--debug")) {
+			printf("\nPress ENTER to exit.");
+			getchar();
 		}
 	}
 	else {

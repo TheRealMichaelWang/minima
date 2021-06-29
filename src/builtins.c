@@ -13,7 +13,7 @@ DECL_BUILT_IN(builtin_print) {
 	}
 	struct value* nullvalue = malloc(sizeof(struct value));
 	ERROR_ALLOC_CHECK(nullvalue);
-	init_null_value(nullvalue);
+	*nullvalue = const_value_null;
 	return nullvalue;
 }
 
@@ -37,7 +37,7 @@ DECL_BUILT_IN(builtin_system_cmd) {
 	free(buffer);
 	struct value* nullvalue = malloc(sizeof(struct value));
 	ERROR_ALLOC_CHECK(nullvalue);
-	init_null_value(nullvalue);
+	*nullvalue = const_value_null;
 	return nullvalue;
 }
 
