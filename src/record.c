@@ -57,11 +57,6 @@ const int init_record(struct record* record, struct record_prototype* prototype)
 }
 
 void free_record(struct record* record) {
-	for (uint_fast8_t i = 0; i < record->prototype->size; i++)
-		if (record->properties[i]->gc_flag == GARBAGE_UNINIT) {
-			free_value(record->properties[i]);
-			free(record->properties[i]);
-		}
 	free(record->properties);
 }
 

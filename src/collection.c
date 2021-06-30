@@ -11,11 +11,6 @@ const int init_collection(struct collection* collection, uint64_t size) {
 }
 
 void free_collection(struct collection* collection) {
-	for (uint64_t i = 0; i < collection->size; i++)
-		if (collection->inner_collection[i]->gc_flag == GARBAGE_UNINIT) {
-			free_value(collection->inner_collection[i]);
-			free(collection->inner_collection[i]);
-		}
 	free(collection->inner_collection);
 }
 

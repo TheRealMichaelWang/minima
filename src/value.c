@@ -53,5 +53,5 @@ const double compare_value(const struct value* a, const struct value* b) {
 
 void free_value(struct value* value) {
 	if (value->type == VALUE_TYPE_OBJ)
-		free_object(&value->payload.object);
+		free_object(&value->payload.object, value->gc_flag);
 }

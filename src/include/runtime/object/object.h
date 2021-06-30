@@ -24,7 +24,7 @@ struct object {
 
 void init_object_col(struct object* object, struct collection* collection);
 void init_object_rec(struct object* object, struct record* record);
-void free_object(struct object* object);
+void free_object(struct object* object, enum garbage_flag gc_flag);
 
 const int object_compare(struct object* a, struct object* b);
 const struct value** object_get_children(struct object* object, uint64_t* size);

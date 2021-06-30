@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "include/runtime/value.h"
 #include "include/runtime/object/object.h"
 
 void init_object_col(struct object* object, struct collection* collection) {
@@ -12,7 +13,20 @@ void init_object_rec(struct object* object, struct record* record) {
 	object->ptr.record = record;
 }
 
-void free_object(struct object* object) {
+void free_uninit(struct object* object) {
+	uint32_t size;
+	struct value** children = object_get_children(object, &size);
+
+	for(uint_fast32_t i = 0; i < size; i++)
+		if (children[i]->type == GARBAGE_UNINIT) {
+			free_value(children[i]);
+			free(children[i]);
+		}
+}
+
+void free_object(struct object* object, enum garbage_flag gc_flag) {
+	if (gc_flag == GARBAGE_UNINIT)
+		free_uninit(object);
 	switch (object->type)
 	{
 	case OBJ_TYPE_COL:
