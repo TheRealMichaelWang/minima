@@ -1,10 +1,16 @@
 # Minima
-Minima is a small, portable, and dynamic object-oriented programming language written in C.
+Minima is an object-oriented, imperative scripting language focused on being practical and pragmatic. Minima aims to be simple, easy to write, yet powerful enough to create readable, performant and concise code for any problem. You can read Minima's documentation [here.](https://github.com/TheRealMichaelWang/minima/wiki)
 
-## The Syntax
-Minima's syntax is optimized for a fast byte-code translation at the expense of program verbosity. However, it's easy to parse and compile. You can read Minima's documentation [here.](https://github.com/TheRealMichaelWang/minima/wiki)
+Among many things, it's...
+* **Small** - The compiler and virutal-machine clock slightly under 5000 lines of code. 
+* **Portable** - Minima compiles byte-code and runs it on a virtual-machine. It's the same way Java does it.
+* **Powerful** - Minima is designed for quick-and-messy object-oriented programming on the fly. 
+* **Embedable** - It's very easy to imbed it into your C/C++ project.
+* **Easy To Learn** - You could probably read the documentation, and learn the language, in under half-an-hour.
 
-Countdown
+## Some Examples
+
+### Count Down 
 ```
 set i to 10
 while dec i {
@@ -12,9 +18,7 @@ while dec i {
 }
 ```
 
-## Some Examples
-
-Fizz Buzz
+### Fizz Buzz
 ```
 set i to 0
 while inc i <= 99 {
@@ -34,7 +38,7 @@ while inc i <= 99 {
 }
 ```
 
-Fibonacci
+### Fibonacci
 ```
 proc fib(n) {
 	if n <= 1 {
@@ -45,7 +49,7 @@ proc fib(n) {
 extern print(goproc fib(25))
 ```
 
-Factorial
+### Factorial
 ```
 proc fact(n) {
 	if n {
