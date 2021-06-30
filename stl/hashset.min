@@ -1,0 +1,69 @@
+rem Minima, written by Michael Wang 2020-21
+
+rem Purpose: Implements a basic hash-set
+
+include "list.min"
+
+record hash_set {
+	keys
+
+	proc init(capacity) {
+		set this.keys to alloc[capacity]
+	}
+
+	proc init {
+		goproc init as this(100)
+	}
+
+	proc rehash(new_capacity) {
+		set old_cap to extern len(this.keys)
+
+		set i to old_cap
+		set found_keys to new list
+		while dec i {
+			if this.keys[i] != null {
+				goproc push_back as found_keys(this.keys[i])
+			}
+		}
+
+		set this.keys to alloc[new_capacity]
+		while found_keys.size {
+			goproc insert_key as this(goproc pop_front as found_keys)
+		}
+	}
+
+	proc insert_key(key) {
+		set cap to extern len(this.keys)
+		set i to key % cap
+
+		while i < cap {
+			if this.keys[i] == null {
+				set this.keys[i] to key
+				return null
+			}
+			inc i
+		}
+
+		goproc rehash as this(2 * cap)
+		goproc insert_key as this(key)
+	}
+
+	proc insert(object) {
+		goproc insert_key as this(extern hash(object))
+	}
+
+	proc find(object) {
+		set hash to extern hash(object)
+		set cap to extern len(this.keys)
+		set i to hash % cap
+
+		while i < cap {
+			if this.keys[i] == hash {
+				return true
+			}
+			inc i
+		}
+		return false
+	}
+}
+
