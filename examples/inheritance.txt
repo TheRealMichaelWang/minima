@@ -39,3 +39,6 @@ record student extends person {  rem this is the derived-class
 }
 
 set tim to new student("Tim", 15, 9, 4.0)
+
+external printl(goproc can_drink as tim) rem Returns false - Tim is a person, so we can call can_drink
+external printl(goproc is_smart as tim) rem Returns true
