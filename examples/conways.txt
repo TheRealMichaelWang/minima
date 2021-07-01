@@ -101,3 +101,14 @@ record cell_batch {
 		inc this.epoch
 	}
 }
+
+set cells to new cell_batch
+set i to 1000
+
+while dec i {
+  goproc evolve as cells
+}
+
+goproc print as cells
+
+while true {}
