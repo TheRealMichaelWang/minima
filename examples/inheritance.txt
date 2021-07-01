@@ -38,4 +38,4 @@ record student extends person {  rem this is the derived-class
   }
 }
 
-set michael to new student("Tim", 15, 9, 4.0)
+set tim to new student("Tim", 15, 9, 4.0)
