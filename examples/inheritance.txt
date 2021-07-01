@@ -1,18 +1,35 @@
 record person {
-    name
-    age
-    proc init(name, age) {
-           set this.name to name
-           set this.age to age
-    }
+	name
+	age
+
+	proc init(name, age) {
+		set this.name to name
+		set this.age to age
+	}
+
+	proc print {
+		extern printl("Name: ",this.name)
+		extern printl("Age: ", this.age)
+	}
 }
+
 record student extends person {
-    gpa
-    school
-    proc init(name, age, gpa, school) {
-            goproc init as this.base(name, age)
-            set this.gpa to gpa
-            set this.school to school
-    }
+	grade
+	gpa
+
+	proc init(name, age, grade, gpa) {
+		goproc init as this.base(name, age)
+		set this.grade to grade
+		set this.gpa to gpa
+	}
+
+	proc print {
+		goproc print as this.base
+		extern printl("Grade: ", this.grade)
+		extern printl("GPA: ", this.gpa)
+	}
 }
-set michael to new student("Michael", 15, 4, "North Hollywood")
+
+set michael to new student("Michael", 15, 9, 4.0)
+
+goproc print as michael
