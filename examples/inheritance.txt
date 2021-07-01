@@ -1,35 +1,41 @@
-record person {
-	name
-	age
+record person {  rem this is the base-class
+  name
+  age
 
-	proc init(name, age) {
-		set this.name to name
-		set this.age to age
-	}
+  proc init(name, age) {
+    set this.name to name
+    set this.age to age
+  }
 
-	proc print {
-		extern printl("Name: ",this.name)
-		extern printl("Age: ", this.age)
-	}
+  proc can_drink {
+    return this.age > 21
+  }
+
+  proc print {
+    extern printl("Name: ", this.name)
+    extern printl("Age: ", this.age)
+  }
 }
 
-record student extends person {
-	grade
-	gpa
+record student extends person {  rem this is the derived-class
+  grade
+  gpa
 
-	proc init(name, age, grade, gpa) {
-		goproc init as this.base(name, age)
-		set this.grade to grade
-		set this.gpa to gpa
-	}
+  proc init(name, age, grade, gpa) {
+    goproc init as this.base(name, age)
+    set this.grade to grade
+    set this.gpa to gpa
+  }
 
-	proc print {
-		goproc print as this.base
-		extern printl("Grade: ", this.grade)
-		extern printl("GPA: ", this.gpa)
-	}
+  proc is_smart {
+    return this.gpa >= 4.0
+  }
+
+  proc print {
+    goproc print as this.base
+    extern printl("Grade: ", this.grade)
+    extern printl("GPA: ", this.gpa)
+  }
 }
 
-set michael to new student("Michael", 15, 9, 4.0)
-
-goproc print as michael
+set michael to new student("Tim", 15, 9, 4.0)
