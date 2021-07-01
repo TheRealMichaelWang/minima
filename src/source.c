@@ -82,6 +82,7 @@ int main(uint32_t argc, char** argv) {
 
 		struct chunk_builder global_build; //contains our source
 		uint64_t ip = 0;
+		uint32_t imported_files = 0;
 		init_chunk_builder(&global_build);
 		chunk_write(&global_build, MACHINE_NEW_FRAME);
 
@@ -112,6 +113,7 @@ int main(uint32_t argc, char** argv) {
 			}
 			else {
 				init_compiler(&compiler, src_buf);
+				compiler.imported_files = imported_files;
 
 				if (!compile(&compiler, 1)) {
 					printf("\n***Syntax Error***\n");
@@ -123,6 +125,7 @@ int main(uint32_t argc, char** argv) {
 				else {
 					struct chunk new_chunk = build_chunk(&compiler.chunk_builder);
 					chunk_write_chunk(&global_build, new_chunk, 1);
+					imported_files = compiler.imported_files;
 
 					struct chunk global_chunk = build_chunk(&global_build);
 					chunk_jump_to(&global_chunk, ip);

@@ -490,6 +490,7 @@ DECL_STATMENT_COMPILER(compile_include) {
 	char* file_path = malloc(150);
 	NULL_CHECK(file_path);
 	scanner_read_str(&compiler->scanner, file_path, 0);
+	compiler_read_tok(compiler);
 
 	FILE* infile = fopen(file_path, "rb");
 	if (!infile) {
@@ -514,6 +515,10 @@ DECL_STATMENT_COMPILER(compile_include) {
 
 	struct compiler temp_compiler;
 	init_compiler(&temp_compiler, source);
+	
+	temp_compiler.imported_files = compiler->imported_files;
+	for (uint_fast8_t i = 0; i < compiler->imported_files; i++)
+		temp_compiler.imported_file_hashes[i] = compiler->imported_file_hashes[i];
 
 	if (!compile(&temp_compiler, 0)) {
 		compiler->last_err = temp_compiler.last_err;
@@ -522,7 +527,6 @@ DECL_STATMENT_COMPILER(compile_include) {
 	}
 	struct chunk compiled_chunk = build_chunk(&temp_compiler.chunk_builder);
 	chunk_write_chunk(&compiler->chunk_builder, compiled_chunk, 1);
-	compiler_read_tok(compiler);
 
 	free(source);
 	free(file_path);
