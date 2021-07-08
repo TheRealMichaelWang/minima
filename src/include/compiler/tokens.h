@@ -4,7 +4,7 @@
 #include "../runtime/operators.h"
 #include "../runtime/value.h"
 
-#define IS_VALUE_TOK(TOK) (TOK.type < 12 && TOK.type >= 0)
+#define IS_VALUE_TOK(TOK) (TOK.type < 12)
 #define IS_STATMENT_TOK(TOK) (TOK.type - 9 < 10)
 
 struct token {

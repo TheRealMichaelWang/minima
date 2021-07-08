@@ -22,7 +22,7 @@ void free_var_context(struct var_context* var_context);
 
 const struct value* retrieve_var(struct var_context* var_context, const uint64_t id);
 
-int emplace_var(struct var_context* var_context,const uint64_t id, const struct value* value);
+const int emplace_var(struct var_context* var_context,const uint64_t id, const struct value* value);
 
 
 #endif // !VARIABLE_H

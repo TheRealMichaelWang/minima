@@ -5,6 +5,6 @@
 
 #include "runtime/value.h"
 
-void print_value(struct value* value, const int print_mode);
+void print_value(struct value value, const int print_mode);
 
 #endif // !IO_H

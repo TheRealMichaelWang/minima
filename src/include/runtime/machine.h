@@ -18,14 +18,15 @@ struct machine {
 	uint64_t* position_stack;
 	char* position_flags;
 
+	struct value* constant_stack;
 	struct value** evaluation_stack;
-	char* eval_flags;
 
 	struct var_context* var_stack;
 
 	uint64_t positions;
-	uint64_t evals;
 	uint64_t call_size;
+	uint16_t evals;
+	uint16_t constants;
 
 	char std_flag;
 	enum error last_err;
@@ -38,6 +39,10 @@ const int init_machine(struct machine* machine);
 void free_machine(struct machine* machine);
 
 void machine_reset(struct machine* machine);
+
+const struct value* pop_eval(struct machine* machine);
+const struct value* push_eval(struct machine* machine, struct value* value);
+const int condition_check(struct machine* machine);
 
 const int machine_execute(struct machine* machine, struct chunk* chunk);
 

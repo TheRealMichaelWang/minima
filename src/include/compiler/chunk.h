@@ -41,8 +41,8 @@ inline const uint64_t chunk_read_ulong(struct chunk* chunk) {
 	return *(uint64_t*)chunk_read_size(chunk, sizeof(uint64_t));
 }
 
-inline const struct value* chunk_read_value(struct chunk* chunk) {
-	return chunk_read_size(chunk, sizeof(struct value));
+inline const struct value chunk_read_value(struct chunk* chunk) {
+	return *(struct value*)chunk_read_size(chunk, sizeof(struct value));
 }
 
 void chunk_jump_to(struct chunk* chunk, const uint64_t pos);

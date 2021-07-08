@@ -29,7 +29,7 @@ void free_record_prototype(struct record_prototype* prototype);
 const int record_append_property(struct record_prototype* prototype, uint64_t property);
 const int record_inherit(struct record_prototype* child, struct record_prototype* parent);
 
-const int init_record(struct record* record, struct record_prototype* prototype);
+const int init_record(struct record* record, struct record_prototype* prototype, struct machine* machine);
 void free_record(struct record* record);
 
 struct value* record_get_property(struct record* record, const uint64_t property);

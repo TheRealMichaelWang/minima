@@ -7,102 +7,66 @@
 #include "include/runtime/opcodes.h"
 
 #define NULL_CHECK(PTR, ERROR) if(PTR == NULL) { machine->last_err = ERROR; return 0; }
-#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
-
+#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 #define MATCH_EVALS(MIN_EVALS) if(machine->evals < MIN_EVALS) { machine->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
-#define FREE_EVAL(EVAL, FLAGS) if(!FLAGS) { free_value(EVAL); free(EVAL); }
 
+#define PUSH_EVAL(VALUE_PTR) if(!push_eval(machine, VALUE_PTR)) { return 0; }
 #define MACHINE_ERROR(ERROR) {machine->last_err = ERROR; return 0;}
-
 #define DECL_OPCODE_HANDLER(METHOD_NAME) static const int METHOD_NAME(struct machine* machine, struct chunk* chunk)
 
-inline static const int push_eval(struct machine* machine, struct value* value, char flags) {
-	STACK_CHECK;
-	machine->evaluation_stack[machine->evals] = value;
-	machine->eval_flags[machine->evals++] = flags;
-	if (!flags)
-		value->gc_flag = GARBAGE_UNINIT;
-	return 1;
-}
-
-inline static const int condition_check(struct machine* machine) {
-	MATCH_EVALS(1);
-	struct value* valptr = machine->evaluation_stack[--machine->evals];
-	int cond = 1;
-	if (valptr->type == VALUE_TYPE_NULL || (valptr->type == VALUE_TYPE_NUM && valptr->payload.numerical == 0))
-		cond = 0;
-	FREE_EVAL(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
-	return cond;
-}
-
 DECL_OPCODE_HANDLER(opcode_load_const) {
-	struct value* to_push = malloc(sizeof(struct value));
-	NULL_CHECK(to_push, ERROR_OUT_OF_MEMORY);
-	copy_value(to_push, chunk_read_size(chunk, sizeof(struct value)));
-	if (!push_eval(machine, to_push, 0))
-		MACHINE_ERROR(ERROR_STACK_OVERFLOW);
+	struct value constant = chunk_read_value(chunk);
+	PUSH_EVAL(&constant);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_load_var) {
 	struct value* var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], chunk_read_ulong(chunk));
 	NULL_CHECK(var_ptr, ERROR_VARIABLE_UNDEFINED);
-	if (!push_eval(machine, var_ptr, 1))
-		MACHINE_ERROR(ERROR_STACK_OVERFLOW);
+
+	PUSH_EVAL(var_ptr);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_store_var) {
 	MATCH_EVALS(1);
 	uint64_t id = chunk_read_ulong(chunk);
-	struct value* setptr = machine->evaluation_stack[--machine->evals];
-	if (machine->eval_flags[machine->evals])
-		emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr);
-	else {
-		struct value* varptr = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
-		if (varptr == NULL) {
-			gc_register_value(&machine->garbage_collector, setptr, 0);
-			emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr);
-		}
-		else {
-			free_value(varptr);
-			memcpy(varptr, setptr, sizeof(struct value));
-			free(setptr);
-			gc_register_value(&machine->garbage_collector, varptr, 1);
-		}
-	}
+
+	struct value* setptr = pop_eval(machine);
+	if (setptr->gc_flag == GARBAGE_UNINIT)
+		setptr = gc_register_value(&machine->garbage_collector, *setptr);
+	
+	if (!emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr))
+		MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	MATCH_EVALS(2);
 
-	struct value* value_b = machine->evaluation_stack[--machine->evals];
-	char flag_b = machine->eval_flags[machine->evals];
-	struct value* value_a = machine->evaluation_stack[--machine->evals];
-	char flag_a = machine->eval_flags[machine->evals];
+	struct value* value_b = pop_eval(machine);
+	struct value* value_a = pop_eval(machine);
+
 	enum binary_operator op = chunk_read(chunk);
-	struct value* result = invoke_binary_op(op, value_a, value_b);
-	FREE_EVAL(value_a, flag_a);
-	FREE_EVAL(value_b, flag_b);
-	NULL_CHECK(result, ERROR_UNEXPECTED_TYPE);
-	if (!push_eval(machine, result, 0))
-		return 0;
+	struct value result = invoke_binary_op(op, value_a, value_b);
+	
+	PUSH_EVAL(&result);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	MATCH_EVALS(1);
+
+	struct value* operand = pop_eval(machine);
 	enum unary_operator op = chunk_read(chunk);
-	struct value* result = invoke_unary_op(op, machine->evaluation_stack[--machine->evals]);
-	NULL_CHECK(result, ERROR_UNEXPECTED_TYPE);
-	if (result != machine->evaluation_stack[machine->evals]) {
-		FREE_EVAL(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
-		if (!push_eval(machine, result, 0))
-			return 0;
+
+	if (op != OPERATOR_COPY && operand->type != VALUE_TYPE_OBJ) {
+		struct value result = invoke_unary_op(op, operand);
+		PUSH_EVAL(&result);
 	}
 	else
-		push_eval(machine, result, machine->eval_flags[machine->evals]);
+		PUSH_EVAL(operand);
+
 	return 1;
 }
 
@@ -127,9 +91,8 @@ DECL_OPCODE_HANDLER(opcode_goto_as) {
 	MATCH_EVALS(1);
 
 	struct value* record_eval = machine->evaluation_stack[machine->evals - 1];
-	char record_flag = machine->eval_flags[machine->evals - 1];
 
-	if (!IS_RECORD(record_eval))
+	if (!IS_RECORD(*record_eval))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	STACK_CHECK;
@@ -147,7 +110,7 @@ DECL_OPCODE_HANDLER(opcode_goto_as) {
 		}
 		record_eval = record_get_property(current_record, RECORD_BASE_PROPERTY);
 		if (record_eval)
-			if(!IS_RECORD(record_eval))
+			if(!IS_RECORD(*record_eval))
 				MACHINE_ERROR(ERROR_UNEXPECTED_TYPE)
 			else
 				current_record = record_eval->payload.object.ptr.record;
@@ -215,28 +178,24 @@ DECL_OPCODE_HANDLER(opcode_clean) {
 }
 
 DECL_OPCODE_HANDLER(opcode_trace) {
-	if (machine->eval_flags[machine->evals - 1])
+	if (machine->evaluation_stack[machine->evals - 1]->gc_flag != GARBAGE_UNINIT)
 		gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1]);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_pop) {
-	if (!machine->evals)
-		MACHINE_ERROR(ERROR_INSUFFICIENT_EVALS);
-	machine->evals--;
-	FREE_EVAL(machine->evaluation_stack[machine->evals], machine->eval_flags[machine->evals]);
+	STACK_CHECK;
+	pop_eval(machine);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_get_index) {
 	MATCH_EVALS(2);
 
-	struct value* index_val = machine->evaluation_stack[--machine->evals];
-	char index_flag = machine->eval_flags[machine->evals];
-	struct value* collection_val = machine->evaluation_stack[--machine->evals];
-	char collection_flag = machine->eval_flags[machine->evals];
+	struct value* index_val = pop_eval(machine);
+	struct value* collection_val = pop_eval(machine);
 
-	if (index_val->type != VALUE_TYPE_NUM || !IS_COLLECTION(collection_val))
+	if (index_val->type != VALUE_TYPE_NUM || !IS_COLLECTION(*collection_val))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct collection* collection = collection_val->payload.object.ptr.collection;
@@ -245,22 +204,7 @@ DECL_OPCODE_HANDLER(opcode_get_index) {
 	if (index >= collection->size)
 		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
 
-	struct value* toreturn = NULL;
-
-	if (collection->inner_collection[index]->gc_flag == GARBAGE_UNINIT) {
-		toreturn = malloc(sizeof(struct value));
-		if (!copy_value(toreturn, collection->inner_collection[index]))
-			return 0;
-		machine->eval_flags[machine->evals] = 0;
-	}
-	else {
-		toreturn = collection->inner_collection[index];
-		machine->eval_flags[machine->evals] = 1;
-	}
-	machine->evaluation_stack[machine->evals++] = toreturn;
-
-	FREE_EVAL(index_val, index_flag);
-	FREE_EVAL(collection_val, collection_flag);
+	PUSH_EVAL(collection->inner_collection[index]);
 
 	return 1;
 }
@@ -268,12 +212,9 @@ DECL_OPCODE_HANDLER(opcode_get_index) {
 DECL_OPCODE_HANDLER(opcode_set_index) {
 	MATCH_EVALS(3);
 
-	struct value* set_val = machine->evaluation_stack[--machine->evals];
-	char set_flag = machine->eval_flags[machine->evals];
-	struct value* index_val = machine->evaluation_stack[--machine->evals];
-	char index_flag = machine->eval_flags[machine->evals];
-	struct value* collection_val = machine->evaluation_stack[--machine->evals];
-	char collection_flag = machine->eval_flags[machine->evals];
+	struct value* set_val = pop_eval(machine);
+	struct value* index_val = pop_eval(machine);
+	struct value* collection_val = pop_eval(machine);
 
 	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != OBJ_TYPE_COL)
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
@@ -284,25 +225,27 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 	if (index >= collection->size)
 		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
 
-	if (set_flag) {
-		if (collection->inner_collection[index]->gc_flag == GARBAGE_UNINIT) {
-			free_value(collection->inner_collection[index]);
-			free(collection->inner_collection[index]);
-		}
-		collection->inner_collection[index] = set_val;
-	}
-	else {
-		struct value* item_ptr = collection->inner_collection[index];
-		free_value(item_ptr);
-		memcpy(item_ptr, set_val, sizeof(struct value));
-		free(set_val);
-		if (collection_flag)
-			gc_register_value(&machine->garbage_collector, item_ptr, 1);
-	}
+	if (collection_val->gc_flag != GARBAGE_UNINIT && set_val->gc_flag == GARBAGE_UNINIT)
+		set_val = gc_register_value(&machine->garbage_collector, *set_val);
 
-	FREE_EVAL(collection_val, collection_flag);
-	FREE_EVAL(index_val, index_flag);
+	collection->inner_collection[index] = set_val;
 
+	return 1;
+}
+
+DECL_OPCODE_HANDLER(opcode_get_property) {
+	MATCH_EVALS(1);
+
+	struct value* record_eval = pop_eval(machine);
+
+	if (!IS_RECORD(*record_eval))
+		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
+
+	struct value* property_val = record_get_property(record_eval->payload.object.ptr.record, chunk_read_ulong(chunk));
+	if (!property_val)
+		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
+
+	PUSH_EVAL(property_val);
 	return 1;
 }
 
@@ -311,66 +254,19 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 
 	uint64_t property = chunk_read_ulong(chunk);
 
-	struct value* set_val = machine->evaluation_stack[--machine->evals];
-	char set_flag = machine->eval_flags[machine->evals];
-	struct value* record_eval = machine->evaluation_stack[--machine->evals];
-	char record_flag = machine->eval_flags[machine->evals];
+	struct value* set_val = pop_eval(machine);
+	struct value* record_eval = pop_eval(machine);
 
-	if (!IS_RECORD(record_eval))
+	if (!IS_RECORD(*record_eval))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
-
 	struct record* record = record_eval->payload.object.ptr.record;
-	struct value* property_val = record_get_property(record, property);
-	if (!property_val)
+	
+	if (record_eval->gc_flag != GARBAGE_UNINIT && set_val->gc_flag == GARBAGE_UNINIT)
+		set_val = gc_register_value(&machine->garbage_collector, *set_val);
+
+	if (!record_set_property(record, property, set_val))
 		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 
-	if (set_flag) {
-		if (property_val->gc_flag == GARBAGE_UNINIT) {
-			free_value(property_val);
-			free(property_val);
-		}
-		if (!record_set_property(record, property, set_val))
-			MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
-	}
-	else {
-		free_value(property_val);
-		memcpy(property_val, set_val, sizeof(struct value));
-		free(set_val);
-		if (record_flag)
-			gc_register_value(&machine->garbage_collector, property_val, 1);
-	}
-
-	FREE_EVAL(record_eval, record_flag);
-	return 1;
-}
-
-DECL_OPCODE_HANDLER(opcode_get_property) {
-	MATCH_EVALS(1);
-
-	struct value* record_eval = machine->evaluation_stack[--machine->evals];
-	char record_flag = machine->eval_flags[machine->evals];
-
-	if (!IS_RECORD(record_eval))
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
-
-	struct value* toreturn = NULL;
-	struct value* property_val = record_get_property(record_eval->payload.object.ptr.record, chunk_read_ulong(chunk));
-	if (!property_val)
-		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
-
-	if (property_val->gc_flag == GARBAGE_UNINIT) {
-		toreturn = malloc(sizeof(struct value));
-		if (!copy_value(toreturn, property_val))
-			return 0;
-		machine->eval_flags[machine->evals] = 0;
-	}
-	else {
-		toreturn = property_val;
-		machine->eval_flags[machine->evals] = 1;
-	}
-	machine->evaluation_stack[machine->evals++] = toreturn;
-
-	FREE_EVAL(record_eval, record_flag);
 	return 1;
 }
 
@@ -382,10 +278,11 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 
 	struct value* result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments);
 	NULL_CHECK(result, ERROR_LABEL_UNDEFINED);
-	for (uint_fast64_t i = machine->evals - arguments; i < machine->evals; i++)
-		FREE_EVAL(machine->evaluation_stack[i], machine->eval_flags[i]);
-	machine->evals -= arguments;
-	return push_eval(machine, result, 0);
+
+	while (arguments--)
+		pop_eval(machine);
+	
+	return push_eval(machine, result);
 }
 
 DECL_OPCODE_HANDLER(opcode_build_collection) {
@@ -397,7 +294,7 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	NULL_CHECK(init_collection(collection, req_size), ERROR_OUT_OF_MEMORY);
 
 	while (req_size--)
-		collection->inner_collection[req_size] = machine->evaluation_stack[--machine->evals];
+		collection->inner_collection[req_size] = pop_eval(machine);
 
 	struct value* new_val = malloc(sizeof(struct value));
 	NULL_CHECK(new_val, ERROR_OUT_OF_MEMORY);
@@ -406,7 +303,7 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	init_object_col(&obj, collection);
 	init_obj_value(new_val, obj);
 
-	return push_eval(machine, new_val, 0);
+	return push_eval(machine, new_val);
 }
 
 DECL_OPCODE_HANDLER(opcode_build_record_proto) {
@@ -425,16 +322,20 @@ DECL_OPCODE_HANDLER(opcode_build_record_proto) {
 
 DECL_OPCODE_HANDLER(opcode_build_record) {
 	uint64_t id = chunk_read_ulong(chunk);
+
 	struct record* new_rec = malloc(sizeof(struct record));
 	NULL_CHECK(new_rec, ERROR_OUT_OF_MEMORY);
-	if (!cache_init_record(&machine->global_cache, id, new_rec))
+	
+	if (!cache_init_record(&machine->global_cache, id, new_rec, machine))
 		MACHINE_ERROR(ERROR_RECORD_UNDEFINED);
-	struct value* rec_val = malloc(sizeof(struct value));
-	NULL_CHECK(rec_val, ERROR_OUT_OF_MEMORY);
+	
+	struct value rec_val;
 	struct object obj;
+
 	init_object_rec(&obj, new_rec);
-	init_obj_value(rec_val, obj);
-	push_eval(machine, rec_val, 0);
+	init_obj_value(&rec_val, obj);
+	
+	PUSH_EVAL(&rec_val);
 	return 1;
 }
 

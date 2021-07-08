@@ -6,9 +6,26 @@
 #include "include/runtime/object/object.h"
 #include "include/runtime/builtins/builtins.h"
 
+static char* get_str(struct value* value) {
+	ERROR_ALLOC_CHECK(value);
+
+	if (!IS_COLLECTION(*value))
+		return NULL;
+
+	struct collection* collection = value->payload.object.ptr.collection;
+	char* buffer = malloc((collection->size + 1) * sizeof(char));
+	ERROR_ALLOC_CHECK(buffer);
+	for (uint64_t i = 0; i < collection->size; i++) {
+		buffer[i] = collection->inner_collection[i]->payload.character;
+	}
+	buffer[collection->size] = 0;
+
+	return buffer;
+}
+
 DECL_BUILT_IN(builtin_print) {
 	for (uint64_t i = 0; i < argc; i++) {
-		print_value(argv[i], 1);
+		print_value(*argv[i], 1);
 	}
 	struct value* nullvalue = malloc(sizeof(struct value));
 	ERROR_ALLOC_CHECK(nullvalue);
@@ -23,17 +40,16 @@ DECL_BUILT_IN(builtin_print_line) {
 }
 
 DECL_BUILT_IN(builtin_system_cmd) {
-	if (argc < 1 || !IS_COLLECTION(argv[0]))
+	if (argc < 1)
 		return NULL;
-	struct collection* collection = argv[0]->payload.object.ptr.collection;
-	char* buffer = malloc((collection->size + 1)* sizeof(char));
+
+	char* buffer = get_str(argv[0]);
 	ERROR_ALLOC_CHECK(buffer);
-	for (uint64_t i = 0; i < collection->size; i++) {
-		buffer[i] = collection->inner_collection[i]->payload.character;
-	}
-	buffer[collection->size] = 0;
+
 	system(buffer);
+
 	free(buffer);
+
 	struct value* nullvalue = malloc(sizeof(struct value));
 	ERROR_ALLOC_CHECK(nullvalue);
 	*nullvalue = const_value_null;
@@ -83,7 +99,7 @@ DECL_BUILT_IN(builtin_get_input) {
 }
 
 DECL_BUILT_IN(builtin_get_length) {
-	if (argc < 1 || !IS_COLLECTION(argv[0]))
+	if (argc < 1 || !IS_COLLECTION(*argv[0]))
 		return NULL;
 	struct value* toret = malloc(sizeof(struct value));
 	ERROR_ALLOC_CHECK(toret);
@@ -98,4 +114,29 @@ DECL_BUILT_IN(builtin_get_hash) {
 	ERROR_ALLOC_CHECK(toret);
 	init_num_value(toret, value_hash(*argv[0]));
 	return toret;
+}
+
+DECL_BUILT_IN(builtin_to_num) {
+	if (argc < 1)
+		return NULL;
+
+	char* buffer = get_str(argv[0]);
+	ERROR_ALLOC_CHECK(buffer);
+
+	struct value* toret = malloc(sizeof(struct value));
+	ERROR_ALLOC_CHECK(toret);
+
+	init_num_value(toret, strtod(buffer, NULL));
+	return toret;
+}
+
+DECL_BUILT_IN(builtin_to_str) {
+	if (argc < 1)
+		return NULL;
+
+	if (argv[0]->type != VALUE_TYPE_NUM)
+		return NULL;
+	double num = argv[0]->payload.numerical;
+
+
 }

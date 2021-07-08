@@ -57,7 +57,7 @@ static enum op_precedence op_precedence[14] = {
 	PREC_EXP
 };
 
-struct value* invoke_binary_op(enum binary_operator operator, struct value* a, struct value* b);
-struct value* invoke_unary_op(enum unary_operator operator, struct value* a);
+struct value invoke_binary_op(enum binary_operator operator, struct value* a, struct value* b);
+struct value invoke_unary_op(enum unary_operator operator, struct value* a);
 
 #endif // !OPERATORS

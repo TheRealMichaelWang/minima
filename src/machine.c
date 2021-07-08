@@ -5,14 +5,18 @@
 #include "include/runtime/opcodes.h"
 #include "include/runtime/machine.h"
 
+#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
+#define MATCH_EVALS(MIN_EVALS) if(machine->evals < MIN_EVALS) { machine->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
+
 const int init_machine(struct machine* machine) {
 	ERROR_ALLOC_CHECK(machine->position_stack = malloc(MACHINE_MAX_POSITIONS * sizeof(uint64_t)));
 	ERROR_ALLOC_CHECK(machine->position_flags = malloc(MACHINE_MAX_POSITIONS * sizeof(char)));
-	ERROR_ALLOC_CHECK(machine->evaluation_stack = malloc(MACHINE_MAX_EVALS * sizeof(struct value)));
-	ERROR_ALLOC_CHECK(machine->eval_flags = malloc(MACHINE_MAX_EVALS * sizeof(char)));
 	ERROR_ALLOC_CHECK(machine->var_stack = malloc(MACHINE_MAX_CALLS * sizeof(struct var_context)));
+	ERROR_ALLOC_CHECK(machine->evaluation_stack = malloc(MACHINE_MAX_EVALS * sizeof(struct value*)));
+	ERROR_ALLOC_CHECK(machine->constant_stack = malloc(MACHINE_MAX_EVALS * sizeof(struct value)));
 
 	machine->evals = 0;
+	machine->constants = 0;
 	machine->positions = 0;
 	machine->std_flag = 0;
 	machine->call_size = 0;
@@ -31,13 +35,8 @@ const int init_machine(struct machine* machine) {
 }
 
 void machine_reset(struct machine* machine) {
-	while (machine->evals) {
-		if (!machine->eval_flags[machine->evals - 1]) {
-			free_value(machine->evaluation_stack[machine->evals - 1]);
-			free(machine->evaluation_stack[machine->evals - 1]);
-		}
-		machine->evals--;
-	}
+	machine->evals = 0;
+	machine->constants = 0;
 	while (machine->call_size > 1)
 		free_var_context(&machine->var_stack[--machine->call_size]);
 }
@@ -49,12 +48,47 @@ void free_machine(struct machine* machine) {
 	
 	free(machine->position_stack);
 	free(machine->position_flags);
-	free(machine->evaluation_stack);
-	free(machine->eval_flags);
 	free(machine->var_stack);
+	free(machine->evaluation_stack);
+	free(machine->constant_stack);
 
 	free_gcollect(&machine->garbage_collector);
 	free_global_cache(&machine->global_cache);
+}
+
+const struct value* pop_eval(struct machine* machine) {
+	if (!machine->evals)
+		return NULL;
+
+	struct value* top = machine->evaluation_stack[--machine->evals];
+
+	if (top->gc_flag == GARBAGE_UNINIT)
+		machine->constants--;
+	return top;
+}
+
+const struct value* push_eval(struct machine* machine, struct value* value)
+{
+	STACK_CHECK;
+
+	if (value->gc_flag == GARBAGE_UNINIT) {
+		machine->constant_stack[machine->constants] = *value;
+		value = &machine->constant_stack[machine->constants++];
+	}
+
+	machine->evaluation_stack[machine->evals++] = value;
+	return value;
+}
+
+const int condition_check(struct machine* machine) {
+	MATCH_EVALS(1);
+
+	struct value* valptr = pop_eval(machine);
+	int cond = 1;
+	if (valptr->type == VALUE_TYPE_NULL || (valptr->type == VALUE_TYPE_NUM && valptr->payload.numerical == 0))
+		cond = 0;
+
+	return cond;
 }
 
 const enum error machine_execute(struct machine* machine, struct chunk* chunk) {

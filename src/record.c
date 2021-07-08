@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include "include/error.h"
 #include "include/runtime/value.h"
+#include "include/runtime/machine.h"
+#include "include/runtime/object/record.h"
 
 #define MAX_SIZE 255
 
@@ -35,23 +37,23 @@ const int record_inherit(struct record_prototype* child, struct record_prototype
 	return 1;  
 }
 
-const int init_record(struct record* record, struct record_prototype* prototype) {
+const int init_record(struct record* record, struct record_prototype* prototype, struct machine* machine) {
 	record->prototype = prototype;
 	ERROR_ALLOC_CHECK(record->properties = malloc(prototype->size * sizeof(struct value*)));
 	for (uint_fast8_t i = 0; i < prototype->size; i++) {
-		struct value* property = malloc(sizeof(struct value));
-		ERROR_ALLOC_CHECK(property);
+		struct value property;
+
 		if (prototype->base_prototype && i == retrieve_property_index(prototype, RECORD_BASE_PROPERTY) - 1) {
 			struct record* record = malloc(sizeof(struct record));
 			ERROR_ALLOC_CHECK(record);
-			init_record(record, prototype->base_prototype);
+			init_record(record, prototype->base_prototype, machine);
 			struct object object;
 			init_object_rec(&object, record);
-			init_obj_value(property, object);
+			init_obj_value(&property, object);
 		}
 		else 
-			init_null_value(property);
-		record->properties[i] = property;
+			init_null_value(&property);
+		record->properties[i] = push_eval(machine, &property);
 	}
 	return 1;
 }
@@ -66,7 +68,7 @@ struct value* record_get_property(struct record* record, const uint64_t property
 		return record->properties[i - 1];
 	else if (record->prototype->base_prototype) {
 		struct value* record_val = record_get_property(record, RECORD_BASE_PROPERTY);
-		if (record_val && IS_RECORD(record_val)) {
+		if (record_val && IS_RECORD(*record_val)) {
 			return record_get_property(record_val->payload.object.ptr.record, property);
 		}
 	}
@@ -81,7 +83,7 @@ const int record_set_property(struct record* record, const uint64_t property, st
 	}
 	else if (record->prototype->base_prototype) {
 		struct value* record_val = record_get_property(record, RECORD_BASE_PROPERTY);
-		if (record_val && IS_RECORD(record_val)) {
+		if (record_val && IS_RECORD(*record_val)) {
 			return record_set_property(record_val, property, value);
 		}
 	}

@@ -13,18 +13,6 @@ void init_chunk(struct chunk* chunk, char* code, const uint64_t size) {
 }
 
 void free_chunk(struct chunk* chunk) {
-	chunk->pos = 0;
-	chunk_read(chunk);
-	while (chunk->last_code != MACHINE_END)
-	{
-		char op_code = chunk->last_code;
-		if (op_code == MACHINE_LOAD_CONST) {
- 			free_value(chunk_read_value(chunk));
-			chunk_read(chunk);
-		}
-		else
-			chunk_skip_ins(chunk);
-	}
 	free(chunk->code);
 }
 
@@ -85,9 +73,7 @@ const void* chunk_read_size(struct chunk* chunk, const uint64_t size) {
 const int chunk_write_value(struct chunk_builder* chunk_builder, struct value value) {
 	if (value.type == VALUE_TYPE_OBJ)
 		return 0;
-	struct value copy;
-	copy_value(&copy, &value);
-	chunk_write_size(chunk_builder, &copy, sizeof(struct value));
+	chunk_write_size(chunk_builder, &value, sizeof(struct value));
 	return 1;
 }
 

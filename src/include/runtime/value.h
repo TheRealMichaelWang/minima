@@ -5,8 +5,8 @@
 
 #include "object/object.h"
 
-#define IS_COLLECTION(VALUE) (VALUE->type == VALUE_TYPE_OBJ && VALUE->payload.object.type == OBJ_TYPE_COL)
-#define IS_RECORD(VALUE) (VALUE->type == VALUE_TYPE_OBJ && VALUE->payload.object.type == OBJ_TYPE_REC)
+#define IS_COLLECTION(VALUE) ((VALUE).type == VALUE_TYPE_OBJ && (VALUE).payload.object.type == OBJ_TYPE_COL)
+#define IS_RECORD(VALUE) ((VALUE).type == VALUE_TYPE_OBJ && (VALUE).payload.object.type == OBJ_TYPE_REC)
 
 struct value {
 	enum garbage_flag {
@@ -40,7 +40,6 @@ void init_num_value(struct value* value, const double d);
 void init_char_value(struct value* value, const char c);
 void init_obj_value(struct value* value, struct object obj);
 
-const int copy_value(struct value* dest, struct value* src);
 const double compare_value(const struct value* a, const struct value* b);
 
 void free_value(struct value* value);

@@ -75,10 +75,10 @@ const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id,
 	return insert_bucket(global_cache, to_insert);
 }
 
-const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record) {
+const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record, struct machine* machine) {
 	struct cache_bucket* bucket = get_cache_bucket(global_cache, proto_id, CACHE_TYPE_PROTO);
 	if (bucket) {
-		init_record(record, bucket->payload.prototype);
+		init_record(record, bucket->payload.prototype, machine);
 		return 1;
 	}
 	return 0;

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "include/error.h"
 #include "include/runtime/variable.h"
 
 #define MAX_SIZE 63
@@ -34,7 +35,7 @@ const struct value* retrieve_var(struct var_context* var_context, const uint64_t
 	return NULL;
 }
 
-int emplace_var(struct var_context* var_context, const uint64_t id, const struct value* value) {
+const int emplace_var(struct var_context* var_context, const uint64_t id, const struct value* value) {
 	struct var_bucket** current_bucket = &var_context->buckets[id & MAX_SIZE];
 	while (*current_bucket != NULL)
 	{
@@ -44,8 +45,7 @@ int emplace_var(struct var_context* var_context, const uint64_t id, const struct
 	}
 	if (*current_bucket == NULL) {
 		*current_bucket = malloc(sizeof(struct var_bucket));
-		if (*current_bucket == NULL)
-			return 0;
+		ERROR_ALLOC_CHECK(*current_bucket);
 		(*current_bucket)->id_hash = id;
 		(*current_bucket)->next = NULL;
 	}
