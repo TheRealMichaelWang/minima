@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "include/runtime/opcodes.h"
 #include "include/compiler/chunk.h"
 #include "include/compiler/compiler.h"

@@ -9,9 +9,9 @@
 #define MAX_TRACE 25000
 
 void init_gcollect(struct garbage_collector* garbage_collector) {
-	garbage_collector->frame_stack = malloc(MAX_GARBAGE * sizeof(struct garbage_frame));
-	garbage_collector->value_stack = malloc(MAX_VALUES * sizeof(struct value*));
-	garbage_collector->trace_stack = malloc(MAX_TRACE * sizeof(struct value*));
+	ERROR_ALLOC_CHECK(garbage_collector->frame_stack = malloc(MAX_GARBAGE * sizeof(struct garbage_frame)));
+	ERROR_ALLOC_CHECK(garbage_collector->value_stack = malloc(MAX_VALUES * sizeof(struct value*)));
+	ERROR_ALLOC_CHECK(garbage_collector->trace_stack = malloc(MAX_TRACE * sizeof(struct value*)));
 	garbage_collector->frames = 0;
 }
 
@@ -33,11 +33,23 @@ static void init_gframe(struct garbage_frame* garbage_frame, struct value** valu
 const int gc_register_trace(struct garbage_collector* garbage_collector, struct value* value) {
 	if (value->gc_flag == GARBAGE_UNINIT)
 		return 0;
-	value->gc_flag = GARBAGE_TRACE;
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	if (top->to_trace == MAX_GARBAGE)
 		return 0;
 	top->to_trace[top->trace_values++] = value;
+	return 1;
+}
+
+const int gc_register_children(struct garbage_collector* garbage_collector, struct value* head) {
+	head->gc_flag = GARBAGE_COLLECT;
+	if (head->type == VALUE_TYPE_OBJ) {
+		uint64_t size = 0;
+		const struct value** children = object_get_children(&head->payload.object, &size);
+
+		for (uint64_t i = 0; i < size; i++)
+			if (children[i]->gc_flag == GARBAGE_UNINIT)
+				ERROR_ALLOC_CHECK(children[i] = gc_register_value(garbage_collector, *children[i]));
+	}
 	return 1;
 }
 
@@ -53,14 +65,7 @@ const struct value* gc_register_value(struct garbage_collector* garbage_collecto
 	struct garbage_frame* gframe = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	gframe->to_collect[gframe->collect_values++] = alloc_apartment;
 	
-	if (alloc_apartment->type == VALUE_TYPE_OBJ) {
-		uint64_t size = 0;
-		const struct value** children = object_get_children(&alloc_apartment->payload.object,&size);
-
-		for (uint64_t i = 0; i < size; i++)
-			if (children[i]->gc_flag == GARBAGE_UNINIT)
-				children[i] = gc_register_value(garbage_collector, *children[i]);
-	}
+	gc_register_children(garbage_collector, alloc_apartment);
 	return alloc_apartment;
 }
 
@@ -95,10 +100,6 @@ static void trace_value(struct value* value, struct value** reset_stack, uint32_
 void gc_collect(struct garbage_collector* garbage_collector) {
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 
-	for (uint64_t i = 0; i < top->collect_values; i++)
-		if (top->to_collect[i]->gc_flag != GARBAGE_TRACE)
-			top->to_collect[i]->gc_flag = GARBAGE_COLLECT;
-
 	struct value** reset_stack = &top->to_collect[top->collect_values];
 	uint32_t reset_top = 0;
 	while (top->trace_values--)
@@ -112,6 +113,7 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 		else if (top->to_collect[i]->gc_flag == GARBAGE_KEEP) {
 			struct garbage_frame* prev = &garbage_collector->frame_stack[garbage_collector->frames - 2];
 			prev->to_collect[prev->collect_values++] = top->to_collect[i];
+			top->to_collect[i]->gc_flag = GARBAGE_COLLECT;
 		}
 	}
 

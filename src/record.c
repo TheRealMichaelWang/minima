@@ -41,7 +41,7 @@ const int init_record(struct record* record, struct record_prototype* prototype,
 	record->prototype = prototype;
 	ERROR_ALLOC_CHECK(record->properties = malloc(prototype->size * sizeof(struct value*)));
 	for (uint_fast8_t i = 0; i < prototype->size; i++) {
-		struct value property;
+		struct value property = const_value_null;
 
 		if (prototype->base_prototype && i == retrieve_property_index(prototype, RECORD_BASE_PROPERTY) - 1) {
 			struct record* record = malloc(sizeof(struct record));
@@ -51,9 +51,7 @@ const int init_record(struct record* record, struct record_prototype* prototype,
 			init_object_rec(&object, record);
 			init_obj_value(&property, object);
 		}
-		else 
-			init_null_value(&property);
-		record->properties[i] = push_eval(machine, &property);
+		record->properties[i] = push_eval(machine, &property, 0);
 	}
 	return 1;
 }

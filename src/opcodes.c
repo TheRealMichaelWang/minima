@@ -6,11 +6,12 @@
 #include "include/runtime/operators.h"
 #include "include/runtime/opcodes.h"
 
-#define NULL_CHECK(PTR, ERROR) if(PTR == NULL) { machine->last_err = ERROR; return 0; }
+#define NULL_CHECK(PTR, ERROR) if((PTR) == NULL) { machine->last_err = ERROR; return 0; }
 #define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 #define MATCH_EVALS(MIN_EVALS) if(machine->evals < MIN_EVALS) { machine->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
 
-#define PUSH_EVAL(VALUE_PTR) if(!push_eval(machine, VALUE_PTR)) { return 0; }
+#define PUSH_EVAL(VALUE_PTR) if(!push_eval(machine, VALUE_PTR, 1)) { return 0; }
+
 #define MACHINE_ERROR(ERROR) {machine->last_err = ERROR; return 0;}
 #define DECL_OPCODE_HANDLER(METHOD_NAME) static const int METHOD_NAME(struct machine* machine, struct chunk* chunk)
 
@@ -22,6 +23,7 @@ DECL_OPCODE_HANDLER(opcode_load_const) {
 
 DECL_OPCODE_HANDLER(opcode_load_var) {
 	struct value* var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], chunk_read_ulong(chunk));
+
 	NULL_CHECK(var_ptr, ERROR_VARIABLE_UNDEFINED);
 
 	PUSH_EVAL(var_ptr);
@@ -32,12 +34,21 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 	MATCH_EVALS(1);
 	uint64_t id = chunk_read_ulong(chunk);
 
-	struct value* setptr = pop_eval(machine);
-	if (setptr->gc_flag == GARBAGE_UNINIT)
-		setptr = gc_register_value(&machine->garbage_collector, *setptr);
-	
-	if (!emplace_var(&machine->var_stack[machine->call_size - 1], id, setptr))
+	struct value* src = pop_eval(machine);
+	NULL_CHECK(src, ERROR_INSUFFICIENT_EVALS);
+
+	if (src->gc_flag == GARBAGE_UNINIT) {
+		struct value* dest = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
+		if (dest) {
+			*dest = *src;
+			NULL_CHECK(gc_register_children(&machine->garbage_collector, dest), ERROR_OUT_OF_MEMORY);
+		}
+		else if (!emplace_var(&machine->var_stack[machine->call_size - 1], id, gc_register_value(&machine->garbage_collector, *src)))
+			MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
+	}
+	else if (!emplace_var(&machine->var_stack[machine->call_size - 1], id, src))
 		MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
+
 	return 1;
 }
 
@@ -45,7 +56,9 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	MATCH_EVALS(2);
 
 	struct value* value_b = pop_eval(machine);
+	NULL_CHECK(value_b, ERROR_INSUFFICIENT_EVALS);
 	struct value* value_a = pop_eval(machine);
+	NULL_CHECK(value_a, ERROR_INSUFFICIENT_EVALS);
 
 	enum binary_operator op = chunk_read(chunk);
 	struct value result = invoke_binary_op(op, value_a, value_b);
@@ -58,11 +71,12 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	MATCH_EVALS(1);
 
 	struct value* operand = pop_eval(machine);
+	NULL_CHECK(operand, ERROR_INSUFFICIENT_EVALS);
 	enum unary_operator op = chunk_read(chunk);
 
-	if (op != OPERATOR_COPY && operand->type != VALUE_TYPE_OBJ) {
-		struct value result = invoke_unary_op(op, operand);
-		PUSH_EVAL(&result);
+	if (!(op == OPERATOR_COPY && operand->type == VALUE_TYPE_OBJ)) {
+		struct value result = invoke_unary_op(op, operand, machine);
+		push_eval(machine, &result, 0);
 	}
 	else
 		PUSH_EVAL(operand);
@@ -185,7 +199,7 @@ DECL_OPCODE_HANDLER(opcode_trace) {
 
 DECL_OPCODE_HANDLER(opcode_pop) {
 	STACK_CHECK;
-	pop_eval(machine);
+	NULL_CHECK(pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 	return 1;
 }
 
@@ -193,7 +207,9 @@ DECL_OPCODE_HANDLER(opcode_get_index) {
 	MATCH_EVALS(2);
 
 	struct value* index_val = pop_eval(machine);
+	NULL_CHECK(index_val, ERROR_INSUFFICIENT_EVALS);
 	struct value* collection_val = pop_eval(machine);
+	NULL_CHECK(collection_val, ERROR_INSUFFICIENT_EVALS);
 
 	if (index_val->type != VALUE_TYPE_NUM || !IS_COLLECTION(*collection_val))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
@@ -213,8 +229,11 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 	MATCH_EVALS(3);
 
 	struct value* set_val = pop_eval(machine);
+	NULL_CHECK(set_val, ERROR_INSUFFICIENT_EVALS);
 	struct value* index_val = pop_eval(machine);
+	NULL_CHECK(index_val, ERROR_INSUFFICIENT_EVALS);
 	struct value* collection_val = pop_eval(machine);
+	NULL_CHECK(collection_val, ERROR_INSUFFICIENT_EVALS);
 
 	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != OBJ_TYPE_COL)
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
@@ -225,10 +244,16 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 	if (index >= collection->size)
 		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
 
-	if (collection_val->gc_flag != GARBAGE_UNINIT && set_val->gc_flag == GARBAGE_UNINIT)
-		set_val = gc_register_value(&machine->garbage_collector, *set_val);
-
-	collection->inner_collection[index] = set_val;
+	if (set_val->gc_flag == GARBAGE_UNINIT) {
+		if(collection->inner_collection[index] == GARBAGE_UNINIT)
+			collection->inner_collection[index] = set_val;
+		else {
+			*collection->inner_collection[index] = *set_val;
+			NULL_CHECK(gc_register_children(&machine->garbage_collector, collection->inner_collection[index]), ERROR_OUT_OF_MEMORY);
+		}
+	}
+	else
+		collection->inner_collection[index] = set_val;
 
 	return 1;
 }
@@ -237,13 +262,14 @@ DECL_OPCODE_HANDLER(opcode_get_property) {
 	MATCH_EVALS(1);
 
 	struct value* record_eval = pop_eval(machine);
+	NULL_CHECK(record_eval, ERROR_INSUFFICIENT_EVALS);
 
 	if (!IS_RECORD(*record_eval))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
 	struct value* property_val = record_get_property(record_eval->payload.object.ptr.record, chunk_read_ulong(chunk));
-	if (!property_val)
-		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
+
+	NULL_CHECK(property_val, ERROR_PROPERTY_UNDEFINED);
 
 	PUSH_EVAL(property_val);
 	return 1;
@@ -255,16 +281,27 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 	uint64_t property = chunk_read_ulong(chunk);
 
 	struct value* set_val = pop_eval(machine);
+	NULL_CHECK(set_val, ERROR_INSUFFICIENT_EVALS);
 	struct value* record_eval = pop_eval(machine);
+	NULL_CHECK(record_eval, ERROR_INSUFFICIENT_EVALS);
 
 	if (!IS_RECORD(*record_eval))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 	struct record* record = record_eval->payload.object.ptr.record;
 	
-	if (record_eval->gc_flag != GARBAGE_UNINIT && set_val->gc_flag == GARBAGE_UNINIT)
-		set_val = gc_register_value(&machine->garbage_collector, *set_val);
-
-	if (!record_set_property(record, property, set_val))
+	if (set_val->gc_flag == GARBAGE_UNINIT) {
+		struct value* property_val = record_get_property(record, property);
+		
+		if (property_val->gc_flag == GARBAGE_UNINIT) {
+			if (!record_set_property(record, property, set_val))
+				MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
+		}
+		else {
+			*property_val = *set_val;
+			NULL_CHECK(gc_register_children(&machine->garbage_collector, property_val), ERROR_OUT_OF_MEMORY);
+		}
+	}
+	else if (!record_set_property(record, property, set_val))
 		MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 
 	return 1;
@@ -280,9 +317,9 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 	NULL_CHECK(result, ERROR_LABEL_UNDEFINED);
 
 	while (arguments--)
-		pop_eval(machine);
+		NULL_CHECK(pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 	
-	return push_eval(machine, result);
+	return push_eval(machine, result, 0);
 }
 
 DECL_OPCODE_HANDLER(opcode_build_collection) {
@@ -294,7 +331,7 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	NULL_CHECK(init_collection(collection, req_size), ERROR_OUT_OF_MEMORY);
 
 	while (req_size--)
-		collection->inner_collection[req_size] = pop_eval(machine);
+		NULL_CHECK(collection->inner_collection[req_size] = pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 
 	struct value* new_val = malloc(sizeof(struct value));
 	NULL_CHECK(new_val, ERROR_OUT_OF_MEMORY);
@@ -303,7 +340,7 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	init_object_col(&obj, collection);
 	init_obj_value(new_val, obj);
 
-	return push_eval(machine, new_val);
+	return push_eval(machine, new_val, 1);
 }
 
 DECL_OPCODE_HANDLER(opcode_build_record_proto) {
@@ -335,7 +372,7 @@ DECL_OPCODE_HANDLER(opcode_build_record) {
 	init_object_rec(&obj, new_rec);
 	init_obj_value(&rec_val, obj);
 	
-	PUSH_EVAL(&rec_val);
+	push_eval(machine, &rec_val, 0);
 	return 1;
 }
 

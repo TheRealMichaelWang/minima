@@ -24,9 +24,10 @@ void init_gcollect(struct garbage_collector* garbage_collector);
 void free_gcollect(struct garbage_collector* garbage_collector);
 
 const int gc_register_trace(struct garbage_collector* garbage_collector, struct value* value);
+const int gc_register_children(struct garbage_collector* garbage_collector, struct value* head);
 const struct value* gc_register_value(struct garbage_collector* garbage_collector, struct value value);
-void gc_new_frame(struct garbage_collector* garbage_collector);
 
+void gc_new_frame(struct garbage_collector* garbage_collector);
 void gc_collect(struct garbage_collector* garbage_collector);
 
 #endif // !GARBAGE_H

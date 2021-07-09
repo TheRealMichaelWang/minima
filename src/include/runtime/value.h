@@ -12,7 +12,7 @@ struct value {
 	enum garbage_flag {
 		GARBAGE_UNINIT,
 		GARBAGE_COLLECT,
-		GARBAGE_TRACE,
+		//GARBAGE_TRACE,
 		GARBAGE_KEEP
 	}gc_flag;
 

@@ -2,10 +2,11 @@
 #include <math.h>
 #include "include/error.h"
 #include "include/runtime/value.h"
+#include "include/runtime/machine.h"
 #include "include/runtime/operators.h"
 
 #define DECL_BINARY_OPERATOR(METHOD_NAME) static struct value METHOD_NAME(struct value* a, struct value* b)
-#define DECL_UNARY_OPERATOR(METHOD_NAME) static struct value METHOD_NAME(struct value* a)
+#define DECL_UNARY_OPERATOR(METHOD_NAME) static struct value METHOD_NAME(struct value* a, struct machine* machine)
 
 //#define MATCH_OP_TYPE(OPERAND, VALUE_TYPE) if(OPERAND->type != VALUE_TYPE) { return 0; } 
 
@@ -128,7 +129,9 @@ DECL_BINARY_OPERATOR(op_power) {
 }
 
 DECL_UNARY_OPERATOR(op_copy) {
-	return *a;
+	struct value copy = *a;
+	copy.gc_flag = GARBAGE_UNINIT;
+	return copy;
 }
 
 DECL_UNARY_OPERATOR(op_invert) {
@@ -151,19 +154,16 @@ DECL_UNARY_OPERATOR(op_alloc) {
 	struct value c;
 
 	uint64_t i = a->payload.numerical;
-	if (i > 1000000) {
-		init_null_value(&c);
-		return c;
-	}
+	if (i > 1000000)
+		return const_value_null;
 	
 	struct collection* collection = malloc(sizeof(struct collection));
 	//ERROR_ALLOC_CHECK(collection);
 
 	init_collection(collection, i);
-	while (i--)
-	{
-		collection->inner_collection[i] = malloc(sizeof(struct value));
-		init_null_value(collection->inner_collection[i]);
+	while (i--) {
+		struct value elem = const_value_null;
+		collection->inner_collection[i] = push_eval(machine, &elem, 0);
 	}
 	struct object obj;
 	init_object_col(&obj, collection);
@@ -217,6 +217,6 @@ struct value invoke_binary_op(enum binary_operator operator, struct value* a, st
 	return (*binary_operators[operator])(a, b);
 }
 
-struct value invoke_unary_op(enum unary_operator operator, struct value* a) {
-	return (*unary_operators[operator])(a);
+struct value invoke_unary_op(enum unary_operator operator, struct value* a, struct machine* machine) {
+	return (*unary_operators[operator])(a, machine);
 }
