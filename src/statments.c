@@ -182,7 +182,7 @@ DECL_VALUE_COMPILER(compile_goto) {
 			chunk_write(&compiler->chunk_builder, MACHINE_GOTO);
 			chunk_write_ulong(&compiler->chunk_builder, format_label(proc_id, 0, arguments));
 		}
-		chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
+		//chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	}
 	else {
 		chunk_write(&compiler->chunk_builder, MACHINE_CALL_EXTERN);
@@ -214,7 +214,7 @@ DECL_VALUE_COMPILER(compile_new_record) {
 	chunk_write_ulong(&compiler->chunk_builder, record_id);
 	chunk_write(&compiler->chunk_builder, MACHINE_GOTO_AS);
 	chunk_write_ulong(&compiler->chunk_builder, combine_hash(RECORD_INIT_PROC, arguments));
-	chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
+	//chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	return 1;
 }
 
@@ -375,8 +375,17 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		return 0;
 	}
 
-	MATCH_TOK(compiler_read_tok(compiler), TOK_IDENTIFIER);
-	uint64_t proc_id = compiler->last_tok.payload.identifier;
+	uint64_t proc_id;
+	compiler_read_tok(compiler);
+	if (callee && compiler->last_tok.type == TOK_BINARY_OP)
+		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, BINARY_OVERLOAD_CONST);
+	else if (callee && compiler->last_tok.type == TOK_UNARY_OP)
+		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, UNARY_OVERLOAD_CONST);
+	else {
+		MATCH_TOK(compiler->last_tok, TOK_IDENTIFIER);
+		proc_id = compiler->last_tok.payload.identifier;
+	}
+
 	chunk_write(&compiler->chunk_builder, MACHINE_LABEL);
 	uint64_t reverse_buffer[50];
 	uint32_t buffer_size = 0;
@@ -392,8 +401,12 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		MATCH_TOK(compiler->last_tok, TOK_CLOSE_PAREN);
 		compiler_read_tok(compiler);
 	}
-	if (callee)
+	if (callee) {
 		reverse_buffer[buffer_size++] = RECORD_THIS;
+		if (proc_id == 180057 && buffer_size == 1)
+			proc_id = combine_hash((uint64_t)OPERATOR_NEGATE, UNARY_OVERLOAD_CONST);
+	}
+	
 	chunk_write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
 	chunk_write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 	while (buffer_size--) {
@@ -415,6 +428,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
 		chunk_write_value(&compiler->chunk_builder, const_value_null);
 	}
+	chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	chunk_write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 	chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
 	return 1;
@@ -477,6 +491,7 @@ DECL_STATMENT_COMPILER(compile_return) {
 	}
 	else
 		chunk_write_value(&compiler->chunk_builder, const_value_null);
+	chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	chunk_write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 	return 1;
 }

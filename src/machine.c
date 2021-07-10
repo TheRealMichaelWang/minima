@@ -107,7 +107,7 @@ const struct value* push_eval(struct machine* machine, struct value* value, int 
 const int condition_check(struct machine* machine) {
 	MATCH_EVALS(1);
 
-	struct value* valptr = pop_eval(machine, 1);
+	struct value* valptr = pop_eval(machine);
 	NULL_CHECK(valptr, ERROR_INSUFFICIENT_EVALS);
 
 	int cond = 1;

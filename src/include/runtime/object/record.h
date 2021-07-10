@@ -7,8 +7,11 @@
 
 #define RECORD_BASE_PROPERTY 2090104960
 #define RECORD_INIT_PROC 2090370361
-
 #define RECORD_THIS 2090759133
+
+#define BINARY_OVERLOAD_CONST 2187
+#define UNARY_OVERLOAD_CONST 3187
+
 struct value; //forward declare value.
 
 struct record_prototype {

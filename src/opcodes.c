@@ -62,9 +62,26 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	NULL_CHECK(value_a, ERROR_INSUFFICIENT_EVALS);
 
 	enum binary_operator op = chunk_read(chunk);
-	struct value result = invoke_binary_op(op, value_a, value_b);
-	
-	PUSH_EVAL(&result);
+
+	if (IS_RECORD(*value_a) || IS_RECORD(*value_b)) {
+		struct value* record_val = IS_RECORD(*value_a) ? value_a : value_b;
+		struct value* operand = IS_RECORD(*value_a) ? value_b : value_a;
+
+		uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(combine_hash(combine_hash((uint64_t)op, BINARY_OVERLOAD_CONST), 2), record_val->payload.object.ptr.record->prototype->identifier));
+		NULL_CHECK(pos, ERROR_LABEL_UNDEFINED);
+
+		STACK_CHECK;
+		machine->position_stack[machine->positions] = chunk->pos;
+		machine->position_flags[machine->positions++] = 1;
+
+		PUSH_EVAL(operand);
+		PUSH_EVAL(record_val);
+		chunk_jump_to(chunk, pos);
+	}
+	else {
+		struct value result = invoke_binary_op(op, value_a, value_b);
+		PUSH_EVAL(&result);
+	}
 	return 1;
 }
 
@@ -76,8 +93,21 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	enum unary_operator op = chunk_read(chunk);
 
 	if (!(op == OPERATOR_COPY && operand->type == VALUE_TYPE_OBJ)) {
-		struct value result = invoke_unary_op(op, operand, machine);
-		push_eval(machine, &result, 0);
+		if (IS_RECORD(*operand)) {
+			uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(combine_hash(combine_hash((uint64_t)op, UNARY_OVERLOAD_CONST), 1), operand->payload.object.ptr.record->prototype->identifier));
+			NULL_CHECK(pos, ERROR_LABEL_UNDEFINED);
+
+			STACK_CHECK;
+			machine->position_stack[machine->positions] = chunk->pos;
+			machine->position_flags[machine->positions++] = 1;
+
+			PUSH_EVAL(operand);
+			chunk_jump_to(chunk, pos);
+		}
+		else {
+			struct value result = invoke_unary_op(op, operand, machine);
+			push_eval(machine, &result, 0);
+		}
 	}
 	else
 		PUSH_EVAL(operand);
@@ -111,12 +141,13 @@ DECL_OPCODE_HANDLER(opcode_goto_as) {
 	if (!IS_RECORD(*record_eval))
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 
-	STACK_CHECK;
-	machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
-	machine->position_flags[machine->positions++] = 1;
-
 	struct record* current_record = record_eval->payload.object.ptr.record;
 	unsigned long id = chunk_read_ulong(chunk);
+
+	STACK_CHECK;
+	machine->position_stack[machine->positions] = chunk->pos; // +sizeof(uint64_t);
+	machine->position_flags[machine->positions++] = 1;
+
 	while (record_eval != NULL)
 	{
 		uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(id, current_record->prototype->identifier));
@@ -194,8 +225,8 @@ DECL_OPCODE_HANDLER(opcode_clean) {
 }
 
 DECL_OPCODE_HANDLER(opcode_trace) {
-	if (machine->evaluation_stack[machine->evals - 1]->gc_flag != GARBAGE_UNINIT)
-		gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1]);
+	NULL_CHECK(machine->evals, ERROR_INSUFFICIENT_EVALS);
+	gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1]);
 	return 1;
 }
 

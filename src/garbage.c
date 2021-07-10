@@ -31,8 +31,6 @@ static void init_gframe(struct garbage_frame* garbage_frame, struct value** valu
 }
 
 const int gc_register_trace(struct garbage_collector* garbage_collector, struct value* value) {
-	if (value->gc_flag == GARBAGE_UNINIT)
-		return 0;
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	if (top->to_trace == MAX_GARBAGE)
 		return 0;
@@ -83,14 +81,15 @@ void gc_new_frame(struct garbage_collector* garbage_collector) {
 }
 
 static void trace_value(struct value* value, struct value** reset_stack, uint32_t* stack_top) {
-	if (value->gc_flag == GARBAGE_KEEP)
-		return;
+	if (value->gc_flag != GARBAGE_UNINIT) {
+		if (value->gc_flag == GARBAGE_KEEP)
+			return;
 
-	value->gc_flag = GARBAGE_KEEP;
+		value->gc_flag = GARBAGE_KEEP;
 
-	reset_stack[*stack_top] = value;
-	(*stack_top)++;
-
+		reset_stack[*stack_top] = value;
+		(*stack_top)++;
+	}
 	if (value->type == VALUE_TYPE_OBJ) {
 		uint64_t size = 0;
 		const struct value** children = object_get_children(&value->payload.object, &size);
