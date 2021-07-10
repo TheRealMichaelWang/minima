@@ -218,7 +218,7 @@ DECL_OPCODE_HANDLER(opcode_new_frame) {
 }
 
 DECL_OPCODE_HANDLER(opcode_clean) {
-	if (machine->call_size == 0)
+	if (!machine->call_size)
 		MACHINE_ERROR(ERROR_INSUFFICIENT_CALLS);
 	free_var_context(&machine->var_stack[--machine->call_size]);
 	return 1;

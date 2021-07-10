@@ -55,7 +55,7 @@ const int emplace_var(struct var_context* var_context, const uint64_t id, const 
 
 	while (i < var_context->hash_limit)
 	{
-		if (!var_context->buckets[i].set_flag) {
+		if (!var_context->buckets[i].set_flag || (var_context->buckets[i].identifier == id)) {
 			var_context->buckets[i].identifier = id;
 			var_context->buckets[i].value = value;
 			var_context->buckets[i].set_flag = 1;
