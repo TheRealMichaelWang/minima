@@ -96,6 +96,7 @@ DECL_OPCODE_HANDLER(opcode_goto) {
 	machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
 	machine->position_flags[machine->positions++] = 1;
 	uint64_t pos = cache_retrieve_pos(&machine->global_cache, chunk_read_ulong(chunk));
+
 	NULL_CHECK(pos, ERROR_LABEL_UNDEFINED);
 	chunk_jump_to(chunk, pos);
 	return 1;
@@ -142,7 +143,7 @@ DECL_OPCODE_HANDLER(opcode_return_goto) {
 DECL_OPCODE_HANDLER(opcode_label) {
 	uint64_t id = chunk_read_ulong(chunk);
 	if (!cache_insert_label(&machine->global_cache, id, chunk->pos))
-		MACHINE_ERROR(ERROR_LABEL_UNDEFINED);
+		MACHINE_ERROR(ERROR_LABEL_REDEFINE);
 	chunk_read(chunk);
 	chunk_skip(chunk, 1);
 	return 1;

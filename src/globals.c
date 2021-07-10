@@ -36,7 +36,7 @@ static const int insert_bucket(struct global_cache* global_cache, struct cache_b
 	}
 	*bucket = malloc(sizeof(struct cache_bucket));
 	ERROR_ALLOC_CHECK(*bucket);
-	memcpy(*bucket, &to_insert, sizeof(struct cache_bucket));
+	**bucket = to_insert;
 	(*bucket)->next = NULL;
 	return 1;
 }
