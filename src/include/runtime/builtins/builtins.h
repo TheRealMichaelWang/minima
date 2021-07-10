@@ -5,7 +5,7 @@
 #include "../value.h"
 
 //API to facilitate the declaration of built-in procedures which can be called using the "extern" keyword within the Minima language
-#define DECL_BUILT_IN(METHOD_NAME) struct value* METHOD_NAME(struct value** argv, uint32_t argc)
+#define DECL_BUILT_IN(METHOD_NAME) struct value (METHOD_NAME)(struct value** argv, uint32_t argc, struct machine* machine)
 
 //prints values
 DECL_BUILT_IN(builtin_print); 
@@ -27,5 +27,11 @@ DECL_BUILT_IN(builtin_get_length);
 
 //gets the hash of a value
 DECL_BUILT_IN(builtin_get_hash);
+
+//gets a str as a numerical
+DECL_BUILT_IN(builtin_to_num);
+
+//gets the numerical as a str
+DECL_BUILT_IN(builtin_to_str);
 
 #endif // !STDLIB_H

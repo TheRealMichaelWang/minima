@@ -4,6 +4,7 @@
 #define LABEL_H
 
 #include <stdint.h>
+#include "builtins/builtins.h"
 
 struct global_cache {
 	struct cache_bucket {
@@ -19,7 +20,7 @@ struct global_cache {
 		{
 			uint64_t pos;
 			struct record_prototype* prototype; 
-			struct value* (*builtin_delegate)(struct value** argv, uint32_t argc);
+			DECL_BUILT_IN(*delegate);
 		}payload;
 
 		struct cache_bucket* next;
@@ -36,7 +37,7 @@ const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id,
 const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record, struct machine* machine);
 const int cache_merge_proto(struct global_cache* global_cache, uint64_t child, uint64_t parent);
 
-const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, struct value* (*delegate)(struct value** argv, uint32_t argc));
-struct value* cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc);
+const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, DECL_BUILT_IN(*delegate));
+struct value cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc, struct machine* machine);
 
 #endif // !LABEL_H

@@ -1,66 +1,80 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "include/io.h"
 #include "include/hash.h"
 #include "include/error.h"
+#include "include/runtime/machine.h"
 #include "include/runtime/object/object.h"
 #include "include/runtime/builtins/builtins.h"
 
-static char* get_str(struct value* value) {
-	ERROR_ALLOC_CHECK(value);
-
-	if (!IS_COLLECTION(*value))
+static char* value_to_str(struct value value) {
+	if (!IS_COLLECTION(value))
 		return NULL;
 
-	struct collection* collection = value->payload.object.ptr.collection;
+	struct collection* collection = value.payload.object.ptr.collection;
+
 	char* buffer = malloc((collection->size + 1) * sizeof(char));
 	ERROR_ALLOC_CHECK(buffer);
-	for (uint64_t i = 0; i < collection->size; i++) {
+	
+	for (uint64_t i = 0; i < collection->size; i++)
 		buffer[i] = collection->inner_collection[i]->payload.character;
-	}
 	buffer[collection->size] = 0;
 
 	return buffer;
+}
+
+struct value str_to_value(const char* buffer, const int length, struct machine* machine) {
+	struct value toret;
+	struct collection* collection = malloc(sizeof(struct collection));
+	if (collection == NULL)
+		return const_value_null;
+
+	init_collection(collection, length);
+	for(uint_fast32_t i = 0; i < length; i++) { 
+		struct value char_elem;
+		init_char_value(&char_elem, buffer[i]);
+		collection->inner_collection[i] = push_eval(machine, &char_elem, 0);
+	}
+	struct object obj;
+	init_object_col(&obj, collection);
+	init_obj_value(&toret, obj);
+	return toret;
 }
 
 DECL_BUILT_IN(builtin_print) {
 	for (uint64_t i = 0; i < argc; i++) {
 		print_value(*argv[i], 1);
 	}
-	struct value* nullvalue = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(nullvalue);
-	*nullvalue = const_value_null;
-	return nullvalue;
+	return const_value_null;
 }
 
 DECL_BUILT_IN(builtin_print_line) {
-	struct value* toreturn = builtin_print(argv, argc);
+	builtin_print(argv, argc, machine);
 	printf("\n");
-	return toreturn;
+	return const_value_null;
 }
 
 DECL_BUILT_IN(builtin_system_cmd) {
 	if (argc < 1)
-		return NULL;
+		return const_value_null;
 
-	char* buffer = get_str(argv[0]);
-	ERROR_ALLOC_CHECK(buffer);
+	char* buffer = value_to_str(*argv[0]);
+	if(buffer == NULL)
+		return const_value_null;
 
 	system(buffer);
-
 	free(buffer);
 
-	struct value* nullvalue = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(nullvalue);
-	*nullvalue = const_value_null;
-	return nullvalue;
+	return const_value_null;
 }
 
 DECL_BUILT_IN(builtin_random) {
 	double random_double = (double)rand() / RAND_MAX;
-	struct value* numvalue = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(numvalue);
-	init_num_value(numvalue,random_double);
+	struct value numvalue;
+	init_num_value(&numvalue,random_double);
 	return numvalue;
 }
 
@@ -78,65 +92,56 @@ DECL_BUILT_IN(builtin_get_input) {
 	}
 	buffer[length] = 0;
 
-	struct value* toret = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(toret);
-	if (format_flag == 'n' || format_flag == 'N') {
-		init_num_value(toret, strtod(buffer, NULL));
-	}
-	else {
-		struct collection* collection = malloc(sizeof(struct collection));
-		ERROR_ALLOC_CHECK(collection);
-		init_collection(collection, length);
-		while (length--) {
-			collection->inner_collection[length] = malloc(sizeof(struct value));
-			init_char_value(collection->inner_collection[length], buffer[length]);
-		}
-		struct object obj;
-		init_object_col(&obj, collection);
-		init_obj_value(toret, obj);
-	}
+	struct value toret;
+	if (format_flag == 'n' || format_flag == 'N')
+		init_num_value(&toret, strtod(buffer, NULL));
+	else
+		toret = str_to_value(buffer, length, machine);
 	return toret;
 }
 
 DECL_BUILT_IN(builtin_get_length) {
 	if (argc < 1 || !IS_COLLECTION(*argv[0]))
-		return NULL;
-	struct value* toret = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(toret);
-	init_num_value(toret, argv[0]->payload.object.ptr.collection->size);
+		return const_value_null;
+	struct value toret;
+	init_num_value(&toret, argv[0]->payload.object.ptr.collection->size);
 	return toret;
 }
 
 DECL_BUILT_IN(builtin_get_hash) {
-	if (argc < 1)
-		return NULL;
-	struct value* toret = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(toret);
-	init_num_value(toret, value_hash(*argv[0]));
+	struct value toret;
+	init_num_value(&toret, value_hash(*argv[0]));
 	return toret;
 }
 
 DECL_BUILT_IN(builtin_to_num) {
 	if (argc < 1)
-		return NULL;
+		return const_value_null;
 
-	char* buffer = get_str(argv[0]);
-	ERROR_ALLOC_CHECK(buffer);
+	char* buffer = value_to_str(*argv[0]);
+	if (*buffer == NULL)
+		return const_value_null;
 
-	struct value* toret = malloc(sizeof(struct value));
-	ERROR_ALLOC_CHECK(toret);
+	struct value toret;
 
-	init_num_value(toret, strtod(buffer, NULL));
+	init_num_value(&toret, strtod(buffer, NULL));
 	return toret;
 }
 
 DECL_BUILT_IN(builtin_to_str) {
 	if (argc < 1)
-		return NULL;
+		return const_value_null;
 
 	if (argv[0]->type != VALUE_TYPE_NUM)
-		return NULL;
-	double num = argv[0]->payload.numerical;
+		return const_value_null;
 
+	char* buffer = malloc(150);
+	if (buffer == NULL)
+		return const_value_null;
 
+	sprintf(buffer, "%g", argv[0]->payload.numerical);
+	struct value toret = str_to_value(buffer, strlen(buffer), machine);
+	free(buffer);
+
+	return toret;
 }

@@ -94,17 +94,17 @@ const int cache_merge_proto(struct global_cache* global_cache, uint64_t child, u
 	return 0;
 }
 
-const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, struct value* (*delegate)(struct value** argv, uint32_t argc)) {
+const int cache_declare_builtin(struct global_cache* global_cache, uint64_t id, DECL_BUILT_IN(*delegate)) {
 	struct cache_bucket to_insert;
 	to_insert.id = id;
 	to_insert.type = CACHE_TYPE_BUILTIN;
-	to_insert.payload.builtin_delegate = delegate;
+	to_insert.payload.delegate = delegate;
 	return insert_bucket(global_cache, to_insert);
 }
 
-struct value* cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc) {
+struct value cache_invoke_builtin(struct global_cache* global_cache, uint64_t id, struct value** argv, uint32_t argc, struct machine* machine) {
 	struct cache_bucket* bucket = get_cache_bucket(global_cache, id, CACHE_TYPE_BUILTIN);
 	if (bucket)
-		return (*bucket->payload.builtin_delegate)(argv, argc);
-	return NULL;
+		return (*bucket->payload.delegate)(argv, argc, machine);
+	return const_value_null;
 }

@@ -32,6 +32,8 @@ const int init_machine(struct machine* machine) {
 	cache_declare_builtin(&machine->global_cache, 262752949, builtin_get_input);
 	cache_declare_builtin(&machine->global_cache, 193498052, builtin_get_length);
 	cache_declare_builtin(&machine->global_cache, 2090320585, builtin_get_hash);
+	cache_declare_builtin(&machine->global_cache, 193506174, builtin_to_str);
+	cache_declare_builtin(&machine->global_cache, 193500757, builtin_to_num);
 	return 1;
 }
 
@@ -73,10 +75,8 @@ const struct value* pop_eval(struct machine* machine) {
 			struct value** children = object_get_children(&top->payload.object, &children_count);
 
 			while (children_count--)
-				if (children[children_count]->gc_flag == GARBAGE_UNINIT) {
-					machine->constants--;
-					machine->evals--;
-				}
+				if (children[children_count]->gc_flag == GARBAGE_UNINIT)
+					pop_eval(machine);
 		}
 	}
 	return top;
@@ -107,7 +107,7 @@ const struct value* push_eval(struct machine* machine, struct value* value, int 
 const int condition_check(struct machine* machine) {
 	MATCH_EVALS(1);
 
-	struct value* valptr = pop_eval(machine);
+	struct value* valptr = pop_eval(machine, 1);
 	NULL_CHECK(valptr, ERROR_INSUFFICIENT_EVALS);
 
 	int cond = 1;

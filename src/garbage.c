@@ -41,7 +41,10 @@ const int gc_register_trace(struct garbage_collector* garbage_collector, struct 
 }
 
 const int gc_register_children(struct garbage_collector* garbage_collector, struct value* head) {
+	if (head->gc_flag == GARBAGE_COLLECT)
+		return 0;
 	head->gc_flag = GARBAGE_COLLECT;
+	
 	if (head->type == VALUE_TYPE_OBJ) {
 		uint64_t size = 0;
 		const struct value** children = object_get_children(&head->payload.object, &size);
@@ -60,7 +63,6 @@ const struct value* gc_register_value(struct garbage_collector* garbage_collecto
 	struct value* alloc_apartment = malloc(sizeof(struct value));
 	ERROR_ALLOC_CHECK(alloc_apartment);
 	*alloc_apartment = value;
-	alloc_apartment->gc_flag = GARBAGE_COLLECT;
 
 	struct garbage_frame* gframe = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	gframe->to_collect[gframe->collect_values++] = alloc_apartment;
@@ -113,7 +115,6 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 		else if (top->to_collect[i]->gc_flag == GARBAGE_KEEP) {
 			struct garbage_frame* prev = &garbage_collector->frame_stack[garbage_collector->frames - 2];
 			prev->to_collect[prev->collect_values++] = top->to_collect[i];
-			top->to_collect[i]->gc_flag = GARBAGE_COLLECT;
 		}
 	}
 

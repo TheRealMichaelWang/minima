@@ -40,6 +40,7 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 	if (src->gc_flag == GARBAGE_UNINIT) {
 		struct value* dest = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
 		if (dest) {
+			free_value(dest);
 			*dest = *src;
 			NULL_CHECK(gc_register_children(&machine->garbage_collector, dest), ERROR_OUT_OF_MEMORY);
 		}
@@ -249,6 +250,7 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 		if(collection->inner_collection[index] == GARBAGE_UNINIT)
 			collection->inner_collection[index] = set_val;
 		else {
+			free_value(collection->inner_collection[index]);
 			*collection->inner_collection[index] = *set_val;
 			NULL_CHECK(gc_register_children(&machine->garbage_collector, collection->inner_collection[index]), ERROR_OUT_OF_MEMORY);
 		}
@@ -298,6 +300,7 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 				MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 		}
 		else {
+			free_value(property_val);
 			*property_val = *set_val;
 			NULL_CHECK(gc_register_children(&machine->garbage_collector, property_val), ERROR_OUT_OF_MEMORY);
 		}
@@ -314,13 +317,13 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 
 	MATCH_EVALS(arguments);
 
-	struct value* result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments);
-	NULL_CHECK(result, ERROR_LABEL_UNDEFINED);
+	struct value result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments, machine);
 
 	while (arguments--)
 		NULL_CHECK(pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 	
-	return push_eval(machine, result, 0);
+	PUSH_EVAL(&result);
+	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_build_collection) {
