@@ -337,14 +337,13 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	while (req_size--)
 		NULL_CHECK(collection->inner_collection[req_size] = pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 
-	struct value* new_val = malloc(sizeof(struct value));
-	NULL_CHECK(new_val, ERROR_OUT_OF_MEMORY);
+	struct value new_val;
 
 	struct object obj;
 	init_object_col(&obj, collection);
-	init_obj_value(new_val, obj);
+	init_obj_value(&new_val, obj);
 
-	return push_eval(machine, new_val, 1);
+	return push_eval(machine, &new_val, 1);
 }
 
 DECL_OPCODE_HANDLER(opcode_build_record_proto) {
