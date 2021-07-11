@@ -2,23 +2,6 @@
 #include <string.h>
 #include "include/runtime/value.h"
 
-void init_null_value(struct value* value) {
-	value->gc_flag = GARBAGE_UNINIT;
-	value->type = VALUE_TYPE_NULL;
-}
-
-void init_num_value(struct value* value, const double num) {
-	value->gc_flag = GARBAGE_UNINIT;
-	value->type = VALUE_TYPE_NUM;
-	value->payload.numerical = num;
-}
-
-void init_char_value(struct value* value, const char c) {
-	value->gc_flag = GARBAGE_UNINIT;
-	value->type = VALUE_TYPE_CHAR;
-	value->payload.character = c;
-}
-
 void init_obj_value(struct value* value, struct object obj) {
 	value->gc_flag = GARBAGE_UNINIT;
 	value->type = VALUE_TYPE_OBJ;

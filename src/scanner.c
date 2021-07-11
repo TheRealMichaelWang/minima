@@ -165,15 +165,15 @@ struct token scanner_read_tok(struct scanner* scanner) {
 			break;
 		case 2090557760: //null
 			tok.type = TOK_PRIMATIVE;
-			init_null_value(&tok.payload.primative);
+			tok.payload.primative = const_value_null;
 			break;
 		case 2090770405: //true
 			tok.type = TOK_PRIMATIVE;
-			init_num_value(&tok.payload.primative, 1);
+			tok.payload.primative = const_value_true;
 			break;
 		case 258723568: //false
 			tok.type = TOK_PRIMATIVE;
-			init_num_value(&tok.payload.primative, 0);
+			tok.payload.primative = const_value_false;
 			break;
 		case 193504585: //remark
 			while (scanner->last_char != '\n')
@@ -192,18 +192,16 @@ struct token scanner_read_tok(struct scanner* scanner) {
 			read_char(scanner);
 		}
 		tok.type = TOK_PRIMATIVE;
-		init_num_value(&tok.payload.primative, strtod(start, NULL));
+		tok.payload.primative = NUM_VALUE(strtod(start, NULL));
 	}
 	else if (scanner->last_char == '\'') {
 		read_char(scanner);
-		init_char_value(&tok.payload.primative, read_data_char(scanner));
+		tok.payload.primative = CHAR_VALUE(read_data_char(scanner));
 		if (scanner->last_err == ERROR_UNRECOGNIZED_CONTROL_SEQ) {
-			free_value(&tok.payload.primative);
 			tok.type = TOK_ERROR;
 			return tok;
 		}
 		if (scanner->last_char != '\'') {
-			free_value(&tok.payload.primative);
 			scanner->last_err = ERROR_UNEXPECTED_CHAR;
 			tok.type = TOK_ERROR;
 			return tok;

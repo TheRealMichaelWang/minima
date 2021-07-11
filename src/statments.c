@@ -19,7 +19,6 @@ DECL_VALUE_COMPILER(compile_primative) {
 	MATCH_TOK(compiler->last_tok, TOK_PRIMATIVE);
 	chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
 	chunk_write_value(&compiler->chunk_builder, compiler->last_tok.payload.primative);
-	free_value(&compiler->last_tok.payload.primative);
 	compiler_read_tok(compiler);
 	return 1;
 }
@@ -35,10 +34,7 @@ DECL_VALUE_COMPILER(compile_string) {
 	uint64_t len = strlen(buffer);
 	for (uint_fast64_t i = 0; i < len; i++) {
 		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-		struct value char_val;
-		init_char_value(&char_val, buffer[i]);
-		chunk_write_value(&compiler->chunk_builder, char_val);
-		free_value(&char_val);
+		chunk_write_value(&compiler->chunk_builder, CHAR_VALUE(buffer[i]));
 	}
 	free(buffer);
 	chunk_write(&compiler->chunk_builder, MACHINE_BUILD_COL);

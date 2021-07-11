@@ -8,6 +8,9 @@
 #define IS_COLLECTION(VALUE) ((VALUE).type == VALUE_TYPE_OBJ && (VALUE).payload.object.type == OBJ_TYPE_COL)
 #define IS_RECORD(VALUE) ((VALUE).type == VALUE_TYPE_OBJ && (VALUE).payload.object.type == OBJ_TYPE_REC)
 
+#define NUM_VALUE(NUM) (struct value) { GARBAGE_UNINIT, NUM, VALUE_TYPE_NUM}
+#define CHAR_VALUE(CHAR) (struct value) {GARBAGE_UNINIT, CHAR, VALUE_TYPE_CHAR}
+
 struct value {
 	enum garbage_flag {
 		GARBAGE_UNINIT,
@@ -35,9 +38,6 @@ static const struct value const_value_null = { GARBAGE_UNINIT, 0, VALUE_TYPE_NUL
 static const struct value const_value_true = { GARBAGE_UNINIT, 1, VALUE_TYPE_NUM };
 static const struct value const_value_false = { GARBAGE_UNINIT, 0, VALUE_TYPE_NUM };
 
-void init_null_value(struct value* value);
-void init_num_value(struct value* value, const double d);
-void init_char_value(struct value* value, const char c);
 void init_obj_value(struct value* value, struct object obj);
 
 const double compare_value(const struct value* a, const struct value* b);

@@ -4,7 +4,7 @@
 #include "include/runtime/machine.h"
 #include "include/runtime/object/record.h"
 
-#define MAX_SIZE 255
+#define MAX_SIZE 256
 
 inline static const uint8_t retrieve_property_index(struct record_prototype* prototype, uint64_t property) {
 	return prototype->property_map[property & 255];

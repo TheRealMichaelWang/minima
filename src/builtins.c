@@ -33,11 +33,12 @@ struct value str_to_value(const char* buffer, const int length, struct machine* 
 		return const_value_null;
 
 	init_collection(collection, length);
-	for(uint_fast32_t i = 0; i < length; i++) { 
-		struct value char_elem;
-		init_char_value(&char_elem, buffer[i]);
+	struct value char_elem;
+	for(uint_fast32_t i = 0; i < length; i++) {
+		char_elem = CHAR_VALUE(buffer[i]);
 		collection->inner_collection[i] = push_eval(machine, &char_elem, 0);
 	}
+
 	struct object obj;
 	init_object_col(&obj, collection);
 	init_obj_value(&toret, obj);
@@ -73,9 +74,7 @@ DECL_BUILT_IN(builtin_system_cmd) {
 
 DECL_BUILT_IN(builtin_random) {
 	double random_double = (double)rand() / RAND_MAX;
-	struct value numvalue;
-	init_num_value(&numvalue,random_double);
-	return numvalue;
+	return NUM_VALUE(random_double);
 }
 
 DECL_BUILT_IN(builtin_get_input) {
@@ -92,26 +91,20 @@ DECL_BUILT_IN(builtin_get_input) {
 	}
 	buffer[length] = 0;
 
-	struct value toret;
 	if (format_flag == 'n' || format_flag == 'N')
-		init_num_value(&toret, strtod(buffer, NULL));
+		return NUM_VALUE(strtod(buffer, NULL));
 	else
-		toret = str_to_value(buffer, length, machine);
-	return toret;
+		return str_to_value(buffer, length, machine);
 }
 
 DECL_BUILT_IN(builtin_get_length) {
 	if (argc < 1 || !IS_COLLECTION(*argv[0]))
 		return const_value_null;
-	struct value toret;
-	init_num_value(&toret, argv[0]->payload.object.ptr.collection->size);
-	return toret;
+	return NUM_VALUE(argv[0]->payload.object.ptr.collection->size);
 }
 
 DECL_BUILT_IN(builtin_get_hash) {
-	struct value toret;
-	init_num_value(&toret, value_hash(*argv[0]));
-	return toret;
+	return NUM_VALUE(value_hash(*argv[0]));
 }
 
 DECL_BUILT_IN(builtin_to_num) {
@@ -121,10 +114,8 @@ DECL_BUILT_IN(builtin_to_num) {
 	char* buffer = value_to_str(*argv[0]);
 	if (*buffer == NULL)
 		return const_value_null;
-
-	struct value toret;
-
-	init_num_value(&toret, strtod(buffer, NULL));
+	struct value toret = NUM_VALUE(strtod(buffer, NULL));
+	free(buffer);
 	return toret;
 }
 
