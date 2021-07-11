@@ -342,17 +342,20 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 	return 1;
 }
 
+static struct value* argv[1000];
+
 DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 	uint64_t id = chunk_read_ulong(chunk);
 	uint64_t arguments = chunk_read_ulong(chunk);
 
 	MATCH_EVALS(arguments);
 
-	struct value result = cache_invoke_builtin(&machine->global_cache, id, &machine->evaluation_stack[machine->evals - arguments], arguments, machine);
+	uint_fast64_t i = arguments;
+	while (i--)
+		argv[i] = pop_eval(machine);
 
-	while (arguments--)
-		NULL_CHECK(pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
-	
+	struct value result = cache_invoke_builtin(&machine->global_cache, id, &argv, arguments, machine);
+
 	PUSH_EVAL(&result);
 	return 1;
 }
