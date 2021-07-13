@@ -5,6 +5,8 @@
 #include "include/runtime/machine.h"
 #include "include/runtime/operators.h"
 
+#include <stdio.h>
+
 #define DECL_BINARY_OPERATOR(METHOD_NAME) static struct value METHOD_NAME(struct value* a, struct value* b)
 #define DECL_UNARY_OPERATOR(METHOD_NAME) static struct value METHOD_NAME(struct value* a, struct machine* machine)
 
@@ -104,6 +106,7 @@ DECL_UNARY_OPERATOR(op_alloc) {
 		return const_value_null;
 
 	init_collection(collection, i);
+
 	while (i--)
 		collection->inner_collection[i] = push_eval(machine, &const_value_null, 0);
 

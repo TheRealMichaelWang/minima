@@ -26,7 +26,8 @@ static uint32_t block_check(const char* src, uint32_t length) {
 }
 
 int main(uint32_t argc, char** argv) {
-	init_machine(&machine);
+	if (!init_machine(&machine))
+		exit(EXIT_FAILURE);
 	struct compiler compiler;
 
 	if (argc > 1) {
@@ -64,7 +65,7 @@ int main(uint32_t argc, char** argv) {
 				printf("\n***Runtime Error***\n");
 				error_info(err);
 				printf("\n\nDUMP: \n");
-				debug_print_dump(source_chunk, 1);
+				debug_print_dump(source_chunk);
 			}
 		}
 		free(source);
@@ -109,7 +110,7 @@ int main(uint32_t argc, char** argv) {
 				printf("\nGLOBAL DUMP:\n");
 				struct chunk global_chunk = build_chunk(&global_build);
 				global_chunk.pos = ip;
-				debug_print_dump(global_chunk, 1);
+				debug_print_dump(global_chunk);
 			}
 			else {
 				init_compiler(&compiler, src_buf);

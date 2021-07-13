@@ -44,11 +44,11 @@ const int init_record(struct record* record, struct record_prototype* prototype,
 		struct value property = const_value_null;
 
 		if (prototype->base_prototype && i == retrieve_property_index(prototype, RECORD_BASE_PROPERTY) - 1) {
-			struct record* record = malloc(sizeof(struct record));
+			struct record* base_record = malloc(sizeof(struct record));
 			ERROR_ALLOC_CHECK(record);
-			init_record(record, prototype->base_prototype, machine);
+			init_record(base_record, prototype->base_prototype, machine);
 			struct object object;
-			init_object_rec(&object, record);
+			init_object_rec(&object, base_record);
 			init_obj_value(&property, object);
 		}
 		record->properties[i] = push_eval(machine, &property, 0);
@@ -82,7 +82,7 @@ const int record_set_property(struct record* record, const uint64_t property, st
 	else if (record->prototype->base_prototype) {
 		struct value* record_val = record_get_property(record, RECORD_BASE_PROPERTY);
 		if (record_val && IS_RECORD(*record_val)) {
-			return record_set_property(record_val, property, value);
+			return record_set_property(record_val->payload.object.ptr.record, property, value);
 		}
 	}
 	return 0;

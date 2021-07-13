@@ -3,15 +3,13 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-struct value;
-
 #include "collection.h"
 #include "record.h"
 
 struct object {
 	union object_ptr
 	{
-		struct collection* collection;\
+		struct collection* collection;
 		struct record* record;
 	}ptr;
 
@@ -24,7 +22,7 @@ struct object {
 
 void init_object_col(struct object* object, struct collection* collection);
 void init_object_rec(struct object* object, struct record* record);
-void free_object(struct object* object, enum garbage_flag gc_flag);
+void free_object(struct object* object);
 
 const int object_compare(struct object* a, struct object* b);
 const struct value** object_get_children(struct object* object, uint64_t* size);

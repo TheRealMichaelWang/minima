@@ -13,7 +13,7 @@ void init_object_rec(struct object* object, struct record* record) {
 	object->ptr.record = record;
 }
 
-void free_object(struct object* object, enum garbage_flag gc_flag) {
+void free_object(struct object* object) {
 	switch (object->type)
 	{
 	case OBJ_TYPE_COL:

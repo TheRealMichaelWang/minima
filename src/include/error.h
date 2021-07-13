@@ -31,6 +31,6 @@ enum error {
 
 #define ERROR_ALLOC_CHECK(PTR) if((PTR) == NULL) { return 0; }
 
-void error_info(enum error error);
+const int error_info(enum error error);
 
 #endif // !ERROR_H

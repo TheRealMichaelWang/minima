@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "include/error.h"
+#include "include/runtime/machine.h"
 #include "include/runtime/globals.h"
 
 #define MAX_SIZE 255
 
 void init_global_cache(struct global_cache* global_cache) {
-	global_cache->buckets = calloc(MAX_SIZE, sizeof(struct cache_bucket*));
+	global_cache->buckets = calloc(MAX_SIZE + 1, sizeof(struct cache_bucket*));
 }
 
 void free_global_cache(struct global_cache* global_cache) {

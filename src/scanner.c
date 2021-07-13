@@ -236,6 +236,9 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		case '}':
 			tok.type = TOK_CLOSE_BRACE;
 			break;
+		case '#':
+			tok.type = TOK_HASHTAG;
+			break;
 		case '+':
 			tok.type = TOK_BINARY_OP;
 			tok.payload.bin_op = OPERATOR_ADD;

@@ -8,11 +8,12 @@
 #define MAX_VALUES 300000
 #define MAX_TRACE 25000
 
-void init_gcollect(struct garbage_collector* garbage_collector) {
+const int init_gcollect(struct garbage_collector* garbage_collector) {
 	ERROR_ALLOC_CHECK(garbage_collector->frame_stack = malloc(MAX_GARBAGE * sizeof(struct garbage_frame)));
 	ERROR_ALLOC_CHECK(garbage_collector->value_stack = malloc(MAX_VALUES * sizeof(struct value*)));
 	ERROR_ALLOC_CHECK(garbage_collector->trace_stack = malloc(MAX_TRACE * sizeof(struct value*)));
 	garbage_collector->frames = 0;
+	return 1;
 }
 
 void free_gcollect(struct garbage_collector* garbage_collector) {
@@ -32,7 +33,7 @@ static void init_gframe(struct garbage_frame* garbage_frame, struct value** valu
 
 const int gc_register_trace(struct garbage_collector* garbage_collector, struct value* value) {
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
-	if (top->to_trace == MAX_GARBAGE)
+	if (top->trace_values == MAX_GARBAGE)
 		return 0;
 	top->to_trace[top->trace_values++] = value;
 	return 1;

@@ -136,3 +136,12 @@ DECL_BUILT_IN(builtin_to_str) {
 
 	return toret;
 }
+
+DECL_BUILT_IN(builtin_get_type) {
+	if (argc < 1)
+		return const_value_null;
+	if (!IS_RECORD(*argv[0]) && argv[0]->type != VALUE_TYPE_ID)
+		return CHAR_VALUE(argv[0]->type);
+	uint64_t type_hash = combine_hash(VALUE_TYPE_OBJ, argv[0]->type == VALUE_TYPE_ID ? argv[0]->payload.identifier : argv[0]->payload.object.ptr.record->prototype->identifier);
+	return NUM_VALUE(type_hash);
+}

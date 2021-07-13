@@ -2,7 +2,6 @@
 #include <string.h>
 #include "include/error.h"
 #include "include/runtime/opcodes.h"
-#include "include/runtime/value.h"
 #include "include/compiler/chunk.h"
 
 void init_chunk(struct chunk* chunk, char* code, const uint64_t size) {

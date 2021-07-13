@@ -23,7 +23,7 @@ uint64_t value_hash(struct value value) {
     else {
         struct object object = value.payload.object;
         uint64_t size, hash;
-        struct value** children = object_get_children(&object, &size);
+        const struct value** children = object_get_children(&object, &size);
         hash = value.type;
         for (uint_fast64_t i = 0; i < size; i++)
             combine_hash(hash, value_hash(*children[i]));

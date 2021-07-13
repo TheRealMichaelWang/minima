@@ -20,7 +20,7 @@ struct garbage_collector {
 	uint64_t frames;
 };
 
-void init_gcollect(struct garbage_collector* garbage_collector);
+const int init_gcollect(struct garbage_collector* garbage_collector);
 void free_gcollect(struct garbage_collector* garbage_collector);
 
 const int gc_register_trace(struct garbage_collector* garbage_collector, struct value* value);

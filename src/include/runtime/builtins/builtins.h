@@ -34,4 +34,7 @@ DECL_BUILT_IN(builtin_to_num);
 //gets the numerical as a str
 DECL_BUILT_IN(builtin_to_str);
 
+//gets the type hash of an object
+DECL_BUILT_IN(builtin_get_type);
+
 #endif // !STDLIB_H

@@ -4,10 +4,10 @@
 #define COMPILER_H
 
 #include <stdint.h>
-#include "include/error.h"
-#include "include/hash.h"
-#include "include/compiler/scanner.h"
-#include "include/compiler/chunk.h"
+#include "../error.h"
+#include "../hash.h"
+#include "scanner.h"
+#include "chunk.h"
 
 struct compiler
 {
@@ -34,10 +34,5 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 
 //compiles a block of code
 const int compile_body(struct compiler* compiler, const int func_encapsulated);
-
-//"formats" a label by mangling label id and info together
-inline uint64_t format_label(uint64_t identifier, uint64_t callee, uint64_t arguments) {
-	return combine_hash(combine_hash(identifier, arguments), callee);
-}
 
 #endif // !COMPILER_H

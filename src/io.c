@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include "include/error.h"
 #include "include/io.h"
 
@@ -98,7 +99,7 @@ static void print_collection(struct collection collection) {
 }
 
 static void print_record(struct record record) {
-	printf("<%p>", record);
+	printf("<%p>", &record);
 	for (uint_fast8_t i = 0; i < record.prototype->size; i++) {
 		printf("\n\t");
 		print_value(*record.properties[i], 0);
@@ -108,7 +109,7 @@ static void print_record(struct record record) {
 void print_value(struct value value, const int print_mode) {
 	if (value.type == VALUE_TYPE_NUM)
 		printf("%g", value.payload.numerical);
-	else if (value.type == VALUE_TYPE_CHAR)
+	else if (value.type == VALUE_TYPE_CHAR) {
 		if (print_mode)
 			printf("%c", value.payload.character);
 		else {
@@ -116,8 +117,11 @@ void print_value(struct value value, const int print_mode) {
 			print_data_char(value.payload.character);
 			printf("\'");
 		}
+	}
 	else if (value.type == VALUE_TYPE_NULL)
 		printf("null");
+	else if (value.type == VALUE_TYPE_ID)
+		printf("identifier(%" PRIu64 ")", value.payload.identifier);
 	else if (IS_COLLECTION(value))
 		if (is_str(value))
 			print_str(*value.payload.object.ptr.collection, print_mode);
@@ -132,7 +136,7 @@ void print_value(struct value value, const int print_mode) {
 		printf("[Print Error]");
 }
 
-void error_info(enum error error) {
+const int error_info(enum error error) {
 	printf("Error: %s",error_names[error]);
 	char* doc_path = malloc(25);
 	ERROR_ALLOC_CHECK(doc_path);

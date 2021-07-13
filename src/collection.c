@@ -18,7 +18,7 @@ const int collection_compare(struct collection* a, struct collection* b) {
 	if (a->size != b->size)
 		return 0;
 	for (uint64_t i = 0; i < a->size; i++) {
-		if (compare_value(a, b))
+		if (compare_value(a->inner_collection[i], b->inner_collection[i]))
 			return 0;
 	}
 	return 1;

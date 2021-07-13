@@ -14,19 +14,17 @@ const double compare_value(const struct value* a, const struct value* b) {
 
 	switch (a->type)
 	{
-	case VALUE_TYPE_NUM: {
+	case VALUE_TYPE_NUM:
 		return a->payload.numerical - b->payload.numerical;
-	}
 	case VALUE_TYPE_CHAR:
 		return (double)a->payload.character - (double)b->payload.character;
-	case VALUE_TYPE_OBJ: {
-		return !object_compare(a, b);
-	}
+	case VALUE_TYPE_OBJ:
+		return (double)(!object_compare(&a->payload.object, &b->payload.object));
 	}
 	return 0;
 }
 
 void free_value(struct value* value) {
 	if (value->type == VALUE_TYPE_OBJ)
-		free_object(&value->payload.object, value->gc_flag);
+		free_object(&value->payload.object);
 }

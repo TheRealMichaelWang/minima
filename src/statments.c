@@ -176,9 +176,8 @@ DECL_VALUE_COMPILER(compile_goto) {
 		}
 		else {
 			chunk_write(&compiler->chunk_builder, MACHINE_GOTO);
-			chunk_write_ulong(&compiler->chunk_builder, format_label(proc_id, 0, arguments));
+			chunk_write_ulong(&compiler->chunk_builder, combine_hash(combine_hash(proc_id, arguments), 0));
 		}
-		//chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	}
 	else {
 		chunk_write(&compiler->chunk_builder, MACHINE_CALL_EXTERN);
@@ -210,7 +209,15 @@ DECL_VALUE_COMPILER(compile_new_record) {
 	chunk_write_ulong(&compiler->chunk_builder, record_id);
 	chunk_write(&compiler->chunk_builder, MACHINE_GOTO_AS);
 	chunk_write_ulong(&compiler->chunk_builder, combine_hash(RECORD_INIT_PROC, arguments));
-	//chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
+	return 1;
+}
+
+DECL_VALUE_COMPILER(compile_hashtag) {
+	MATCH_TOK(compiler->last_tok, TOK_HASHTAG);
+	MATCH_TOK(compiler_read_tok(compiler), TOK_IDENTIFIER);
+	chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
+	chunk_write_value(&compiler->chunk_builder, ID_VALUE(compiler->last_tok.payload.identifier));
+	compiler_read_tok(compiler);
 	return 1;
 }
 
@@ -374,9 +381,9 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	uint64_t proc_id;
 	compiler_read_tok(compiler);
 	if (callee && compiler->last_tok.type == TOK_BINARY_OP)
-		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, BINARY_OVERLOAD_CONST);
+		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, BINARY_OVERLOAD);
 	else if (callee && compiler->last_tok.type == TOK_UNARY_OP)
-		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, UNARY_OVERLOAD_CONST);
+		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, UNARY_OVERLOAD);
 	else {
 		MATCH_TOK(compiler->last_tok, TOK_IDENTIFIER);
 		proc_id = compiler->last_tok.payload.identifier;
@@ -400,10 +407,10 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	if (callee) {
 		reverse_buffer[buffer_size++] = RECORD_THIS;
 		if (proc_id == 180057 && buffer_size == 1)
-			proc_id = combine_hash((uint64_t)OPERATOR_NEGATE, UNARY_OVERLOAD_CONST);
+			proc_id = combine_hash((uint64_t)OPERATOR_NEGATE, UNARY_OVERLOAD);
 	}
 	
-	chunk_write_ulong(&compiler->chunk_builder, format_label(proc_id, callee, buffer_size));
+	chunk_write_ulong(&compiler->chunk_builder, combine_hash(combine_hash(proc_id, buffer_size), callee));
 	chunk_write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
 	while (buffer_size--) {
 		chunk_write(&compiler->chunk_builder, MACHINE_TRACE);
@@ -545,7 +552,7 @@ DECL_STATMENT_COMPILER(compile_include) {
 	return 1;
 }
 
-DECL_VALUE_COMPILER((*value_compilers[12])) = {
+DECL_VALUE_COMPILER((*value_compilers[13])) = {
 	compile_primative,
 	compile_string,
 	compile_reference,
@@ -555,6 +562,7 @@ DECL_VALUE_COMPILER((*value_compilers[12])) = {
 	compile_paren,
 	compile_unary,
 	compile_unary,
+	compile_hashtag,
 	compile_unary,
 	compile_goto,
 	compile_goto

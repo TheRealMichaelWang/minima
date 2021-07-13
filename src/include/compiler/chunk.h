@@ -46,8 +46,6 @@ inline const struct value chunk_read_value(struct chunk* chunk) {
 }
 
 void chunk_jump_to(struct chunk* chunk, const uint64_t pos);
-
-void chunk_skip_ins(struct chunk* chunk);
 void chunk_skip(struct chunk* chunk, uint64_t depth);
 
 #endif // !CHUNK_H
