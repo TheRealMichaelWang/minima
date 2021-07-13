@@ -141,6 +141,10 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 
 	struct value result = cache_invoke_builtin(&machine->global_cache, id, &argv, arguments, machine);
 
+	uint_fast64_t i = arguments;
+	while (i--)
+		free_value(argv[i]);
+
 	PUSH_EVAL(&result);
 	return 1;
 }
@@ -397,14 +401,14 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 DECL_OPCODE_HANDLER(opcode_build_record_proto) {
 	uint64_t id = chunk_read_ulong(chunk);
 	uint64_t properties = chunk_read_ulong(chunk);
-	struct record_prototype* prototype = malloc(sizeof(struct record_prototype));
+
+	struct record_prototype* prototype = cache_insert_prototype(&machine->global_cache, id);
 	NULL_CHECK(prototype, ERROR_OUT_OF_MEMORY);
-	init_record_prototype(prototype, id);
+	
 	while (properties--)
 		if (!record_append_property(prototype, chunk_read_ulong(chunk)))
 			MACHINE_ERROR(ERROR_PROPERTY_REDEFINE);
-	if (!cache_insert_prototype(&machine->global_cache, id, prototype))
-		MACHINE_ERROR(ERROR_RECORD_REDEFINE);
+
 	return 1;
 }
 

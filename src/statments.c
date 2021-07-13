@@ -447,25 +447,32 @@ DECL_STATMENT_COMPILER(compile_record) {
 		base_record_id = compiler->last_tok.payload.identifier;
 		compiler_read_tok(compiler);
 	}
-	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
+
 	uint64_t property_buffer[500];
 	uint64_t properties = 0;
-	compiler_read_tok(compiler);
-	while (compiler->last_tok.type != TOK_CLOSE_BRACE)
-	{
-		if (compiler->last_tok.type == TOK_IDENTIFIER) {
-			property_buffer[properties++] = compiler->last_tok.payload.identifier;
-			compiler_read_tok(compiler);
-		}
-		else if (compiler->last_tok.type == TOK_PROC) {
-			if (!compile_proc(compiler, record_id, 0, 1))
+	
+	if (compiler->last_tok.type == TOK_OPEN_BRACE) {
+		compiler_read_tok(compiler);
+		while (compiler->last_tok.type != TOK_CLOSE_BRACE)
+		{
+			if (compiler->last_tok.type == TOK_IDENTIFIER) {
+				property_buffer[properties++] = compiler->last_tok.payload.identifier;
+				compiler_read_tok(compiler);
+			}
+			else if (compiler->last_tok.type == TOK_PROC) {
+				if (!compile_proc(compiler, record_id, 0, 1))
+					return 0;
+			}
+			else {
+				compiler->last_err = ERROR_UNEXPECTED_TOKEN;
 				return 0;
+			}
 		}
-		else {
-			compiler->last_err = ERROR_UNEXPECTED_TOKEN;
-			return 0;
-		}
+		compiler_read_tok(compiler);
 	}
+	else if (!base_record_id)
+		MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
+
 	chunk_write(&compiler->chunk_builder, MACHINE_BUILD_PROTO);
 	chunk_write_ulong(&compiler->chunk_builder, record_id);
 	chunk_write_ulong(&compiler->chunk_builder, properties);
@@ -476,7 +483,6 @@ DECL_STATMENT_COMPILER(compile_record) {
 		chunk_write_ulong(&compiler->chunk_builder, record_id);
 		chunk_write_ulong(&compiler->chunk_builder, base_record_id);
 	}
-	compiler_read_tok(compiler);
 	return 1;
 }
 
@@ -492,8 +498,10 @@ DECL_STATMENT_COMPILER(compile_return) {
 			return 0;
 		chunk_write(&compiler->chunk_builder, MACHINE_TRACE);
 	}
-	else
+	else {
+		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
 		chunk_write_value(&compiler->chunk_builder, const_value_null);
+	}
 	chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	chunk_write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
 	return 1;

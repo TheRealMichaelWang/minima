@@ -35,6 +35,7 @@ const int init_machine(struct machine* machine) {
 	cache_declare_builtin(&machine->global_cache, 193506174, builtin_to_str);
 	cache_declare_builtin(&machine->global_cache, 193500757, builtin_to_num);
 	cache_declare_builtin(&machine->global_cache, 524429692, builtin_get_type);
+	cache_declare_builtin(&machine->global_cache, 1088750371, builtin_implements);
 	return 1;
 }
 

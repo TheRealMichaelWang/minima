@@ -145,3 +145,16 @@ DECL_BUILT_IN(builtin_get_type) {
 	uint64_t type_hash = combine_hash(VALUE_TYPE_OBJ, argv[0]->type == VALUE_TYPE_ID ? argv[0]->payload.identifier : argv[0]->payload.object.ptr.record->prototype->identifier);
 	return NUM_VALUE(type_hash);
 }
+
+DECL_BUILT_IN(builtin_implements) {
+	if (argc < 2 || !IS_RECORD(*argv[0]) || argv[1]->type != VALUE_TYPE_ID)
+		return const_value_null;
+	struct value* record = argv[0];
+	while (record != NULL)
+	{
+		if (record->payload.object.ptr.record->prototype->identifier == argv[1]->payload.identifier)
+			return const_value_true;
+		record = record_get_property(record->payload.object.ptr.record, RECORD_BASE_PROPERTY);
+	}
+	return const_value_false;
+}

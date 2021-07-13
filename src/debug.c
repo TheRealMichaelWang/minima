@@ -143,6 +143,7 @@ void debug_print_dump(struct chunk chunk) {
 	uint64_t old_pos = chunk.pos;
 	chunk.pos = 0;
 	uint32_t indent = 1;
+	chunk.last_code = -1;
 
 	while (chunk.last_code != MACHINE_END) {
 		print_instruction_dump(&chunk, &indent);

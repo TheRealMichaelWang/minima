@@ -68,12 +68,20 @@ uint64_t cache_retrieve_pos(struct global_cache* global_cache, uint64_t id) {
 	return 0;
 }
 
-const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id, struct record_prototype* prototype) {
-	struct cache_bucket to_insert;
-	to_insert.id = id;
-	to_insert.type = CACHE_TYPE_PROTO;
-	to_insert.payload.prototype = prototype;
-	return insert_bucket(global_cache, to_insert);
+struct record_prototype* cache_insert_prototype(struct global_cache* global_cache, uint64_t id) {
+	struct cache_bucket* bucket = get_cache_bucket(global_cache, id, CACHE_TYPE_PROTO);
+	if (!bucket) {
+		struct cache_bucket to_insert;
+		to_insert.id = id;
+		to_insert.type = CACHE_TYPE_PROTO;
+		to_insert.payload.prototype = malloc(sizeof(struct record_prototype));
+		ERROR_ALLOC_CHECK(to_insert.payload.prototype);
+		init_record_prototype(to_insert.payload.prototype, id);
+		insert_bucket(global_cache, to_insert);
+		return to_insert.payload.prototype;
+	}
+	else
+		return bucket->payload.prototype;
 }
 
 const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record, struct machine* machine) {

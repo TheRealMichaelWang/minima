@@ -33,7 +33,7 @@ void free_global_cache(struct global_cache* global_cache);
 const int cache_insert_label(struct global_cache* global_cache, uint64_t id, uint64_t pos);
 uint64_t cache_retrieve_pos(struct global_cache* global_cache, uint64_t id);
 
-const int cache_insert_prototype(struct global_cache* global_cache, uint64_t id, struct record_prototype* prototype);
+struct record_prototype* cache_insert_prototype(struct global_cache* global_cache, uint64_t id);
 const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id, struct record* record, struct machine* machine);
 const int cache_merge_proto(struct global_cache* global_cache, uint64_t child, uint64_t parent);
 
