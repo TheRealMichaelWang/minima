@@ -372,7 +372,6 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 	return 1;
 }
 
-
 DECL_OPCODE_HANDLER(opcode_build_collection) {
 	uint64_t req_size = chunk_read_ulong(chunk);
 	MATCH_EVALS(req_size);
