@@ -406,7 +406,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	}
 	if (callee) {
 		reverse_buffer[buffer_size++] = RECORD_THIS;
-		if (proc_id == 180057 && buffer_size == 1)
+		if (proc_id == 5862393 && buffer_size == 1)
 			proc_id = combine_hash((uint64_t)OPERATOR_NEGATE, UNARY_OVERLOAD);
 	}
 	
@@ -517,46 +517,44 @@ DECL_STATMENT_COMPILER(compile_include) {
 	char* file_path = malloc(150);
 	NULL_CHECK(file_path);
 	scanner_read_str(&compiler->scanner, file_path, 0);
-	compiler_read_tok(compiler);
-
-	FILE* infile = fopen(file_path, "rb");
-	if (!infile) {
-		compiler->last_err = ERROR_CANNOT_OPEN_FILE;
-		return 0;
-	}
 
 	uint64_t path_hash = hash(file_path, strlen(file_path));
 	for (uint_fast8_t i = 0; i < compiler->imported_files; i++)
-		if (compiler->imported_file_hashes[i] == path_hash)
+		if (compiler->imported_file_hashes[i] == path_hash) {
+			free(file_path);
+			compiler_read_tok(compiler);
 			return 1;
+		}
 	compiler->imported_file_hashes[compiler->imported_files++] = path_hash;
+
+	FILE* infile = fopen(file_path, "rb");
+	if (!infile) {
+		free(file_path);
+		compiler->last_err = ERROR_CANNOT_OPEN_FILE;
+		return 0;
+	}
+	free(file_path);
 
 	fseek(infile, 0, SEEK_END);
 	uint64_t fsize = ftell(infile);
 	fseek(infile, 0, SEEK_SET);
-	char* source = malloc(fsize + 1);
+	char* source = malloc((fsize + 1) * sizeof(char));
 	NULL_CHECK(source);
-	fread(source, 1, fsize, infile);
+	fread(source, sizeof(char), fsize, infile);
 	fclose(infile);
 	source[fsize] = 0;
 
-	struct compiler temp_compiler;
-	init_compiler(&temp_compiler, source);
+	struct scanner my_scanner = compiler->scanner;
+	init_scanner(&compiler->scanner, source);
 	
-	temp_compiler.imported_files = compiler->imported_files;
-	for (uint_fast8_t i = 0; i < compiler->imported_files; i++)
-		temp_compiler.imported_file_hashes[i] = compiler->imported_file_hashes[i];
-
-	if (!compile(&temp_compiler, 0)) {
-		compiler->last_err = temp_compiler.last_err;
-		compiler->scanner = temp_compiler.scanner;
+	compiler_read_tok(compiler);
+	if (!compile(compiler, 0)) 
 		return 0;
-	}
-	struct chunk compiled_chunk = build_chunk(&temp_compiler.chunk_builder);
-	chunk_write_chunk(&compiler->chunk_builder, compiled_chunk, 1);
-
 	free(source);
-	free(file_path);
+
+	compiler->scanner = my_scanner;
+	compiler_read_tok(compiler);
+
 	return 1;
 }
 

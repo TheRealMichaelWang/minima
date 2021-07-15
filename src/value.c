@@ -21,7 +21,7 @@ const double compare_value(const struct value* a, const struct value* b) {
 	case VALUE_TYPE_ID:
 		return (double)(a->payload.identifier != b->payload.identifier);
 	case VALUE_TYPE_OBJ:
-		return (double)(!object_compare(&a->payload.object, &b->payload.object));
+		return (double)object_compare(&a->payload.object, &b->payload.object);
 	}
 	return 0;
 }

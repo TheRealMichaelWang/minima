@@ -64,12 +64,14 @@ void init_compiler(struct compiler* compiler, const char* source) {
 const int compile(struct compiler* compiler, const int repl_mode) {
 	if(!repl_mode)
 		chunk_write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
+	
 	while (compiler->last_tok.type != TOK_END)
 	{
 		if (!compile_statement(compiler, STD_PROC_CALLEE, 0, 0)) {
 			return 0;
 		}
 	}
+
 	if(!repl_mode)
 		chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
 	return 1;

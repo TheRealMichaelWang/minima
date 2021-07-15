@@ -99,25 +99,25 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		case 5863476: //ifs
 			tok.type = TOK_IF;
 			break;
-		case 2090224421: //elif
+		case 6385191717: //elif
 			tok.type = TOK_ELIF;
 			break;
-		case 2090224750: //else
+		case 6385192046: //else
 			tok.type = TOK_ELSE;
 			break;
-		case 279132286: //while
+		case 210732529790: //while
 			tok.type = TOK_WHILE;
 			break;
-		case 2090626457: //proc
+		case 6385593753: //proc
 			tok.type = TOK_PROC;
 			break;
-		case 421984292:
+		case 6953974036516: //record
 			tok.type = TOK_RECORD;
 			break;
-		case 5863225:
+		case 5863225: //as
 			tok.type = TOK_AS;
 			break;
-		case 193500239:
+		case 193500239: //new 
 			tok.type = TOK_NEW;
 			break;
 		case 193505681: //set
@@ -129,22 +129,22 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		case 193504578://ref
 			tok.type = TOK_REF;
 			break;
-		case 3824527: //goproc
+		case 6953555876751: //goproc
 			tok.type = TOK_GOTO;
 			break;
-		case 422601765: //return
+		case 6953974653989: //return
 			tok.type = TOK_RETURN;
 			break;
-		case 2654384009: //include
+		case 229469872107401: //include
 			tok.type = TOK_INCLUDE;
 			break;
-		case 253189136: //alloc
+		case 210706586640: //alloc
 			tok.type = TOK_ALLOC;
 			break;
-		case 4231324027: //exterm
+		case 6953488408955: //extern
 			tok.type = TOK_EXTERN;
 			break;
-		case 2194734848: //extend
+		case 229465117490944: //extend
 			tok.type = TOK_EXTEND;
 			break;
 		case 193486360: //and
@@ -163,20 +163,20 @@ struct token scanner_read_tok(struct scanner* scanner) {
 			tok.type = TOK_UNARY_OP;
 			tok.payload.uni_op = OPERATOR_DECRIMENT;
 			break;
-		case 2090557760: //null
+		case 6385525056: //null
 			tok.type = TOK_PRIMATIVE;
 			tok.payload.primative = const_value_null;
 			break;
-		case 2090770405: //true
+		case 6385737701: //true
 			tok.type = TOK_PRIMATIVE;
 			tok.payload.primative = const_value_true;
 			break;
-		case 258723568: //false
+		case 210712121072: //false
 			tok.type = TOK_PRIMATIVE;
 			tok.payload.primative = const_value_false;
 			break;
 		case 193504585: //remark
-			while (scanner->last_char != '\n')
+			while (scanner->last_char != '\n' && scanner->last_char != 0)
 				read_char(scanner);
 			read_char(scanner);
 			tok.type = TOK_REMARK;

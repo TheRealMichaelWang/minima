@@ -141,9 +141,10 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 
 	struct value result = cache_invoke_builtin(&machine->global_cache, id, &argv, arguments, machine);
 
-	uint_fast64_t i = arguments;
+	i = arguments;
 	while (i--)
-		free_value(argv[i]);
+		if(argv[i]->gc_flag == GARBAGE_UNINIT)
+			free_value(argv[i]);
 
 	PUSH_EVAL(&result);
 	return 1;

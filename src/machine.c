@@ -25,17 +25,17 @@ const int init_machine(struct machine* machine) {
 	ERROR_ALLOC_CHECK(init_gcollect(&machine->garbage_collector));
 	init_global_cache(&machine->global_cache);
 
-	cache_declare_builtin(&machine->global_cache, 271190290, builtin_print);
-	cache_declare_builtin(&machine->global_cache, 359345086, builtin_print_line);
-	cache_declare_builtin(&machine->global_cache, 485418122, builtin_system_cmd);
-	cache_declare_builtin(&machine->global_cache, 417623846, builtin_random);
-	cache_declare_builtin(&machine->global_cache, 262752949, builtin_get_input);
+	cache_declare_builtin(&machine->global_cache, 210724587794, builtin_print);
+	cache_declare_builtin(&machine->global_cache, 6953911397310, builtin_print_line);
+	cache_declare_builtin(&machine->global_cache, 6954037470346, builtin_system_cmd);
+	cache_declare_builtin(&machine->global_cache, 6953969676070, builtin_random);
+	cache_declare_builtin(&machine->global_cache, 210716150453, builtin_get_input);
 	cache_declare_builtin(&machine->global_cache, 193498052, builtin_get_length);
-	cache_declare_builtin(&machine->global_cache, 2090320585, builtin_get_hash);
+	cache_declare_builtin(&machine->global_cache, 6385287881, builtin_get_hash);
 	cache_declare_builtin(&machine->global_cache, 193506174, builtin_to_str);
 	cache_declare_builtin(&machine->global_cache, 193500757, builtin_to_num);
-	cache_declare_builtin(&machine->global_cache, 524429692, builtin_get_type);
-	cache_declare_builtin(&machine->global_cache, 1088750371, builtin_implements);
+	cache_declare_builtin(&machine->global_cache, 6954076481916, builtin_get_type);
+	cache_declare_builtin(&machine->global_cache, 8246457940939440931, builtin_implements);
 	return 1;
 }
 
