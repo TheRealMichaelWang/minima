@@ -145,10 +145,14 @@ void debug_print_dump(struct chunk chunk) {
 	uint32_t indent = 1;
 	chunk.last_code = -1;
 
+	int pos_flag = 1;
+
 	while (chunk.last_code != MACHINE_END) {
 		print_instruction_dump(&chunk, &indent);
-		if (chunk.pos == old_pos && chunk.last_code != MACHINE_END)
+		if (chunk.pos >= old_pos && chunk.last_code != MACHINE_END && pos_flag) {
 			printf(" <<< IP");
+			pos_flag = 0;
+		}
 		printf("\n");
 	}
 }

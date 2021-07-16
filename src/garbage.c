@@ -24,14 +24,14 @@ void free_gcollect(struct garbage_collector* garbage_collector) {
 	free(garbage_collector->trace_stack);
 }
 
-static void init_gframe(struct garbage_frame* garbage_frame, struct value** value_begin, struct value** trace_begin) {
+static void init_gframe(struct garbage_frame* garbage_frame, const struct value** value_begin, const struct value** trace_begin) {
 	garbage_frame->to_collect = value_begin;
 	garbage_frame->to_trace = trace_begin;
 	garbage_frame->collect_values = 0;
 	garbage_frame->trace_values = 0;
 }
 
-const int gc_register_trace(struct garbage_collector* garbage_collector, struct value* value) {
+const int gc_register_trace(struct garbage_collector* garbage_collector, const struct value* value) {
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	if (top->trace_values == MAX_GARBAGE)
 		return 0;
@@ -46,7 +46,7 @@ const int gc_register_children(struct garbage_collector* garbage_collector, stru
 	
 	if (head->type == VALUE_TYPE_OBJ) {
 		uint64_t size = 0;
-		const struct value** children = object_get_children(&head->payload.object, &size);
+		struct value**children = object_get_children(&head->payload.object, &size);
 
 		for (uint64_t i = 0; i < size; i++)
 			if (children[i]->gc_flag == GARBAGE_UNINIT)
@@ -55,7 +55,7 @@ const int gc_register_children(struct garbage_collector* garbage_collector, stru
 	return 1;
 }
 
-const struct value* gc_register_value(struct garbage_collector* garbage_collector, struct value value) {
+struct value*gc_register_value(struct garbage_collector* garbage_collector, struct value value) {
 	if (value.gc_flag != GARBAGE_UNINIT)
 		return NULL;
 
@@ -93,7 +93,7 @@ static void trace_value(struct value* value, struct value** reset_stack, uint32_
 	}
 	if (value->type == VALUE_TYPE_OBJ) {
 		uint64_t size = 0;
-		const struct value** children = object_get_children(&value->payload.object, &size);
+		struct value**children = object_get_children(&value->payload.object, &size);
 		for (uint64_t i = 0; i < size; i++)
 			trace_value(children[i], reset_stack, stack_top);
 	}

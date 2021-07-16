@@ -42,7 +42,7 @@ static const struct value const_value_false = { GARBAGE_UNINIT, 0, VALUE_TYPE_NU
 
 void init_obj_value(struct value* value, struct object obj);
 
-const double compare_value(const struct value* a, const struct value* b);
+const double compare_value(const struct value*a, const struct value*b);
 
 void free_value(struct value* value);
 

@@ -38,7 +38,7 @@ static const int rehash(struct var_context* var_context) {
 	return 1;
 }
 
-const struct value* retrieve_var(struct var_context* var_context, const uint64_t id) {
+struct value*retrieve_var(struct var_context* var_context, const uint64_t id) {
 	uint64_t i = id & (var_context->hash_limit - 1);
 	
 	while (i < var_context->hash_limit && var_context->buckets[i].set_flag)
@@ -50,7 +50,7 @@ const struct value* retrieve_var(struct var_context* var_context, const uint64_t
 	return NULL;
 }
 
-const int emplace_var(struct var_context* var_context, const uint64_t id, const struct value* value) {
+const int emplace_var(struct var_context* var_context, const uint64_t id, struct value*value) {
 	uint64_t i = id & (var_context->hash_limit - 1);
 
 	while (i < var_context->hash_limit)

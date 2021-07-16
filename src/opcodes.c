@@ -22,7 +22,7 @@ DECL_OPCODE_HANDLER(opcode_load_const) {
 }
 
 DECL_OPCODE_HANDLER(opcode_load_var) {
-	const struct value* var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], chunk_read_ulong(chunk));
+	struct value*var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], chunk_read_ulong(chunk));
 
 	NULL_CHECK(var_ptr, ERROR_VARIABLE_UNDEFINED);
 
@@ -34,7 +34,7 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 	MATCH_EVALS(1);
 	uint64_t id = chunk_read_ulong(chunk);
 
-	const struct value* src = pop_eval(machine);
+	struct value*src = pop_eval(machine);
 	NULL_CHECK(src, ERROR_INSUFFICIENT_EVALS);
 
 	if (src->gc_flag == GARBAGE_UNINIT) {
@@ -56,22 +56,23 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	MATCH_EVALS(2);
 
-	const struct value* value_b = pop_eval(machine);
+	struct value*value_b = pop_eval(machine);
 	NULL_CHECK(value_b, ERROR_INSUFFICIENT_EVALS);
-	const struct value* value_a = pop_eval(machine);
+	struct value*value_a = pop_eval(machine);
 	NULL_CHECK(value_a, ERROR_INSUFFICIENT_EVALS);
 
 	enum binary_operator op = chunk_read(chunk);
 
 	if (IS_RECORD(*value_a) || IS_RECORD(*value_b)) {
-		struct value* record_val = IS_RECORD(*value_a) ? value_a : value_b;
-		struct value* operand = IS_RECORD(*value_a) ? value_b : value_a;
+		int in_order = IS_RECORD(*value_a);
+		struct value* record_val = in_order ? value_a : value_b;
+		struct value* operand = in_order ? value_b : value_a;
 
 		struct value* original_record_operand = record_val;
 
 		while (record_val != NULL)
 		{
-			uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(combine_hash(combine_hash((uint64_t)op, BINARY_OVERLOAD), 2), record_val->payload.object.ptr.record->prototype->identifier));
+			uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(combine_hash(combine_hash((uint64_t)op, BINARY_OVERLOAD), 3), record_val->payload.object.ptr.record->prototype->identifier));
 			if (!pos)
 				record_val = record_get_property(record_val->payload.object.ptr.record, RECORD_BASE_PROPERTY);
 			else {
@@ -81,6 +82,9 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 
 				PUSH_EVAL(operand);
 				PUSH_EVAL(original_record_operand);
+				struct value order_flag = NUM_VALUE(in_order);
+				PUSH_EVAL(&order_flag);
+
 				chunk_jump_to(chunk, pos);
 				return 1;
 			}
@@ -94,7 +98,7 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	MATCH_EVALS(1);
 
-	const struct value* operand = pop_eval(machine);
+	struct value*operand = pop_eval(machine);
 	NULL_CHECK(operand, ERROR_INSUFFICIENT_EVALS);
 	enum unary_operator op = chunk_read(chunk);
 
@@ -274,9 +278,9 @@ DECL_OPCODE_HANDLER(opcode_pop) {
 DECL_OPCODE_HANDLER(opcode_get_index) {
 	MATCH_EVALS(2);
 
-	const struct value* index_val = pop_eval(machine);
+	struct value*index_val = pop_eval(machine);
 	NULL_CHECK(index_val, ERROR_INSUFFICIENT_EVALS);
-	const struct value* collection_val = pop_eval(machine);
+	struct value*collection_val = pop_eval(machine);
 	NULL_CHECK(collection_val, ERROR_INSUFFICIENT_EVALS);
 
 	if (index_val->type != VALUE_TYPE_NUM || !IS_COLLECTION(*collection_val))
@@ -296,11 +300,11 @@ DECL_OPCODE_HANDLER(opcode_get_index) {
 DECL_OPCODE_HANDLER(opcode_set_index) {
 	MATCH_EVALS(3);
 
-	const struct value* set_val = pop_eval(machine);
+	struct value*set_val = pop_eval(machine);
 	NULL_CHECK(set_val, ERROR_INSUFFICIENT_EVALS);
-	const struct value* index_val = pop_eval(machine);
+	struct value*index_val = pop_eval(machine);
 	NULL_CHECK(index_val, ERROR_INSUFFICIENT_EVALS);
-	const struct value* collection_val = pop_eval(machine);
+	struct value*collection_val = pop_eval(machine);
 	NULL_CHECK(collection_val, ERROR_INSUFFICIENT_EVALS);
 
 	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != OBJ_TYPE_COL)
@@ -330,7 +334,7 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 DECL_OPCODE_HANDLER(opcode_get_property) {
 	MATCH_EVALS(1);
 
-	const struct value* record_eval = pop_eval(machine);
+	struct value*record_eval = pop_eval(machine);
 	NULL_CHECK(record_eval, ERROR_INSUFFICIENT_EVALS);
 
 	if (!IS_RECORD(*record_eval))
@@ -349,9 +353,9 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 
 	uint64_t property = chunk_read_ulong(chunk);
 
-	const struct value* set_val = pop_eval(machine);
+	struct value*set_val = pop_eval(machine);
 	NULL_CHECK(set_val, ERROR_INSUFFICIENT_EVALS);
-	const struct value* record_eval = pop_eval(machine);
+	struct value*record_eval = pop_eval(machine);
 	NULL_CHECK(record_eval, ERROR_INSUFFICIENT_EVALS);
 
 	if (!IS_RECORD(*record_eval))

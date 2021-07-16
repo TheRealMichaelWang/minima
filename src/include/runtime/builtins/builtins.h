@@ -28,6 +28,8 @@ DECL_BUILT_IN(builtin_get_length);
 //gets the hash of a value
 DECL_BUILT_IN(builtin_get_hash);
 
+DECL_BUILT_IN(builtin_abs);
+
 //gets a str as a numerical
 DECL_BUILT_IN(builtin_to_num);
 

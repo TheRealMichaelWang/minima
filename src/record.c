@@ -73,7 +73,7 @@ struct value* record_get_property(struct record* record, const uint64_t property
 	return NULL;
 }
 
-const int record_set_property(struct record* record, const uint64_t property, struct value* value) {
+const int record_set_property(struct record* record, const uint64_t property, const struct value* value) {
 	uint_fast8_t i = retrieve_property_index(record->prototype, property);
 	if (i) {
 		record->properties[i - 1] = value;

@@ -161,4 +161,5 @@ const int error_info(enum error error) {
 	}
 	else
 		printf("\nNo local help documentation found. Please refer to, https://github.com/TheRealMichaelWang/minima/wiki/Lists, for more information.");
+	return 1;
 }

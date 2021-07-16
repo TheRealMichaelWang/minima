@@ -378,10 +378,13 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		return 0;
 	}
 
+	int bin_op_flag = 0;
 	uint64_t proc_id;
 	compiler_read_tok(compiler);
-	if (callee && compiler->last_tok.type == TOK_BINARY_OP)
+	if (callee && compiler->last_tok.type == TOK_BINARY_OP) {
 		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, BINARY_OVERLOAD);
+		bin_op_flag = 1;
+	}
 	else if (callee && compiler->last_tok.type == TOK_UNARY_OP)
 		proc_id = combine_hash((uint64_t)compiler->last_tok.payload.bin_op, UNARY_OVERLOAD);
 	else {
@@ -406,8 +409,12 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	}
 	if (callee) {
 		reverse_buffer[buffer_size++] = RECORD_THIS;
-		if (proc_id == 5862393 && buffer_size == 1)
+		if (proc_id == 5862393 && buffer_size == 1) {
 			proc_id = combine_hash((uint64_t)OPERATOR_NEGATE, UNARY_OVERLOAD);
+			bin_op_flag = 0;
+		}
+		if (bin_op_flag)
+			reverse_buffer[buffer_size++] = RECORD_OVERLOAD_ORDER;
 	}
 	
 	chunk_write_ulong(&compiler->chunk_builder, combine_hash(combine_hash(proc_id, buffer_size), callee));

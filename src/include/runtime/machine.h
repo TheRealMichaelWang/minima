@@ -41,8 +41,8 @@ void free_machine(struct machine* machine);
 
 void machine_reset(struct machine* machine);
 
-const struct value* pop_eval(struct machine* machine);
-const struct value* push_eval(struct machine* machine, struct value* value, int push_obj_children);
+struct value* pop_eval(struct machine* machine);
+struct value* push_eval(struct machine* machine, struct value* value, int push_obj_children);
 
 const int condition_check(struct machine* machine);
 

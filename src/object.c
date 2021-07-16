@@ -27,9 +27,9 @@ void free_object(struct object* object) {
 	}
 }
 
-const int object_compare(struct object* a, struct object* b) {
+const int object_compare(const struct object* a, const struct object* b) {
 	if (a->type != b->type)
-		return a->type = b->type;
+		return a->type == b->type;
 	switch (a->type)
 	{
 	case OBJ_TYPE_COL:
@@ -40,7 +40,7 @@ const int object_compare(struct object* a, struct object* b) {
 	return 1;
 }
 
-const struct value** object_get_children(struct object* object, uint64_t* size) {
+struct value**object_get_children(const struct object* object, uint64_t* size) {
 	switch (object->type)
 	{
 	case OBJ_TYPE_COL:

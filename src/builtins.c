@@ -26,7 +26,7 @@ static char* value_to_str(struct value value) {
 	return buffer;
 }
 
-struct value str_to_value(const char* buffer, const int length, struct machine* machine) {
+struct value str_to_value(const char* buffer, const size_t length, struct machine* machine) {
 	struct value toret;
 	struct collection* collection = malloc(sizeof(struct collection));
 	if (collection == NULL)
@@ -105,6 +105,15 @@ DECL_BUILT_IN(builtin_get_length) {
 
 DECL_BUILT_IN(builtin_get_hash) {
 	return NUM_VALUE(value_hash(*argv[0]));
+}
+
+DECL_BUILT_IN(builtin_abs) {
+	if (argc < 1 || argv[0]->type != VALUE_TYPE_NUM)
+		return const_value_null;
+	if (argv[0]->payload.numerical >= 0)
+		return NUM_VALUE(argv[0]->payload.numerical);
+	else
+		return NUM_VALUE(-argv[0]->payload.numerical);
 }
 
 DECL_BUILT_IN(builtin_to_num) {

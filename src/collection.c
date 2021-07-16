@@ -14,7 +14,7 @@ void free_collection(struct collection* collection) {
 	free(collection->inner_collection);
 }
 
-const int collection_compare(struct collection* a, struct collection* b) {
+const int collection_compare(const struct collection* a, const struct collection* b) {
 	if (a->size != b->size)
 		return 0;
 	for (uint64_t i = 0; i < a->size; i++) {

@@ -8,6 +8,7 @@
 #define RECORD_BASE_PROPERTY 6385072256
 #define RECORD_INIT_PROC 6385337657
 #define RECORD_THIS 6385726429
+#define RECORD_OVERLOAD_ORDER 7572763920046527
 
 #define BINARY_OVERLOAD 2187
 #define UNARY_OVERLOAD 3187
@@ -36,6 +37,6 @@ const int init_record(struct record* record, struct record_prototype* prototype,
 void free_record(struct record* record);
 
 struct value* record_get_property(struct record* record, const uint64_t property);
-const int record_set_property(struct record* record, const uint64_t property, struct value* value);
+const int record_set_property(struct record* record, const uint64_t property, const struct value* value);
 
 #endif // !RECORD_H

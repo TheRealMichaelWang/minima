@@ -36,6 +36,7 @@ const int init_machine(struct machine* machine) {
 	cache_declare_builtin(&machine->global_cache, 193500757, builtin_to_num);
 	cache_declare_builtin(&machine->global_cache, 6954076481916, builtin_get_type);
 	cache_declare_builtin(&machine->global_cache, 8246457940939440931, builtin_implements);
+	cache_declare_builtin(&machine->global_cache, 193485979, builtin_abs);
 	return 1;
 }
 
@@ -61,7 +62,7 @@ void free_machine(struct machine* machine) {
 	free_global_cache(&machine->global_cache);
 }
 
-const struct value* pop_eval(struct machine* machine) {
+struct value* pop_eval(struct machine* machine) {
 	if (!machine->evals)
 		return NULL;
 
@@ -74,7 +75,7 @@ const struct value* pop_eval(struct machine* machine) {
 		machine->constants--;
 		if (top->type == VALUE_TYPE_OBJ) {
 			uint64_t children_count;
-			const struct value** children = object_get_children(&top->payload.object, &children_count);
+			struct value**children = object_get_children(&top->payload.object, &children_count);
 
 			while (children_count--)
 				if (children[children_count]->gc_flag == GARBAGE_UNINIT)
@@ -84,14 +85,14 @@ const struct value* pop_eval(struct machine* machine) {
 	return top;
 }
 
-const struct value* push_eval(struct machine* machine, struct value* value, int push_obj_children)
+struct value* push_eval(struct machine* machine, struct value* value, int push_obj_children)
 {
 	STACK_CHECK;
 
 	if (value->gc_flag == GARBAGE_UNINIT) {
 		if (value->type == VALUE_TYPE_OBJ && push_obj_children) {
 			uint64_t children_count;
-			const struct value** children = object_get_children(&value->payload.object, &children_count);
+			struct value** children = object_get_children(&value->payload.object, &children_count);
 
 			for (uint_fast64_t i = 0; i < children_count; i++)
 				if (children[i]->gc_flag == GARBAGE_UNINIT)
@@ -109,7 +110,8 @@ const struct value* push_eval(struct machine* machine, struct value* value, int 
 const int condition_check(struct machine* machine) {
 	MATCH_EVALS(1);
 
-	const struct value* valptr = pop_eval(machine);
+	struct value*valptr = pop_eval(machine);
+	
 	NULL_CHECK(valptr, ERROR_INSUFFICIENT_EVALS);
 
 	int cond = 1;

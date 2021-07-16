@@ -8,7 +8,7 @@ void init_obj_value(struct value* value, struct object obj) {
 	value->payload.object = obj;
 }
 
-const double compare_value(const struct value* a, const struct value* b) {
+const double compare_value(const struct value*a, const struct value*b) {
 	if (a->type != b->type)
 		return (double)a->type - (double)b->type;
 
