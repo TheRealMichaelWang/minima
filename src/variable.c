@@ -39,30 +39,23 @@ static const int rehash(struct var_context* var_context) {
 }
 
 struct value*retrieve_var(struct var_context* var_context, const uint64_t id) {
-	uint64_t i = id & (var_context->hash_limit - 1);
-	
-	while (i < var_context->hash_limit && var_context->buckets[i].set_flag)
-	{
+	for (uint_fast64_t i = id & (var_context->hash_limit - 1); i < var_context->hash_limit && var_context->buckets[i].set_flag; i++) {
 		if (var_context->buckets[i].identifier == id)
 			return var_context->buckets[i].value;
-		i++;
 	}
 	return NULL;
 }
 
 const int emplace_var(struct var_context* var_context, const uint64_t id, struct value*value) {
 	ERROR_ALLOC_CHECK(value);
-	uint64_t i = id & (var_context->hash_limit - 1);
 
-	while (i < var_context->hash_limit)
-	{
+	for (uint_fast64_t i = id & (var_context->hash_limit - 1); i < var_context->hash_limit; i++) {
 		if (!var_context->buckets[i].set_flag || (var_context->buckets[i].identifier == id)) {
 			var_context->buckets[i].identifier = id;
 			var_context->buckets[i].value = value;
 			var_context->buckets[i].set_flag = 1;
 			return 1;
 		}
-		i++;
 	}
 	
 	if (!rehash(var_context))
