@@ -1,0 +1,56 @@
+include "map.min"
+include "symbol/core.txt"
+
+record eq_var {
+	proc eval(varmap) {
+		return goproc find as varmap(this.obj)
+	}
+}
+
+record eq_num {
+	proc eval(varmap) {
+		return this.obj
+	}
+}
+
+record eq_op_add {
+	proc eval(varmap) {
+		return goproc eval as this.left(varmap) + goproc eval as this.right(varmap)
+	}
+}
+
+record eq_op_subtract {
+	proc eval(varmap) {
+		return goproc eval as this.left(varmap) - goproc eval as this.right(varmap)
+	}
+}
+
+record eq_op_multiply {
+	proc eval(varmap) {
+		return goproc eval as this.left(varmap) * goproc eval as this.right(varmap)
+	}
+}
+
+record eq_op_divide {
+	proc eval(varmap) {
+		return goproc eval as this.left(varmap) / goproc eval as this.right(varmap)
+	}
+}
+
+record eq_op_mod {
+	proc eval(varmap) {
+		return goproc eval as this.left(varmap) + goproc eval as this.right(varmap)
+	}
+}
+
+record eq_op_pow {
+	proc eval(varmap) {
+		return goproc eval as this.left(varmap) ^ goproc eval as this.right(varmap)
+	}
+}
+
+record eq_op_abs {
+	proc eval(varmap) {
+		return extern abs(goproc eval as this.operand(varmap))
+	}
+}
