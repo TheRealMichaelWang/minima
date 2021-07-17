@@ -86,6 +86,20 @@ record list {
 		inc this.size
 	}
 
+	proc push_range(list) {
+		if this.size == 0 {
+			set this.head to list.head
+			set this.tail to list.tail
+		}
+		else {
+			set this.tail.next to list.head
+			set list.head.prev to this.tail
+			set this.tail to list.tail
+		}
+		set this.size to this.size + list.size
+		set list to null
+	}
+
 	rem Purpose:	Removes the back of the list and returns it's value
 	rem			Returns null if the list is empty
 	proc pop_back {
@@ -136,8 +150,8 @@ record list {
 		set i to 0
 		while current {
 			set array[i] to ref current.value
-			set current to ref current.next
 			inc i
+			set current to ref current.next
 		}
 		return array
 	}
