@@ -190,7 +190,7 @@ record simplifier {
 
 			new rule((const1 * any1) ^ const1, const1 ^ const1 * any1 ^ const2),
 
-			new rule(any1 / any1, 1),
+			new rule(any1 / any1, new eq_num(1)),
 
 			new rule((any1 * any2) / any2, any1),
 			new rule((any2 * any1) / any2, any1),
@@ -200,16 +200,16 @@ record simplifier {
 			new rule((any2 * any1) / (any2 * any3), any1 / any3),
 			new rule((any2 * any1) / (any3 * any2), any1 / any3),
 
-			new rule((any1 - any2) / (any2 - any1), -1),
+			new rule((any1 - any2) / (any2 - any1), new eq_num(-1)),
 
-			new rule((any1 + any2) / (any2 + any1), -1),
+			new rule((any1 + any2) / (any2 + any1), new eq_num(-1)),
 
 			new rule(const1 / (const2 * any1), (const1 / const2) / any1),
 			new rule(const1 / (any1 * const2), (const1 / const2) / any1),
 
 			new rule(const1 * (const2 * any1), (const1 * const2) * any1),
 
-			new rule(any1 - any1, 0),
+			new rule(any1 - any1, new eq_num(0)),
 
 			new rule(any1 - any2 * any1, any1 * (1 - any2)),
 			new rule(any1 - any1 * any2, any1 * (1 - any2)),
