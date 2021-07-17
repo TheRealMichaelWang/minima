@@ -40,9 +40,15 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 	if (src->gc_flag == GARBAGE_UNINIT) {
 		struct value* dest = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
 		if (dest) {
-			free_value(dest);
-			*dest = *src;
-			NULL_CHECK(gc_register_children(&machine->garbage_collector, dest), ERROR_OUT_OF_MEMORY);
+			if (src->type == VALUE_TYPE_NULL) {
+				if (!emplace_var(&machine->var_stack[machine->call_size - 1], id, gc_register_value(&machine->garbage_collector, *src)))
+					MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
+			}
+			else {
+				free_value(dest);
+				*dest = *src;
+				NULL_CHECK(gc_register_children(&machine->garbage_collector, dest), ERROR_OUT_OF_MEMORY);
+			}
 		}
 		else if (!emplace_var(&machine->var_stack[machine->call_size - 1], id, gc_register_value(&machine->garbage_collector, *src)))
 			MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
@@ -102,7 +108,7 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	NULL_CHECK(operand, ERROR_INSUFFICIENT_EVALS);
 	enum unary_operator op = chunk_read(chunk);
 
-	if (!(op == OPERATOR_COPY && operand->type == VALUE_TYPE_OBJ)) {
+	if (!(op == OPERATOR_COPY && (operand->type == VALUE_TYPE_OBJ || operand->type == VALUE_TYPE_NULL))) {
 		if (IS_RECORD(*operand)) {
 			struct value* record_val = operand;
 			struct value* original_record_operand = record_val;
@@ -320,9 +326,14 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 		if(collection->inner_collection[index] == GARBAGE_UNINIT)
 			collection->inner_collection[index] = set_val;
 		else {
-			free_value(collection->inner_collection[index]);
-			*collection->inner_collection[index] = *set_val;
-			NULL_CHECK(gc_register_children(&machine->garbage_collector, collection->inner_collection[index]), ERROR_OUT_OF_MEMORY);
+			if (set_val->type == VALUE_TYPE_NULL) {
+				NULL_CHECK(collection->inner_collection[index] = gc_register_value(&machine->garbage_collector, *set_val), ERROR_OUT_OF_MEMORY);
+			}
+			else {
+				free_value(collection->inner_collection[index]);
+				*collection->inner_collection[index] = *set_val;
+				NULL_CHECK(gc_register_children(&machine->garbage_collector, collection->inner_collection[index]), ERROR_OUT_OF_MEMORY);
+			}
 		}
 	}
 	else
@@ -370,9 +381,15 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 				MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 		}
 		else {
-			free_value(property_val);
-			*property_val = *set_val;
-			NULL_CHECK(gc_register_children(&machine->garbage_collector, property_val), ERROR_OUT_OF_MEMORY);
+			if (set_val->gc_flag == NULL) {
+				if (!record_set_property(record, property, gc_register_value(&machine->garbage_collector, *set_val)))
+					MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
+			}
+			else {
+				free_value(property_val);
+				*property_val = *set_val;
+				NULL_CHECK(gc_register_children(&machine->garbage_collector, property_val), ERROR_OUT_OF_MEMORY);
+			}
 		}
 	}
 	else if (!record_set_property(record, property, set_val))

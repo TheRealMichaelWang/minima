@@ -51,6 +51,7 @@ struct value*retrieve_var(struct var_context* var_context, const uint64_t id) {
 }
 
 const int emplace_var(struct var_context* var_context, const uint64_t id, struct value*value) {
+	ERROR_ALLOC_CHECK(value);
 	uint64_t i = id & (var_context->hash_limit - 1);
 
 	while (i < var_context->hash_limit)
