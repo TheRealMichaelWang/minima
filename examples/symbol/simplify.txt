@@ -270,26 +270,28 @@ record simplifier {
 	}
 
 	proc simplify(eq_entity) {
-		if extern implements(eq_entity, #eq_bin_op) {
-			set eq_entity.left to goproc simplify as this(eq_entity.left)
-			set eq_entity.right to goproc simplify as this(eq_entity.right)
-		}
-		elif extern implements(eq_entity, #eq_uni_op) {
-			set eq_entity.operand to goproc simplify as this(eq_entity.operand)
-		}
-		else {
-			return eq_entity
-		}
-
 		set simp_flag to true
 		while simp_flag {
 			set simp_flag to false
+
+			if extern implements(eq_entity, #eq_bin_op) {
+				set eq_entity.left to goproc simplify as this(eq_entity.left)
+				set eq_entity.right to goproc simplify as this(eq_entity.right)
+			}
+			elif extern implements(eq_entity, #eq_uni_op) {
+				set eq_entity.operand to goproc simplify as this(eq_entity.operand)
+			}
+			else {
+				return eq_entity
+			}
+
 			set i to extern len(this.rules)
 			while dec i {
 				set m_stat to goproc apply as this.rules[i](eq_entity)
 				if m_stat {
 					set eq_entity to m_stat
 					set simp_flag to true
+					inc i
 				}
 			}
 		}

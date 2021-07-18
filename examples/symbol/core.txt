@@ -125,42 +125,42 @@ record eq_op_add extends eq_bin_op {
 rem Purpose: 	A record that implements the subtraction operator
 record eq_op_subtract extends eq_bin_op {
 	proc init(left, right) {
-		goproc init as this.base(left, right, 0)
+		goproc init as this.base(left, right, 1)
 	}
 }
 
 rem Purpose:	A record that implements the multiplication operator
 record eq_op_multiply extends eq_bin_op {
 	proc init(left, right) {
-		goproc init as this.base(left, right, 1)
+		goproc init as this.base(left, right, 2)
 	}
 }
 
 rem Purpose:	A record that implements the division operator
 record eq_op_divide extends eq_bin_op {
 	proc init(left, right) {
-		goproc init as this.base(left, right, 1)
+		goproc init as this.base(left, right, 3)
 	}
 }
 
 rem Purpose:	A record that implements the remainder, not absoloute value operator
 record eq_op_mod extends eq_bin_op {
 	proc init(left, right) {
-		goproc init as this.base(left, right, 1)
+		goproc init as this.base(left, right, 3)
 	}
 }
 
 rem Purpose:	A record that implements the power operator
 record eq_op_pow extends eq_bin_op {
 	proc init(left, right) {
-		goproc init as this.base(left, right, 2)
+		goproc init as this.base(left, right, 4)
 	}
 }
 
 rem Purpose: 	A record that implements the logarithm operator
 record eq_op_log extends eq_bin_op {
 	proc init(val, base) {
-		goproc init as this.base(val, base, 3)
+		goproc init as this.base(val, base, 4)
 	}
 }
 
