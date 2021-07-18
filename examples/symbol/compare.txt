@@ -34,3 +34,9 @@ record eq_uni_op {
 		return goproc compare as this.operand(obj.operand)
 	}
 }
+
+record match {
+	proc compare(obj) {
+		return false
+	}
+}
