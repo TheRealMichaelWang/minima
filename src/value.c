@@ -17,7 +17,7 @@ const double compare_value(const struct value*a, const struct value*b) {
 	case VALUE_TYPE_NUM:
 		return a->payload.numerical - b->payload.numerical;
 	case VALUE_TYPE_CHAR:
-		return a->payload.character - b->payload.character;
+		return (double)a->payload.character - (double)b->payload.character;
 	case VALUE_TYPE_ID:
 		return a->payload.identifier != b->payload.identifier;
 	case VALUE_TYPE_OBJ:

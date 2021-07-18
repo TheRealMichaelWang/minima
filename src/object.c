@@ -29,14 +29,16 @@ void free_object(struct object* object) {
 
 const int object_compare(const struct object* a, const struct object* b) {
 	if (a->type != b->type)
-		return a->type == b->type;
+		return 1;
+
 	switch (a->type)
 	{
 	case OBJ_TYPE_COL:
-		return collection_compare(a->ptr.collection, b->ptr.collection) != 0;
+		return collection_compare(a->ptr.collection, b->ptr.collection) != 1;
 	case OBJ_TYPE_REC:
 		return a->ptr.record != b->ptr.record;
 	}
+
 	return 1;
 }
 
