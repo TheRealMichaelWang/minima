@@ -13,11 +13,11 @@
 //#define MATCH_OP_TYPE(OPERAND, VALUE_TYPE) if(OPERAND->type != VALUE_TYPE) { return 0; } 
 
 DECL_BINARY_OPERATOR(op_equals) {
-	return NUM_VALUE(!compare_value(a, b));
+	return NUM_VALUE(compare_value(a, b) == 0);
 }
 
 DECL_BINARY_OPERATOR(op_not_equals) {
-	return NUM_VALUE(compare_value(a, b));
+	return NUM_VALUE(compare_value(a, b) != 0);
 }
 
 DECL_BINARY_OPERATOR(op_more) {

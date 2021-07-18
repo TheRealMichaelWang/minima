@@ -33,9 +33,9 @@ const int object_compare(const struct object* a, const struct object* b) {
 	switch (a->type)
 	{
 	case OBJ_TYPE_COL:
-		return !collection_compare(a->ptr.collection, b->ptr.collection);
+		return collection_compare(a->ptr.collection, b->ptr.collection) != 0;
 	case OBJ_TYPE_REC:
-		return !(a->ptr.record == b->ptr.record);
+		return a->ptr.record != b->ptr.record;
 	}
 	return 1;
 }
