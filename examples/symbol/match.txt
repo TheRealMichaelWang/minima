@@ -16,9 +16,10 @@ record match extends eq_entity{
 				return false
 			}
 		}
+
 		set matched_ent to goproc find as match_map(this.id)
 		if matched_ent {
-			return eq_entity == matched_ent
+			return goproc compare as matched_ent(eq_entity)
 		}
 		else {
 			goproc insert as match_map(this.id, eq_entity)
@@ -37,7 +38,7 @@ record eq_leaf {
 	}
 
 	proc match(eq_entity, match_map) {
-		return this == eq_entity
+		return goproc compare as this(eq_entity)
 	}
 }
 

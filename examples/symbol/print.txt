@@ -6,6 +6,12 @@ record eq_leaf {
 	}
 }
 
+record match {
+	proc print {
+		extern print("match:",this.id)
+	}
+}
+
 record eq_bin_op {
 	proc print_child(child) {
 		if extern implements(child, #eq_bin_op) {
