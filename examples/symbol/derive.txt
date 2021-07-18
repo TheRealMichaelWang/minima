@@ -10,7 +10,7 @@ record eq_var {
 rem Purpose:	Implements a derivative function for numericals
 record eq_num {
 	proc derive(var) {
-		return 0
+		return new eq_num(0)
 	}
 }
 
@@ -48,9 +48,6 @@ record eq_op_divide {
 rem Purpose:	Implements a derivative function for modulous
 record eq_op_mod {
 	proc derive(var) {
-		if extern typeof(this.right) == extern typeof(#eq_num) {
-			return goproc derive as this.right(var)
-		}
 		return goproc derive as this.left(var) - 
 			(this.left / this.right) * goproc derive as this.right(var)
 	}
@@ -65,17 +62,16 @@ record eq_op_pow {
 		elif extern typeof(this.left) == extern typeof(#eq_num) {
 			return this.right ^ this.left * goproc log(this.left) * goproc derive as this.right(var) 
 		}
-		return this.left ^ this.right * goproc derive as this.left(var) * this.right /
-			(this.left + goproc log(this.left) * goproc derive as this.right(var))
+		return this.left ^ this.right * (goproc derive as this.left(var) * this.right / this.left + goproc log(this.left) * goproc derive as this.right(var))
 	}
 }
 
 rem Purpose:	Implements a derivative function for logarithms
 record eq_op_log {
 	proc derive(var) {
-		return (goproc derive as this.right(var) / this.right * goproc log(this.left) - 
-			goproc log(this.right) + goproc derive as this.left(var) / this.left) /
-			goproc log(this.left) ^ 2
+		return (goproc derive as this.left(var) / this.left * goproc log(this.right) - 
+			goproc log(this.left) * goproc derive as this.right(var) / this.right) /
+			(goproc log(this.right) ^ 2)
 	}
 }
 
