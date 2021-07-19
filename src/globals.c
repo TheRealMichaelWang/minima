@@ -96,10 +96,8 @@ const int cache_init_record(struct global_cache* global_cache, uint64_t proto_id
 const int cache_merge_proto(struct global_cache* global_cache, uint64_t child, uint64_t parent) {
 	struct cache_bucket* child_bucket = get_cache_bucket(global_cache, child, CACHE_TYPE_PROTO);
 	struct cache_bucket* parent_bucket = get_cache_bucket(global_cache, parent, CACHE_TYPE_PROTO);
-	if (child_bucket && parent_bucket) {
-		record_inherit(child_bucket->payload.prototype, parent_bucket->payload.prototype);
-		return 1;
-	}
+	if (child_bucket && parent_bucket)
+		return record_inherit(child_bucket->payload.prototype, parent_bucket->payload.prototype);
 	return 0;
 }
 
