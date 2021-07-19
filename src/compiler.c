@@ -18,17 +18,14 @@ struct token compiler_read_tok(struct compiler* compiler) {
 	return compiler->last_tok;
 }
 
-const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize);
-const int compile_body(struct compiler* compiler, const int func_encapsulated);
-
-const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize) {
+const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int expr_optimize) {
 	char is_id = compiler->last_tok.type == TOK_IDENTIFIER;
-	if (!compile_value(compiler, 1)) //lhs
+	if (!compile_value(compiler, builder, 1)) //lhs
 		return 0;
 	if (compiler->last_tok.type != TOK_BINARY_OP) {
 		if (is_id &&!expr_optimize) {
-			chunk_write(&compiler->chunk_builder, MACHINE_EVAL_UNI_OP);
-			chunk_write(&compiler->chunk_builder, OPERATOR_COPY);
+			chunk_write(builder, MACHINE_EVAL_UNI_OP);
+			chunk_write(builder, OPERATOR_COPY);
 		}
 		return 1;
 	}
@@ -36,18 +33,18 @@ const int compile_expression(struct compiler* compiler, enum op_precedence min_p
 	{
 		enum binary_operator op = compiler->last_tok.payload.bin_op;
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, op_precedence[op], 1))
+		if (!compile_expression(compiler, builder, op_precedence[op], 1))
 			return 0;
-		chunk_write(&compiler->chunk_builder, MACHINE_EVAL_BIN_OP);
-		chunk_write(&compiler->chunk_builder, op);
+		chunk_write(builder, MACHINE_EVAL_BIN_OP);
+		chunk_write(builder, op);
 	}
 	return 1;
 }
 
-const int compile_body(struct compiler* compiler, const int func_encapsulated) {
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, const int func_encapsulated) {
 	while (compiler->last_tok.type != TOK_END && compiler->last_tok.type != TOK_CLOSE_BRACE)
 	{
-		if (!compile_statement(compiler, STD_PROC_CALLEE,1, func_encapsulated))
+		if (!compile_statement(compiler, builder, STD_PROC_CALLEE,1, func_encapsulated))
 			return 0;
 	}
 	compiler_read_tok(compiler);
@@ -57,22 +54,37 @@ const int compile_body(struct compiler* compiler, const int func_encapsulated) {
 void init_compiler(struct compiler* compiler, const char* source) {
 	compiler->imported_files = 0;
 	init_scanner(&compiler->scanner, source);
-	init_chunk_builder(&compiler->chunk_builder);
+	init_chunk_builder(&compiler->code_builder);
+	init_chunk_builder(&compiler->data_builder);
 	compiler_read_tok(compiler);
+}
+
+void free_compiler(struct compiler* compiler) {
+	free(compiler->scanner.source);
 }
 
 const int compile(struct compiler* compiler, const int repl_mode) {
 	if(!repl_mode)
-		chunk_write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
+		chunk_write(&compiler->code_builder, MACHINE_NEW_FRAME);
 	
 	while (compiler->last_tok.type != TOK_END)
 	{
-		if (!compile_statement(compiler, STD_PROC_CALLEE, 0, 0)) {
+		if (!compile_statement(compiler, &compiler->code_builder, STD_PROC_CALLEE, 0, 0)) {
 			return 0;
 		}
 	}
 
 	if(!repl_mode)
-		chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
+		chunk_write(&compiler->code_builder, MACHINE_CLEAN);
 	return 1;
+}
+
+struct chunk compiler_get_chunk(struct compiler* compiler) {
+	struct chunk_builder sum;
+	init_chunk_builder(&sum);
+
+	chunk_write_chunk(&sum, build_chunk(&compiler->data_builder), 1);
+	chunk_write_chunk(&sum, build_chunk(&compiler->code_builder), 1);
+
+	return build_chunk(&sum);
 }

@@ -3,7 +3,7 @@
 
 #include "compiler.h"
 
-const int compile_value(struct compiler* compiler, const int expr_optimize);
-const int compile_statement(struct compiler* compiler, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated);
+const int compile_value(struct compiler* compiler, struct chunk_builder* builder, const int expr_optimize);
+const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated);
 
 #endif // !STATMENTS_H

@@ -13,8 +13,9 @@ struct compiler
 {
 	struct scanner scanner;
 	struct token last_tok;
-	struct chunk_builder chunk_builder;
 	enum error last_err;
+
+	struct chunk_builder data_builder, code_builder;
 
 	uint64_t imported_file_hashes[255];
 	uint_fast8_t imported_files;
@@ -30,9 +31,11 @@ const int compile(struct compiler* compiler, const int repl_mode);
 struct token compiler_read_tok(struct compiler* compiler);
 
 //compiles an expression using shunting-yard
-const int compile_expression(struct compiler* compiler, enum op_precedence min_prec, const int expr_optimize);
+const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int expr_optimize);
 
 //compiles a block of code
-const int compile_body(struct compiler* compiler, const int func_encapsulated);
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, const int func_encapsulated);
+
+struct chunk compiler_get_chunk(struct compiler* compiler);
 
 #endif // !COMPILER_H

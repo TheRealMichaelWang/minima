@@ -12,13 +12,13 @@
 #define MATCH_TOK(TOK, TYPE) if(TOK.type != TYPE) { compiler->last_err = ERROR_UNEXPECTED_TOKEN; return 0; }
 #define NULL_CHECK(PTR) if (PTR == NULL) { compiler->last_err = ERROR_OUT_OF_MEMORY; return 0; }
 
-#define DECL_VALUE_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, const int optimize)
-#define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated)
+#define DECL_VALUE_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder, const int optimize)
+#define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder , const uint64_t callee, const int control_encapsulated, const int proc_encapsulated)
 
 DECL_VALUE_COMPILER(compile_primative) {
 	MATCH_TOK(compiler->last_tok, TOK_PRIMATIVE);
-	chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-	chunk_write_value(&compiler->chunk_builder, compiler->last_tok.payload.primative);
+	chunk_write(builder, MACHINE_LOAD_CONST);
+	chunk_write_value(builder, compiler->last_tok.payload.primative);
 	compiler_read_tok(compiler);
 	return 1;
 }
@@ -33,12 +33,12 @@ DECL_VALUE_COMPILER(compile_string) {
 	}
 	uint64_t len = strlen(buffer);
 	for (uint_fast64_t i = 0; i < len; i++) {
-		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-		chunk_write_value(&compiler->chunk_builder, CHAR_VALUE(buffer[i]));
+		chunk_write(builder, MACHINE_LOAD_CONST);
+		chunk_write_value(builder, CHAR_VALUE(buffer[i]));
 	}
 	free(buffer);
-	chunk_write(&compiler->chunk_builder, MACHINE_BUILD_COL);
-	chunk_write_ulong(&compiler->chunk_builder, len);
+	chunk_write(builder, MACHINE_BUILD_COL);
+	chunk_write_ulong(builder, len);
 	compiler_read_tok(compiler);
 	return 1;
 }
@@ -48,29 +48,29 @@ DECL_VALUE_COMPILER(compile_reference) {
 	if (is_ref)
 		compiler_read_tok(compiler);
 	MATCH_TOK(compiler->last_tok, TOK_IDENTIFIER);
-	chunk_write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
-	chunk_write_ulong(&compiler->chunk_builder, compiler->last_tok.payload.identifier);
+	chunk_write(builder, MACHINE_LOAD_VAR);
+	chunk_write_ulong(builder, compiler->last_tok.payload.identifier);
 	compiler_read_tok(compiler);
 	while (compiler->last_tok.type == TOK_OPEN_BRACKET || compiler->last_tok.type == TOK_PERIOD)
 	{
 		if (compiler->last_tok.type == TOK_OPEN_BRACKET) {
 			compiler_read_tok(compiler);
-			if (!compile_expression(compiler, 0, 1))
+			if (!compile_expression(compiler, builder, 0, 1))
 				return 0;
 			MATCH_TOK(compiler->last_tok, TOK_CLOSE_BRACKET);
-			chunk_write(&compiler->chunk_builder, MACHINE_GET_INDEX);
+			chunk_write(builder, MACHINE_GET_INDEX);
 		}
 		else {
 			MATCH_TOK(compiler_read_tok(compiler), TOK_IDENTIFIER);
-			chunk_write(&compiler->chunk_builder, MACHINE_GET_PROPERTY);
-			chunk_write_ulong(&compiler->chunk_builder, compiler->last_tok.payload.identifier);
+			chunk_write(builder, MACHINE_GET_PROPERTY);
+			chunk_write_ulong(builder, compiler->last_tok.payload.identifier);
 		}
 		compiler_read_tok(compiler);
 	}
 
 	if (!is_ref && !optimize) {
-		chunk_write(&compiler->chunk_builder, MACHINE_EVAL_UNI_OP);
-		chunk_write(&compiler->chunk_builder, OPERATOR_COPY);
+		chunk_write(builder, MACHINE_EVAL_UNI_OP);
+		chunk_write(builder, OPERATOR_COPY);
 	}
 	return 1;
 }
@@ -80,14 +80,14 @@ DECL_VALUE_COMPILER(compile_array) {
 	uint64_t array_size = 0;
 	do {
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, 0, 0))
+		if (!compile_expression(compiler, builder, 0, 0))
 			return 0;
 		array_size++;
 	} while (compiler->last_tok.type == TOK_COMMA);
 	MATCH_TOK(compiler->last_tok, TOK_CLOSE_BRACE);
 
-	chunk_write(&compiler->chunk_builder, MACHINE_BUILD_COL);
-	chunk_write_ulong(&compiler->chunk_builder, array_size);
+	chunk_write(builder, MACHINE_BUILD_COL);
+	chunk_write_ulong(builder, array_size);
 	compiler_read_tok(compiler);
 	return 1;
 }
@@ -96,28 +96,28 @@ DECL_VALUE_COMPILER(compile_unary) {
 	if (compiler->last_tok.type == TOK_ALLOC) {
 		MATCH_TOK(compiler_read_tok(compiler), TOK_OPEN_BRACKET);
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, PREC_BEGIN, 1))
+		if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 			return 0;
-		chunk_write(&compiler->chunk_builder, MACHINE_EVAL_UNI_OP);
-		chunk_write(&compiler->chunk_builder, OPERATOR_ALLOC);
+		chunk_write(builder, MACHINE_EVAL_UNI_OP);
+		chunk_write(builder, OPERATOR_ALLOC);
 		MATCH_TOK(compiler->last_tok, TOK_CLOSE_BRACKET);
 		compiler_read_tok(compiler);
 	}
 	else if (compiler->last_tok.type == TOK_BINARY_OP && compiler->last_tok.payload.bin_op == OPERATOR_SUBTRACT) {
 		compiler_read_tok(compiler);
-		if (!compile_value(compiler, 1))
+		if (!compile_value(compiler, builder, 1))
 			return 0;
-		chunk_write(&compiler->chunk_builder, MACHINE_EVAL_UNI_OP);
-		chunk_write(&compiler->chunk_builder, OPERATOR_NEGATE);
+		chunk_write(builder, MACHINE_EVAL_UNI_OP);
+		chunk_write(builder, OPERATOR_NEGATE);
 	}
 	else {
 		MATCH_TOK(compiler->last_tok, TOK_UNARY_OP);
 		enum unary_operator op = compiler->last_tok.payload.uni_op;
 		compiler_read_tok(compiler);
-		if (!compile_value(compiler, 1))
+		if (!compile_value(compiler, builder, 1))
 			return 0;
-		chunk_write(&compiler->chunk_builder, MACHINE_EVAL_UNI_OP);
-		chunk_write(&compiler->chunk_builder, op);
+		chunk_write(builder, MACHINE_EVAL_UNI_OP);
+		chunk_write(builder, op);
 	}
 	return 1;
 }
@@ -125,7 +125,7 @@ DECL_VALUE_COMPILER(compile_unary) {
 DECL_VALUE_COMPILER(compile_paren) {
 	MATCH_TOK(compiler->last_tok, TOK_OPEN_PAREN);
 	compiler_read_tok(compiler);
-	if (!compile_expression(compiler, PREC_BEGIN, 1))
+	if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 		return 0;
 	MATCH_TOK(compiler->last_tok, TOK_CLOSE_PAREN);
 	compiler_read_tok(compiler);
@@ -140,25 +140,23 @@ DECL_VALUE_COMPILER(compile_goto) {
 	uint64_t proc_id = compiler->last_tok.payload.identifier;
 	uint64_t arguments = 0;
 	int is_record_proc = 0;
+
 	struct chunk_builder temp_builder;
-	struct chunk_builder og_builder;
+	
 	if (compiler_read_tok(compiler).type == TOK_AS) {
 		compiler_read_tok(compiler);
 		init_chunk_builder(&temp_builder);
-		og_builder = compiler->chunk_builder;
-		compiler->chunk_builder = temp_builder;
-		if (!compile_value(compiler, 0))
+		if (!compile_value(compiler, &temp_builder, 0))
 			return 0;
-		temp_builder = compiler->chunk_builder;
-		compiler->chunk_builder = og_builder;
 		is_record_proc = 1;
 		arguments++;
 	}
+
 	if (compiler->last_tok.type == TOK_OPEN_PAREN) {
 		while (1)
 		{
 			compiler_read_tok(compiler);
-			if (!compile_expression(compiler, PREC_BEGIN, 1))
+			if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 				return 0;
 			arguments++;
 			if (compiler->last_tok.type != TOK_COMMA)
@@ -169,20 +167,19 @@ DECL_VALUE_COMPILER(compile_goto) {
 	}
 	if (is_proc) {
 		if (is_record_proc) {
-			struct chunk temp_chunk = build_chunk(&temp_builder);
-			chunk_write_chunk(&compiler->chunk_builder, temp_chunk, 1);
-			chunk_write(&compiler->chunk_builder, MACHINE_GOTO_AS);
-			chunk_write_ulong(&compiler->chunk_builder, combine_hash(proc_id, arguments));
+			chunk_write_chunk(builder, build_chunk(&temp_builder), 1);
+			chunk_write(builder, MACHINE_GOTO_AS);
+			chunk_write_ulong(builder, combine_hash(proc_id, arguments));
 		}
 		else {
-			chunk_write(&compiler->chunk_builder, MACHINE_GOTO);
-			chunk_write_ulong(&compiler->chunk_builder, combine_hash(combine_hash(proc_id, arguments), 0));
+			chunk_write(builder, MACHINE_GOTO);
+			chunk_write_ulong(builder, combine_hash(combine_hash(proc_id, arguments), 0));
 		}
 	}
 	else {
-		chunk_write(&compiler->chunk_builder, MACHINE_CALL_EXTERN);
-		chunk_write_ulong(&compiler->chunk_builder, proc_id);
-		chunk_write_ulong(&compiler->chunk_builder, arguments);
+		chunk_write(builder, MACHINE_CALL_EXTERN);
+		chunk_write_ulong(builder, proc_id);
+		chunk_write_ulong(builder, arguments);
 	}
 	return 1;
 }
@@ -196,7 +193,7 @@ DECL_VALUE_COMPILER(compile_new_record) {
 		while (1)
 		{
 			compiler_read_tok(compiler);
-			if (!compile_expression(compiler, PREC_BEGIN, 1))
+			if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 				return 0;
 			arguments++;
 			if (compiler->last_tok.type != TOK_COMMA)
@@ -205,26 +202,26 @@ DECL_VALUE_COMPILER(compile_new_record) {
 		MATCH_TOK(compiler->last_tok, TOK_CLOSE_PAREN);
 		compiler_read_tok(compiler);
 	}
-	chunk_write(&compiler->chunk_builder, MACHINE_BUILD_RECORD);
-	chunk_write_ulong(&compiler->chunk_builder, record_id);
-	chunk_write(&compiler->chunk_builder, MACHINE_GOTO_AS);
-	chunk_write_ulong(&compiler->chunk_builder, combine_hash(RECORD_INIT_PROC, arguments));
+	chunk_write(builder, MACHINE_BUILD_RECORD);
+	chunk_write_ulong(builder, record_id);
+	chunk_write(builder, MACHINE_GOTO_AS);
+	chunk_write_ulong(builder, combine_hash(RECORD_INIT_PROC, arguments));
 	return 1;
 }
 
 DECL_VALUE_COMPILER(compile_hashtag) {
 	MATCH_TOK(compiler->last_tok, TOK_HASHTAG);
 	MATCH_TOK(compiler_read_tok(compiler), TOK_IDENTIFIER);
-	chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-	chunk_write_value(&compiler->chunk_builder, ID_VALUE(compiler->last_tok.payload.identifier));
+	chunk_write(builder, MACHINE_LOAD_CONST);
+	chunk_write_value(builder, ID_VALUE(compiler->last_tok.payload.identifier));
 	compiler_read_tok(compiler);
 	return 1;
 }
 
 DECL_STATMENT_COMPILER(compile_value_statement) {
-	if (!compile_value(compiler, 0))
+	if (!compile_value(compiler, builder, 0))
 		return 0;
-	chunk_write(&compiler->chunk_builder, MACHINE_POP);
+	chunk_write(builder, MACHINE_POP);
 	return 1;
 }
 
@@ -234,30 +231,30 @@ DECL_STATMENT_COMPILER(compile_set) {
 	uint64_t var_id = compiler->last_tok.payload.identifier;
 	if (compiler_read_tok(compiler).type == TOK_TO) {
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, PREC_BEGIN, 0))
+		if (!compile_expression(compiler, builder, PREC_BEGIN, 0))
 			return 0;
-		chunk_write(&compiler->chunk_builder, MACHINE_STORE_VAR);
-		chunk_write_ulong(&compiler->chunk_builder, var_id);
+		chunk_write(builder, MACHINE_STORE_VAR);
+		chunk_write_ulong(builder, var_id);
 	}
 	else {
-		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
-		chunk_write_ulong(&compiler->chunk_builder, var_id);
+		chunk_write(builder, MACHINE_LOAD_VAR);
+		chunk_write_ulong(builder, var_id);
 		while (1)
 		{
 			if (compiler->last_tok.type == TOK_OPEN_BRACKET) {
 				compiler_read_tok(compiler);
-				if (!compile_expression(compiler, PREC_BEGIN, 1))
+				if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 					return 0;
 				MATCH_TOK(compiler->last_tok, TOK_CLOSE_BRACKET);
 				if (compiler_read_tok(compiler).type == TOK_TO) {
 					compiler_read_tok(compiler);
-					if (!compile_expression(compiler, PREC_BEGIN, 0))
+					if (!compile_expression(compiler, builder, PREC_BEGIN, 0))
 						return 0;
-					chunk_write(&compiler->chunk_builder, MACHINE_SET_INDEX);
+					chunk_write(builder, MACHINE_SET_INDEX);
 					break;
 				}
 				else {
-					chunk_write(&compiler->chunk_builder, MACHINE_GET_INDEX);
+					chunk_write(builder, MACHINE_GET_INDEX);
 				}
 			}
 			else if (compiler->last_tok.type == TOK_PERIOD) {
@@ -265,15 +262,15 @@ DECL_STATMENT_COMPILER(compile_set) {
 				uint64_t property = compiler->last_tok.payload.identifier;
 				if (compiler_read_tok(compiler).type == TOK_TO) {
 					compiler_read_tok(compiler);
-					if (!compile_expression(compiler, PREC_BEGIN, 0))
+					if (!compile_expression(compiler, builder, PREC_BEGIN, 0))
 						return 0;
-					chunk_write(&compiler->chunk_builder, MACHINE_SET_PROPERTY);
-					chunk_write_ulong(&compiler->chunk_builder, property);
+					chunk_write(builder, MACHINE_SET_PROPERTY);
+					chunk_write_ulong(builder, property);
 					break;
 				}
 				else {
-					chunk_write(&compiler->chunk_builder, MACHINE_GET_PROPERTY);
-					chunk_write_ulong(&compiler->chunk_builder, property);
+					chunk_write(builder, MACHINE_GET_PROPERTY);
+					chunk_write_ulong(builder, property);
 				}
 			}
 			else {
@@ -287,50 +284,50 @@ DECL_STATMENT_COMPILER(compile_set) {
 
 DECL_STATMENT_COMPILER(compile_if) {
 	MATCH_TOK(compiler->last_tok, TOK_IF);
-	chunk_write(&compiler->chunk_builder, MACHINE_RESET_FLAG);
+	chunk_write(builder, MACHINE_RESET_FLAG);
 
 	compiler_read_tok(compiler);
-	if (!compile_expression(compiler, PREC_BEGIN, 1))
+	if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 		return 0;
 
-	chunk_write(&compiler->chunk_builder, MACHINE_COND_SKIP);
+	chunk_write(builder, MACHINE_COND_SKIP);
 
 	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 	compiler_read_tok(compiler);
 
-	if (!compile_body(compiler, proc_encapsulated))
+	if (!compile_body(compiler, builder, proc_encapsulated))
 		return 0;
 
-	chunk_write(&compiler->chunk_builder, MACHINE_FLAG);
-	chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
+	chunk_write(builder, MACHINE_FLAG);
+	chunk_write(builder, MACHINE_END_SKIP);
 
 	while (compiler->last_tok.type == TOK_ELIF || compiler->last_tok.type == TOK_ELSE)
 	{
 		if (compiler->last_tok.type == TOK_ELIF) {
 			compiler_read_tok(compiler);
-			chunk_write(&compiler->chunk_builder, MACHINE_FLAG_SKIP);
-			if (!compile_expression(compiler, PREC_BEGIN, 1))
+			chunk_write(builder, MACHINE_FLAG_SKIP);
+			if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
 				return 0;
-			chunk_write(&compiler->chunk_builder, MACHINE_COND_SKIP);
+			chunk_write(builder, MACHINE_COND_SKIP);
 
 			MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 			compiler_read_tok(compiler);
 
-			if (!compile_body(compiler, proc_encapsulated))
+			if (!compile_body(compiler, builder, proc_encapsulated))
 				return 0;
 
-			chunk_write(&compiler->chunk_builder, MACHINE_FLAG);
-			chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
-			chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
+			chunk_write(builder, MACHINE_FLAG);
+			chunk_write(builder, MACHINE_END_SKIP);
+			chunk_write(builder, MACHINE_END_SKIP);
 		}
 		else {
 			compiler_read_tok(compiler);
-			chunk_write(&compiler->chunk_builder, MACHINE_FLAG_SKIP);
+			chunk_write(builder, MACHINE_FLAG_SKIP);
 			MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 			compiler_read_tok(compiler);
-			if (!compile_body(compiler, proc_encapsulated))
+			if (!compile_body(compiler, builder, proc_encapsulated))
 				return 0;
-			chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
+			chunk_write(builder, MACHINE_END_SKIP);
 		}
 	}
 	return 1;
@@ -343,31 +340,26 @@ DECL_STATMENT_COMPILER(compile_while) {
 	struct chunk_builder temp_expr_builder;
 	init_chunk_builder(&temp_expr_builder);
 
-	struct chunk_builder og_builder = compiler->chunk_builder;
-	compiler->chunk_builder = temp_expr_builder;
-
-	if (!compile_expression(compiler, PREC_BEGIN, 1))
+	if (!compile_expression(compiler, &temp_expr_builder,  PREC_BEGIN, 1))
 		return 0;
-
-	temp_expr_builder = compiler->chunk_builder;
-	compiler->chunk_builder = og_builder;
 
 	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 	compiler_read_tok(compiler);
+
 	struct chunk temp_expr_chunk = build_chunk(&temp_expr_builder);
 
-	chunk_write_chunk(&compiler->chunk_builder, temp_expr_chunk, 0);
-	chunk_write(&compiler->chunk_builder, MACHINE_COND_SKIP);
+	chunk_write_chunk(builder, temp_expr_chunk, 0);
+	chunk_write(builder, MACHINE_COND_SKIP);
 
-	chunk_write(&compiler->chunk_builder, MACHINE_MARK);
+	chunk_write(builder, MACHINE_MARK);
 
-	if (!compile_body(compiler, proc_encapsulated))
+	if (!compile_body(compiler, builder, proc_encapsulated))
 		return 0;
 
-	chunk_write_chunk(&compiler->chunk_builder, temp_expr_chunk, 1);
+	chunk_write_chunk(builder, temp_expr_chunk, 1);
 
-	chunk_write(&compiler->chunk_builder, MACHINE_COND_RETURN);
-	chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
+	chunk_write(builder, MACHINE_COND_RETURN);
+	chunk_write(builder, MACHINE_END_SKIP);
 	return 1;
 }
 
@@ -392,7 +384,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		proc_id = compiler->last_tok.payload.identifier;
 	}
 
-	chunk_write(&compiler->chunk_builder, MACHINE_LABEL);
+	chunk_write(&compiler->data_builder, MACHINE_LABEL);
 	uint64_t reverse_buffer[50];
 	uint32_t buffer_size = 0;
 	if (compiler_read_tok(compiler).type == TOK_OPEN_PAREN) {
@@ -417,30 +409,30 @@ DECL_STATMENT_COMPILER(compile_proc) {
 			reverse_buffer[buffer_size++] = RECORD_OVERLOAD_ORDER;
 	}
 	
-	chunk_write_ulong(&compiler->chunk_builder, combine_hash(combine_hash(proc_id, buffer_size), callee));
-	chunk_write(&compiler->chunk_builder, MACHINE_NEW_FRAME);
+	chunk_write_ulong(&compiler->data_builder, combine_hash(combine_hash(proc_id, buffer_size), callee));
+	chunk_write(&compiler->data_builder, MACHINE_NEW_FRAME);
 	while (buffer_size--) {
-		chunk_write(&compiler->chunk_builder, MACHINE_TRACE);
-		chunk_write(&compiler->chunk_builder, MACHINE_STORE_VAR);
-		chunk_write_ulong(&compiler->chunk_builder, reverse_buffer[buffer_size]);
+		chunk_write(&compiler->data_builder, MACHINE_TRACE);
+		chunk_write(&compiler->data_builder, MACHINE_STORE_VAR);
+		chunk_write_ulong(&compiler->data_builder, reverse_buffer[buffer_size]);
 	}
 	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 	compiler_read_tok(compiler);
 
-	if (!compile_body(compiler, 1))
+	if (!compile_body(compiler, &compiler->data_builder, 1))
 		return 0;
 	if (callee && proc_id == RECORD_INIT_PROC) {
-		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_VAR);
-		chunk_write_ulong(&compiler->chunk_builder, RECORD_THIS);
-		chunk_write(&compiler->chunk_builder, MACHINE_TRACE);
+		chunk_write(&compiler->data_builder, MACHINE_LOAD_VAR);
+		chunk_write_ulong(&compiler->data_builder, RECORD_THIS);
+		chunk_write(&compiler->data_builder, MACHINE_TRACE);
 	}
 	else {
-		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-		chunk_write_value(&compiler->chunk_builder, const_value_null);
+		chunk_write(&compiler->data_builder, MACHINE_LOAD_CONST);
+		chunk_write_value(&compiler->data_builder, const_value_null);
 	}
-	chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
-	chunk_write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
-	chunk_write(&compiler->chunk_builder, MACHINE_END_SKIP);
+	chunk_write(&compiler->data_builder, MACHINE_CLEAN);
+	chunk_write(&compiler->data_builder, MACHINE_RETURN_GOTO);
+	chunk_write(&compiler->data_builder, MACHINE_END_SKIP);
 	return 1;
 }
 
@@ -467,7 +459,7 @@ DECL_STATMENT_COMPILER(compile_record) {
 				compiler_read_tok(compiler);
 			}
 			else if (compiler->last_tok.type == TOK_PROC) {
-				if (!compile_proc(compiler, record_id, 0, 1))
+				if (!compile_proc(compiler, &compiler->data_builder, record_id, 0, 1))
 					return 0;
 			}
 			else {
@@ -480,15 +472,15 @@ DECL_STATMENT_COMPILER(compile_record) {
 	else if (!base_record_id)
 		MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
 
-	chunk_write(&compiler->chunk_builder, MACHINE_BUILD_PROTO);
-	chunk_write_ulong(&compiler->chunk_builder, record_id);
-	chunk_write_ulong(&compiler->chunk_builder, properties);
+	chunk_write(&compiler->data_builder, MACHINE_BUILD_PROTO);
+	chunk_write_ulong(&compiler->data_builder, record_id);
+	chunk_write_ulong(&compiler->data_builder, properties);
 	while (properties--)
-		chunk_write_ulong(&compiler->chunk_builder, property_buffer[properties]);
+		chunk_write_ulong(&compiler->data_builder, property_buffer[properties]);
 	if (base_record_id) {
-		chunk_write(&compiler->chunk_builder, MACHINE_INHERIT_REC);
-		chunk_write_ulong(&compiler->chunk_builder, record_id);
-		chunk_write_ulong(&compiler->chunk_builder, base_record_id);
+		chunk_write(&compiler->code_builder, MACHINE_INHERIT_REC);
+		chunk_write_ulong(&compiler->code_builder, record_id);
+		chunk_write_ulong(&compiler->code_builder, base_record_id);
 	}
 	return 1;
 }
@@ -501,16 +493,16 @@ DECL_STATMENT_COMPILER(compile_return) {
 	}
 	compiler_read_tok(compiler);
 	if (IS_VALUE_TOK(compiler->last_tok)) {
-		if (!compile_expression(compiler, PREC_BEGIN, 0))
+		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0))
 			return 0;
-		chunk_write(&compiler->chunk_builder, MACHINE_TRACE);
+		chunk_write(&compiler->data_builder, MACHINE_TRACE);
 	}
 	else {
-		chunk_write(&compiler->chunk_builder, MACHINE_LOAD_CONST);
-		chunk_write_value(&compiler->chunk_builder, const_value_null);
+		chunk_write(&compiler->data_builder, MACHINE_LOAD_CONST);
+		chunk_write_value(&compiler->data_builder, const_value_null);
 	}
-	chunk_write(&compiler->chunk_builder, MACHINE_CLEAN);
-	chunk_write(&compiler->chunk_builder, MACHINE_RETURN_GOTO);
+	chunk_write(&compiler->data_builder, MACHINE_CLEAN);
+	chunk_write(&compiler->data_builder, MACHINE_RETURN_GOTO);
 	return 1;
 }
 
@@ -594,16 +586,16 @@ DECL_STATMENT_COMPILER((*statment_compilers[10])) = {
 	compile_include
 };
 
-const int compile_value(struct compiler* compiler, const int expr_optimize) {
+const int compile_value(struct compiler* compiler, struct chunk_builder* builder, const int expr_optimize) {
 	if (IS_VALUE_TOK(compiler->last_tok))
-		return (*value_compilers[compiler->last_tok.type])(compiler, expr_optimize);
+		return (*value_compilers[compiler->last_tok.type])(compiler, builder, expr_optimize);
 	compiler->last_err = ERROR_UNRECOGNIZED_TOKEN;
 	return 0;
 }
 
-const int compile_statement(struct compiler* compiler, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated) {
+const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated) {
 	if (IS_STATMENT_TOK(compiler->last_tok))
-		return (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, callee, control_encapsulated, proc_encapsulated);
+		return (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, builder, callee, control_encapsulated, proc_encapsulated);
 	compiler->last_err = ERROR_UNRECOGNIZED_TOKEN;
 	return 0;
 }

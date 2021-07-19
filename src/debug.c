@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include "include/runtime/opcodes.h"
 #include "include/io.h"
+#include "include/error.h"
 #include "include/debug.h"
 
 void debug_print_scanner(struct scanner scanner) {
