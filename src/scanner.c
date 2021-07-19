@@ -108,6 +108,9 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		case 210732529790: //while
 			tok.type = TOK_WHILE;
 			break;
+		case 5863320:
+			tok.type = TOK_DO;
+			break;
 		case 6385593753: //proc
 			tok.type = TOK_PROC;
 			break;

@@ -62,7 +62,7 @@ void free_machine(struct machine* machine) {
 	free_global_cache(&machine->global_cache);
 }
 
-struct value* pop_eval(struct machine* machine) {
+struct value* machine_pop_eval(struct machine* machine) {
 	if (!machine->evals)
 		return NULL;
 
@@ -79,13 +79,13 @@ struct value* pop_eval(struct machine* machine) {
 
 			while (children_count--)
 				if (children[children_count]->gc_flag == GARBAGE_UNINIT)
-					pop_eval(machine);
+					machine_pop_eval(machine);
 		}
 	}
 	return top;
 }
 
-struct value* push_eval(struct machine* machine, struct value* value, int push_obj_children)
+struct value* machine_push_eval(struct machine* machine, struct value* value, int push_obj_children)
 {
 	STACK_CHECK;
 
@@ -96,7 +96,7 @@ struct value* push_eval(struct machine* machine, struct value* value, int push_o
 
 			for (uint_fast64_t i = 0; i < children_count; i++)
 				if (children[i]->gc_flag == GARBAGE_UNINIT)
-					push_eval(machine, children[i], 1);
+					machine_push_eval(machine, children[i], 1);
 		}
 
 		machine->constant_stack[machine->constants] = *value;
@@ -107,10 +107,10 @@ struct value* push_eval(struct machine* machine, struct value* value, int push_o
 	return value;
 }
 
-const int condition_check(struct machine* machine) {
+const int machine_condition_check(struct machine* machine) {
 	MATCH_EVALS(1);
 
-	struct value*valptr = pop_eval(machine);
+	struct value*valptr = machine_pop_eval(machine);
 	
 	NULL_CHECK(valptr, ERROR_INSUFFICIENT_EVALS);
 

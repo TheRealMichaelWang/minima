@@ -29,7 +29,7 @@ enum error {
 	ERROR_CANNOT_OPEN_FILE
 };
 
-#define ERROR_ALLOC_CHECK(PTR) if((PTR) == NULL) { return 0; }
+#define ERROR_ALLOC_CHECK(PTR) if(!(PTR)) { return 0; }
 
 const int error_info(enum error error);
 

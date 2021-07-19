@@ -5,7 +5,7 @@
 #include "../runtime/value.h"
 
 #define IS_VALUE_TOK(TOK) ((unsigned int)TOK.type < 13)
-#define IS_STATMENT_TOK(TOK) ((unsigned int)(TOK.type - 10) < 10)
+#define IS_STATMENT_TOK(TOK) ((unsigned int)(TOK.type - 10) < 11)
 
 struct token {
 	enum token_type {
@@ -27,6 +27,7 @@ struct token {
 		TOK_SET, //statments
 		TOK_IF,
 		TOK_WHILE,
+		TOK_DO,
 		TOK_PROC,
 		TOK_RECORD,
 		TOK_RETURN,

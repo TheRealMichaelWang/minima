@@ -6,11 +6,11 @@
 #include "include/runtime/operators.h"
 #include "include/runtime/opcodes.h"
 
-#define NULL_CHECK(PTR, ERROR) if((PTR) == NULL) { machine->last_err = ERROR; return 0; }
+#define NULL_CHECK(PTR, ERROR) if(!(PTR)) { machine->last_err = ERROR; return 0; }
 #define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 #define MATCH_EVALS(MIN_EVALS) if(machine->evals < MIN_EVALS) { machine->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
 
-#define PUSH_EVAL(VALUE_PTR) if(!push_eval(machine, VALUE_PTR, 1)) { return 0; }
+#define PUSH_EVAL(VALUE_PTR) if(!machine_push_eval(machine, VALUE_PTR, 1)) { return 0; }
 
 #define MACHINE_ERROR(ERROR) {machine->last_err = ERROR; return 0;}
 #define DECL_OPCODE_HANDLER(METHOD_NAME) static const int METHOD_NAME(struct machine* machine, struct chunk* chunk)
@@ -34,7 +34,7 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 	MATCH_EVALS(1);
 	uint64_t id = chunk_read_ulong(chunk);
 
-	struct value*src = pop_eval(machine);
+	struct value*src = machine_pop_eval(machine);
 	NULL_CHECK(src, ERROR_INSUFFICIENT_EVALS);
 
 	if (src->gc_flag == GARBAGE_UNINIT) {
@@ -62,9 +62,9 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	MATCH_EVALS(2);
 
-	struct value*value_b = pop_eval(machine);
+	struct value*value_b = machine_pop_eval(machine);
 	NULL_CHECK(value_b, ERROR_INSUFFICIENT_EVALS);
-	struct value*value_a = pop_eval(machine);
+	struct value*value_a = machine_pop_eval(machine);
 	NULL_CHECK(value_a, ERROR_INSUFFICIENT_EVALS);
 
 	enum binary_operator op = chunk_read(chunk);
@@ -104,7 +104,7 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	MATCH_EVALS(1);
 
-	struct value*operand = pop_eval(machine);
+	struct value*operand = machine_pop_eval(machine);
 	NULL_CHECK(operand, ERROR_INSUFFICIENT_EVALS);
 	enum unary_operator op = chunk_read(chunk);
 
@@ -129,7 +129,7 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 			}
 		}
 		struct value result = invoke_unary_op(op, operand, machine);
-		NULL_CHECK(push_eval(machine, &result, 0), ERROR_STACK_OVERFLOW);
+		NULL_CHECK(machine_push_eval(machine, &result, 0), ERROR_STACK_OVERFLOW);
 	}
 	else
 		PUSH_EVAL(operand);
@@ -147,7 +147,7 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 
 	uint_fast64_t i = arguments;
 	while (i--)
-		argv[i] = pop_eval(machine);
+		argv[i] = machine_pop_eval(machine);
 
 	struct value result = cache_invoke_builtin(&machine->global_cache, id, &argv, arguments, machine);
 
@@ -227,14 +227,14 @@ DECL_OPCODE_HANDLER(opcode_label) {
 }
 
 DECL_OPCODE_HANDLER(opcode_cond_skip) {
-	if (!condition_check(machine))
+	if (!machine_condition_check(machine))
 		chunk_skip(chunk, 0);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_cond_return) {
 	--machine->positions;
-	if (condition_check(machine))
+	if (machine_condition_check(machine))
 		chunk_jump_to(chunk, machine->position_stack[machine->positions]);
 	return 1;
 }
@@ -277,16 +277,16 @@ DECL_OPCODE_HANDLER(opcode_trace) {
 
 DECL_OPCODE_HANDLER(opcode_pop) {
 	NULL_CHECK(machine->evals, ERROR_INSUFFICIENT_EVALS);
-	NULL_CHECK(pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
+	NULL_CHECK(machine_pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_get_index) {
 	MATCH_EVALS(2);
 
-	struct value*index_val = pop_eval(machine);
+	struct value*index_val = machine_pop_eval(machine);
 	NULL_CHECK(index_val, ERROR_INSUFFICIENT_EVALS);
-	struct value*collection_val = pop_eval(machine);
+	struct value*collection_val = machine_pop_eval(machine);
 	NULL_CHECK(collection_val, ERROR_INSUFFICIENT_EVALS);
 
 	if (index_val->type != VALUE_TYPE_NUM || !IS_COLLECTION(*collection_val))
@@ -306,11 +306,11 @@ DECL_OPCODE_HANDLER(opcode_get_index) {
 DECL_OPCODE_HANDLER(opcode_set_index) {
 	MATCH_EVALS(3);
 
-	struct value*set_val = pop_eval(machine);
+	struct value*set_val = machine_pop_eval(machine);
 	NULL_CHECK(set_val, ERROR_INSUFFICIENT_EVALS);
-	struct value*index_val = pop_eval(machine);
+	struct value*index_val = machine_pop_eval(machine);
 	NULL_CHECK(index_val, ERROR_INSUFFICIENT_EVALS);
-	struct value*collection_val = pop_eval(machine);
+	struct value*collection_val = machine_pop_eval(machine);
 	NULL_CHECK(collection_val, ERROR_INSUFFICIENT_EVALS);
 
 	if (index_val->type != VALUE_TYPE_NUM || collection_val->type != VALUE_TYPE_OBJ || collection_val->payload.object.type != OBJ_TYPE_COL)
@@ -345,7 +345,7 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 DECL_OPCODE_HANDLER(opcode_get_property) {
 	MATCH_EVALS(1);
 
-	struct value*record_eval = pop_eval(machine);
+	struct value*record_eval = machine_pop_eval(machine);
 	NULL_CHECK(record_eval, ERROR_INSUFFICIENT_EVALS);
 
 	if (!IS_RECORD(*record_eval))
@@ -364,9 +364,9 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 
 	uint64_t property = chunk_read_ulong(chunk);
 
-	struct value*set_val = pop_eval(machine);
+	struct value*set_val = machine_pop_eval(machine);
 	NULL_CHECK(set_val, ERROR_INSUFFICIENT_EVALS);
-	struct value*record_eval = pop_eval(machine);
+	struct value*record_eval = machine_pop_eval(machine);
 	NULL_CHECK(record_eval, ERROR_INSUFFICIENT_EVALS);
 
 	if (!IS_RECORD(*record_eval))
@@ -381,7 +381,7 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 				MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 		}
 		else {
-			if (set_val->gc_flag == NULL) {
+			if (set_val->gc_flag == VALUE_TYPE_NULL) {
 				if (!record_set_property(record, property, gc_register_value(&machine->garbage_collector, *set_val)))
 					MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
 			}
@@ -407,7 +407,7 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	NULL_CHECK(init_collection(collection, req_size), ERROR_OUT_OF_MEMORY);
 
 	while (req_size--)
-		NULL_CHECK(collection->inner_collection[req_size] = pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
+		NULL_CHECK(collection->inner_collection[req_size] = machine_pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 
 	struct value new_val;
 
@@ -449,7 +449,7 @@ DECL_OPCODE_HANDLER(opcode_build_record) {
 	init_object_rec(&obj, new_rec);
 	init_obj_value(&rec_val, obj);
 	
-	push_eval(machine, &rec_val, 0);
+	machine_push_eval(machine, &rec_val, 0);
 	return 1;
 }
 

@@ -41,10 +41,10 @@ void free_machine(struct machine* machine);
 
 void machine_reset(struct machine* machine);
 
-struct value* pop_eval(struct machine* machine);
-struct value* push_eval(struct machine* machine, struct value* value, int push_obj_children);
+struct value* machine_pop_eval(struct machine* machine);
+struct value* machine_push_eval(struct machine* machine, struct value* value, int push_obj_children);
 
-const int condition_check(struct machine* machine);
+const int machine_condition_check(struct machine* machine);
 
 const enum error machine_execute(struct machine* machine, struct chunk* chunk);
 

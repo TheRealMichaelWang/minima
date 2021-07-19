@@ -292,9 +292,6 @@ DECL_STATMENT_COMPILER(compile_if) {
 
 	chunk_write(builder, MACHINE_COND_SKIP);
 
-	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
-	compiler_read_tok(compiler);
-
 	if (!compile_body(compiler, builder, proc_encapsulated))
 		return 0;
 
@@ -310,9 +307,6 @@ DECL_STATMENT_COMPILER(compile_if) {
 				return 0;
 			chunk_write(builder, MACHINE_COND_SKIP);
 
-			MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
-			compiler_read_tok(compiler);
-
 			if (!compile_body(compiler, builder, proc_encapsulated))
 				return 0;
 
@@ -323,8 +317,6 @@ DECL_STATMENT_COMPILER(compile_if) {
 		else {
 			compiler_read_tok(compiler);
 			chunk_write(builder, MACHINE_FLAG_SKIP);
-			MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
-			compiler_read_tok(compiler);
 			if (!compile_body(compiler, builder, proc_encapsulated))
 				return 0;
 			chunk_write(builder, MACHINE_END_SKIP);
@@ -343,9 +335,6 @@ DECL_STATMENT_COMPILER(compile_while) {
 	if (!compile_expression(compiler, &temp_expr_builder,  PREC_BEGIN, 1))
 		return 0;
 
-	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
-	compiler_read_tok(compiler);
-
 	struct chunk temp_expr_chunk = build_chunk(&temp_expr_builder);
 
 	chunk_write_chunk(builder, temp_expr_chunk, 0);
@@ -360,6 +349,25 @@ DECL_STATMENT_COMPILER(compile_while) {
 
 	chunk_write(builder, MACHINE_COND_RETURN);
 	chunk_write(builder, MACHINE_END_SKIP);
+	return 1;
+}
+
+DECL_STATMENT_COMPILER(compile_do_while) {
+	MATCH_TOK(compiler->last_tok, TOK_DO);
+	compiler_read_tok(compiler);
+
+	chunk_write(builder, MACHINE_MARK);
+	
+	if (!compile_body(compiler, builder, proc_encapsulated))
+		return 0;
+
+	MATCH_TOK(compiler->last_tok, TOK_WHILE);
+	compiler_read_tok(compiler);
+
+	if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+		return 0;
+
+	chunk_write(builder, MACHINE_COND_RETURN);
 	return 1;
 }
 
@@ -416,8 +424,6 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write(&compiler->data_builder, MACHINE_STORE_VAR);
 		chunk_write_ulong(&compiler->data_builder, reverse_buffer[buffer_size]);
 	}
-	MATCH_TOK(compiler->last_tok, TOK_OPEN_BRACE);
-	compiler_read_tok(compiler);
 
 	if (!compile_body(compiler, &compiler->data_builder, 1))
 		return 0;
@@ -573,13 +579,14 @@ DECL_VALUE_COMPILER((*value_compilers[13])) = {
 	compile_goto
 };
 
-DECL_STATMENT_COMPILER((*statment_compilers[10])) = {
+DECL_STATMENT_COMPILER((*statment_compilers[11])) = {
 	compile_value_statement,
 	compile_value_statement,
 	compile_value_statement,
 	compile_set,
 	compile_if,
 	compile_while,
+	compile_do_while,
 	compile_proc,
 	compile_record,
 	compile_return,

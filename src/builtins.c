@@ -36,7 +36,7 @@ struct value str_to_value(const char* buffer, const size_t length, struct machin
 	struct value char_elem;
 	for(uint_fast32_t i = 0; i < length; i++) {
 		char_elem = CHAR_VALUE(buffer[i]);
-		collection->inner_collection[i] = push_eval(machine, &char_elem, 0);
+		collection->inner_collection[i] = machine_push_eval(machine, &char_elem, 0);
 	}
 
 	struct object obj;
@@ -121,7 +121,7 @@ DECL_BUILT_IN(builtin_to_num) {
 		return const_value_null;
 
 	char* buffer = value_to_str(*argv[0]);
-	if (*buffer == NULL)
+	if (buffer == NULL)
 		return const_value_null;
 	struct value toret = NUM_VALUE(strtod(buffer, NULL));
 	free(buffer);
