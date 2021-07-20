@@ -4,7 +4,7 @@ rem Purpose: Implements a basic hash-set
 
 include "list.min"
 
-record hash_set {
+record hashset {
 	keys
 
 	proc init(capacity) {
@@ -21,7 +21,7 @@ record hash_set {
 		set i to old_cap
 		set found_keys to new list
 		while dec i {
-			if this.keys[i] != null {
+			if this.keys[i] {
 				goproc push_back as found_keys(this.keys[i])
 			}
 		}
@@ -37,7 +37,7 @@ record hash_set {
 		set i to key % cap
 
 		while i < cap {
-			if this.keys[i] == null {
+			if !this.keys[i] {
 				set this.keys[i] to key
 				return null
 			}

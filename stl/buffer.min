@@ -3,7 +3,7 @@ rem Minima, written by Michael Wang 2020-21
 rem Purpose:	Implements basic array handling procedures
 
 rem Purpose:	Creates a copied, extended array with references to the original array's items.
-rem		Returns 
+rem			Returns a new buffer.
 proc realloc(buffer, len) {
 	if len < extern len(buffer) {
 		return null
@@ -32,11 +32,6 @@ proc memcpy(dest, src, dest_offset, src_offset, length){
 	while dec i {
 		set dest[i + dest_offset] to src[i + src_offset]
 	}
-}
-
-rem Purpose:	Copies elements to another collection/array
-proc memcpy(dest, src, length){
-	goproc memcpy(dest, src, 0, 0, length)
 }
 
 rem Purpose:	Reverses the order of the elements in an array
