@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <math.h>
 #include "include/hash.h"
 #include "include/error.h"
 #include "include/compiler/scanner.h"
@@ -169,6 +170,10 @@ struct token scanner_read_tok(struct scanner* scanner) {
 		case 6385525056: //null
 			tok.type = TOK_PRIMATIVE;
 			tok.payload.primative = const_value_null;
+			break;
+		case 193495074:
+			tok.type = TOK_PRIMATIVE;
+			tok.payload.primative = NUM_VALUE(INFINITY);
 			break;
 		case 6385737701: //true
 			tok.type = TOK_PRIMATIVE;

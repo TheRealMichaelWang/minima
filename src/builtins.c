@@ -104,16 +104,11 @@ DECL_BUILT_IN(builtin_get_length) {
 }
 
 DECL_BUILT_IN(builtin_get_hash) {
-	return NUM_VALUE(value_hash(*argv[0]));
-}
-
-DECL_BUILT_IN(builtin_abs) {
-	if (argc < 1 || argv[0]->type != VALUE_TYPE_NUM)
-		return const_value_null;
-	if (argv[0]->payload.numerical >= 0)
-		return NUM_VALUE(argv[0]->payload.numerical);
-	else
-		return NUM_VALUE(-argv[0]->payload.numerical);
+	if (argc == 1)
+		return NUM_VALUE(value_hash(*argv[0]));
+	else if (argc == 2)
+		return NUM_VALUE(combine_hash(argv[0]->payload.numerical, argv[1]->payload.numerical));
+	return const_value_null;
 }
 
 DECL_BUILT_IN(builtin_to_num) {
@@ -166,4 +161,25 @@ DECL_BUILT_IN(builtin_implements) {
 		record = record_get_property(record->payload.object.ptr.record, RECORD_BASE_PROPERTY);
 	}
 	return const_value_false;
+}
+
+DECL_BUILT_IN(builtin_abs) {
+	if (argc < 1 || argv[0]->type != VALUE_TYPE_NUM)
+		return const_value_null;
+	if (argv[0]->payload.numerical >= 0)
+		return NUM_VALUE(argv[0]->payload.numerical);
+	else
+		return NUM_VALUE(-argv[0]->payload.numerical);
+}
+
+DECL_BUILT_IN(builtin_max) {
+	if (argc < 2)
+		return const_value_null;
+	return NUM_VALUE(max(argv[0]->payload.numerical, argv[1]->payload.numerical));
+}
+
+DECL_BUILT_IN(builtin_min) {
+	if (argc < 2)
+		return const_value_null;
+	return NUM_VALUE(min(argv[0]->payload.numerical, argv[1]->payload.numerical));
 }

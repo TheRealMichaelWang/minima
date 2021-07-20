@@ -28,8 +28,6 @@ DECL_BUILT_IN(builtin_get_length);
 //gets the hash of a value
 DECL_BUILT_IN(builtin_get_hash);
 
-DECL_BUILT_IN(builtin_abs);
-
 //gets a str as a numerical
 DECL_BUILT_IN(builtin_to_num);
 
@@ -40,5 +38,9 @@ DECL_BUILT_IN(builtin_to_str);
 DECL_BUILT_IN(builtin_get_type);
 
 DECL_BUILT_IN(builtin_implements);
+
+DECL_BUILT_IN(builtin_abs);
+DECL_BUILT_IN(builtin_max);
+DECL_BUILT_IN(builtin_min);
 
 #endif // !STDLIB_H
