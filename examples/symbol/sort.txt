@@ -1,0 +1,139 @@
+include "list.min"
+include "union.min"
+include "symbol/core.txt"
+
+record eq_entity {
+	proc terms {
+		return goproc array as goproc linear_children as this(0)
+	}
+
+	proc factors {
+		return goproc array as goproc linear_children as this(1)
+	}
+}
+
+record eq_leaf {
+	proc linear_children(op_rec) {
+		set list to new list
+		goproc push_back as list(this)
+		return list
+	}
+}
+
+record eq_node {
+	proc sort_comp(eq_entity, level) {
+		if !extern implements(eq_entity, #eq_node) {
+			return false
+		}
+
+		if level == 3 and extern implements(eq_entity, #eq_bin_op) and extern implements(this, #eq_bin_op) {
+			return eq_entity.min_prec - (eq_entity.min_prec % 2) == this.min_prec - (this.min_prec % 2)
+		}
+		if level == 2 and extern typeof(this) == extern typeof(eq_entity) {
+			return true
+		}
+
+		set same to 0
+		set i to extern len(eq_entity.children)
+		while dec i {
+			if goproc sort_comp as this.children[i](eq_entity.children[i], level) {
+				inc same
+			}
+		}
+
+		if level > 1 {
+			return same >= 1
+		}
+		else {
+			return same == extern len(this.children)
+		}
+	}
+}
+
+record eq_bin_op {
+	proc linear_children(op_prec) {
+		set list to new list
+		if this.op_prec == op_prec {
+			goproc push_range as list(goproc linear_children as this.left(op_prec))
+			goproc push_range as list(goproc linear_children as this.right(op_prec))
+		}
+		else {
+			goproc push_back as list(this)
+		}
+		return list
+	}	
+}
+
+record op_uni_op {
+	proc linear_children(op_rec) {
+		set list to new list
+		goproc push_back as list(this)
+		return list
+	}
+}
+
+record eq_num {
+	proc sort_comp(eq_entity, level) {
+		if extern typeof(eq_entity) != extern typeof(this) {
+			return false
+		}
+		if level == 3 {
+			return true
+		}
+		return this.obj == eq_entity.obj
+	}
+}
+
+record eq_var {
+	proc sort_comp(eq_entity, level) {
+		if extern typeof(eq_entity) != extern typeof(this) {
+			return false
+		}
+		return this.obj == eq_entity.obj
+	}
+}
+
+proc sort_terms(terms, level) {
+	set union to new union(extern len(terms))
+
+	extern printl("REACHES POINT A")
+
+	set i to extern len(terms)
+
+	extern printl("REACHES POINT B")
+	while dec i {
+		extern printl("This statment will not be reached")
+		set j to extern len(terms)
+		while dec j {
+			if i != j and goproc sort_comp as terms[i](terms[j], level) {
+				goproc unite as union(terms[i], terms[j])
+			}
+		}
+	}
+
+	set roots to goproc roots as union
+	dec level
+
+	if level {
+		set list to new list
+		set i to extern len(roots)
+		while dec i {
+			goproc push_back as list(goproc sort_terms(goproc children as union(roots[i]), level))
+		}
+		return goproc multi_hang(goproc array as list)
+	}
+	return goproc multi_hang(roots)
+}	
+
+proc multi_hang(terms, offset, length) {
+	if length == 1 {
+		return terms[offset]
+	}
+	set mid to extern floor(length / 2)
+	return new eq_op_add(goproc multi_hang(terms, 0, mid),
+				goproc multi_hang(terms, mid, length - mid))
+}
+
+proc multi_hang(terms) {
+	return goproc multi_hang(terms, 0, extern len(terms))
+}

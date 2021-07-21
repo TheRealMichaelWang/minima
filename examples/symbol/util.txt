@@ -1,45 +1,5 @@
-include "list.min"
 include "symbol/core.txt"
-
-record eq_entity {
-	proc terms {
-		return goproc array as goproc linear_children as this(0)
-	}
-
-	proc factors {
-		return goproc array as goproc linear_children as this(1)
-	}
-}
-
-record eq_leaf {
-	proc linear_children(op_rec) {
-		set list to new list
-		goproc push_back as list(this)
-		return list
-	}
-}
-
-record eq_bin_op {
-	proc linear_children(op_prec) {
-		set list to new list
-		if this.op_prec == op_prec {
-			goproc push_range as list(goproc linear_children as this.left(op_prec))
-			goproc push_range as list(goproc linear_children as this.right(op_prec))
-		}
-		else {
-			goproc push_back as list(this)
-		}
-		return list
-	}
-}
-
-record op_uni_op {
-	proc linear_children(op_rec) {
-		set list to new list
-		goproc push_back as list(this)
-		return list
-	}
-}
+include "symbol/sort.txt"
 
 rem Purpose:	Checks if a value is a numerical. If so, it converts it to it's eq_num representation.
 proc num_check(num) {
@@ -62,6 +22,8 @@ proc abs(val) {
 }
 
 proc simplify(expr) {
+	rem set sorted to goproc sort_terms(goproc terms as expr, 3)
+	set sorted to goproc sort_terms(expr, 3)
 	set simplifier to new simplifier
-	return goproc simplify as simplifier(expr)
+	return goproc apply as simplifier(sorted)
 }

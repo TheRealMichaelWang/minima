@@ -1,4 +1,5 @@
 include "symbol/core.txt"
+include "symbol/match.txt"
 
 record eq_node {
 	proc can_simplify {
@@ -166,9 +167,7 @@ record eq_op_abs {
 	}
 }
 
-record simplifier {
-	rules
-
+record simplifier extends rule_set {
 	proc init {
 		set any1 to new match(100, #any)
 		set any2 to new match(101, #any)
@@ -180,7 +179,7 @@ record simplifier {
 		set var2 to new match(301, #eq_var)
 		set var3 to new match(302, #eq_var)
 
-		set this.rules to {
+		set this.base.rules to {
 			new rule(any1 / (any2 / any3), (any1 * any3) / any2),
 			new rule(any1 * (any2 / any3), (any1 * any2) / any3),
 
@@ -267,34 +266,5 @@ record simplifier {
 			new rule(-1 * any1 + any2, any2 - any1),
 			new rule(any1 / any2 * any3, any1 * any3 / any2)
 		}
-	}
-
-	proc simplify(eq_entity) {
-		set simp_flag to true
-		while simp_flag {
-			set simp_flag to false
-
-			if extern implements(eq_entity, #eq_bin_op) {
-				set eq_entity.left to goproc simplify as this(eq_entity.left)
-				set eq_entity.right to goproc simplify as this(eq_entity.right)
-			}
-			elif extern implements(eq_entity, #eq_uni_op) {
-				set eq_entity.operand to goproc simplify as this(eq_entity.operand)
-			}
-			else {
-				return eq_entity
-			}
-
-			set i to extern len(this.rules)
-			while dec i {
-				set m_stat to goproc apply as this.rules[i](eq_entity)
-				if m_stat {
-					set eq_entity to m_stat
-					set simp_flag to true
-					inc i
-				}
-			}
-		}
-		return eq_entity
 	}
 }

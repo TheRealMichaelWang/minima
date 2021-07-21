@@ -1,0 +1,4 @@
+include "symbol.min"
+set x to new eq_var("x")
+set expr to x + 1 + x + 1
+set expr to goproc simplify(expr)

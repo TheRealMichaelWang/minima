@@ -1,0 +1,101 @@
+include "map.min"
+include "list.min"
+
+record union {
+	parents
+	keys
+	indicies
+	size
+	capacity
+
+	proc init(capacity) {
+		set this.capacity to capacity
+		set this.parents to alloc[capacity]
+		set this.keys to alloc[capacity]
+		set this.indicies to new map(capacity)
+		set this.size to 0
+	}
+
+	proc insert(key) {
+		if goproc find as this.indicies(key) {
+			return false
+		}
+		elif this.size == this.capacity {
+			return false
+		}
+		goproc insert as this.indicies(key, this.size)
+		set this.keys[this.size] to key
+		inc this.size
+		return true
+	}
+
+	proc index_parent(i) {
+		if this.parents[i] == null {
+			return i
+		}
+		set this.parents[i] to goproc index_parent as this(this.parents[i])
+		return this.parents[i]
+	}
+
+	proc parent(key) {
+		set i to goproc find as this.indicies(key)
+		if i == null {
+			return null
+		}
+		set j to goproc index_parent as this(i)
+		return this.keys[j]
+	}
+
+	proc unite(parent, child) {
+		set p_i to goproc find as this.indicies(parent)
+		set c_i to goproc find as this.indicies(child)
+		if p_i == null {
+			set p_i to this.size
+			if !goproc insert as this(parent) {
+				return false
+			}
+		}
+		if c_i == null {
+			set c_i to this.size
+			if !goproc insert as this(child) {
+				return false
+			}
+		}
+
+		if goproc index_parent as this(p_i) == c_i {
+			return false
+		}
+
+		set this.parents[c_i] to goproc index_parent as this(p_i)
+		return true
+	}
+
+	proc children(parent) {
+		set i to goproc find as this.indicies(parent)
+		if i == null {
+			return null
+		}
+
+		set found to new list
+
+		set j to extern len(this.parents)
+		while dec j {
+			if goproc index_parent as this(j) == i {
+				goproc push_back as found(this.keys[j])
+			}
+		}
+		return goproc array as found
+	}
+
+	proc roots {
+		set found to new list
+
+		set j to extern len(this.parents)
+		while dec j {
+			if goproc index_parent as this(j) == j and this.keys[j] {
+				goproc push_back as found(this.keys[j])
+			}
+		}
+		return goproc array as found
+	}
+}
