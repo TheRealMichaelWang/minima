@@ -8,7 +8,7 @@ record eq_entity {
 	}
 
 	proc factors {
-		return goproc array as goproc linear_children as this(1)
+		return goproc array as goproc linear_children as this(2)
 	}
 }
 
@@ -53,7 +53,7 @@ record eq_node {
 record eq_bin_op {
 	proc linear_children(op_prec) {
 		set list to new list
-		if this.op_prec == op_prec {
+		if this.op_prec - (this.op_prec % 2) == op_prec - (op_prec % 2) {
 			goproc push_range as list(goproc linear_children as this.left(op_prec))
 			goproc push_range as list(goproc linear_children as this.right(op_prec))
 		}
@@ -96,38 +96,52 @@ record eq_var {
 proc sort_terms(terms, level) {
 	set union to new union(extern len(terms))
 
-	extern printl("REACHES POINT A")
-
 	set i to extern len(terms)
-
-	extern printl("REACHES POINT B")
 	while dec i {
-		extern printl("This statment will not be reached")
 		set j to extern len(terms)
 		while dec j {
 			if i != j and goproc sort_comp as terms[i](terms[j], level) {
-				goproc unite as union(terms[i], terms[j])
+				goproc unite as union(i, j)
 			}
 		}
 	}
 
 	set roots to goproc roots as union
-	dec level
 
-	if level {
-		set list to new list
-		set i to extern len(roots)
-		while dec i {
-			goproc push_back as list(goproc sort_terms(goproc children as union(roots[i]), level))
+	set list to new list
+
+	set i to extern len(roots)
+	while dec i {
+		set children_i to goproc children as union(roots[i])
+		set j to extern len(children_i)
+		set children to alloc[j]
+
+		while dec j {
+			set children[j] to terms[children_i[j]]
 		}
-		return goproc multi_hang(goproc array as list)
+
+		if level {
+			goproc push_back as list(goproc sort_terms(children, level - 1))
+		}
+		else {
+			set j to extern len(children)
+			while dec j {
+				goproc push_back as list(children[j])
+			}
+		}
 	}
-	return goproc multi_hang(roots)
+	return goproc multi_hang(goproc array as list)
 }	
 
 proc multi_hang(terms, offset, length) {
-	if length == 1 {
+	if !length {
+		return null
+	}
+	elif length == 1 {
 		return terms[offset]
+	}
+	elif length == 2 {
+		return new eq_op_add(terms[offset], terms[offset + 1])
 	}
 	set mid to extern floor(length / 2)
 	return new eq_op_add(goproc multi_hang(terms, 0, mid),

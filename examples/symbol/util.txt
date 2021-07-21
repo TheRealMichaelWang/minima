@@ -22,8 +22,7 @@ proc abs(val) {
 }
 
 proc simplify(expr) {
-	rem set sorted to goproc sort_terms(goproc terms as expr, 3)
-	set sorted to goproc sort_terms(expr, 3)
+	set sorted to goproc sort_terms(goproc terms as expr, 3)
 	set simplifier to new simplifier
 	return goproc apply as simplifier(sorted)
 }
