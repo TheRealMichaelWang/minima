@@ -1,0 +1,172 @@
+include "symbol/util.txt"
+include "symbol/compare.txt"
+include "symbol/simplify.txt"
+
+rem Purpose: 	An abstract record that represents items in an mathematical expression
+rem		Practically, it implements operators for all it's derived records
+
+record eq_entity {
+	proc + (op) {
+		if op_order {
+			return goproc simplify as new eq_op_add(this, op)
+		}
+		else {
+			return goproc simplify as new eq_op_add(op, this)
+		}
+	}
+
+	proc - (op) {
+		if op_order {
+			return goproc simplify as new eq_op_subtract(this, op)
+		}
+		else {
+			return goproc simplify as new eq_op_subtract(op, this)
+		}
+	}
+
+	proc * (op) {
+		if op_order {
+			return goproc simplify as new eq_op_multiply(this, op)
+		}
+		else {
+			return goproc simplify as new eq_op_multiply(op, this)
+		}
+	}
+
+	proc / (op) {
+		if op_order {
+			return goproc simplify as new eq_op_divide(this, op)
+		}
+		else {
+			return goproc simplify as new eq_op_divide(op, this)
+		}
+	}
+
+	proc % (op) {
+		if op_order {
+			return goproc simplify as new eq_op_mod(this, op)
+		}
+		else {
+			return goproc simplify as new eq_op_mod(op, this)
+		}
+	}
+
+	proc ^ (op) {
+		if op_order {
+			return goproc simplify as new eq_op_pow(this, op)
+		}
+		else {
+			return goproc simplify as new eq_op_pow(op, this)
+		}
+	}
+
+	proc - {
+		return -1 * this
+	}
+}
+
+rem Purpose:	An abstract record that represents an singlar expression item.
+rem		Derived records included numbers and variables.
+record eq_leaf extends eq_entity {
+	obj
+
+	proc init(obj) {
+		set this.obj to obj
+	}
+}
+
+rem Purpose:	An abstract record that represents an expression with more than one child
+rem		Derived records include unary operators and binary operators
+record eq_node extends eq_entity {
+	children
+
+	proc init(children) {
+		set this.children to children
+	}
+}
+
+rem Purpose:	An abstract record that implements a binary operator.
+record eq_bin_op extends eq_node {
+	left
+	right
+	op_prec
+
+	proc init(left, right, op_prec) {
+		set this.left to goproc num_check(left)
+		set this.right to goproc num_check(right)
+		set this.op_prec to op_prec
+		goproc init as this.base({this.left, this.right})
+	}
+}
+
+rem Purpose:	An abstract record that implements a unary operator
+record eq_uni_op extends eq_node {
+	operand
+
+	proc init(operand) {
+		set this.operand to goproc num_check(operand)
+		goproc init as this.base({this.operand})
+	}
+}
+
+rem Purpose:	A record that implements an abstract variable
+record eq_var extends eq_leaf
+
+rem Purpose:	A record that implements an number in an expression
+record eq_num extends eq_leaf
+
+rem Purpose:	A record that implements an addition operator
+record eq_op_add extends eq_bin_op {
+	proc init(left, right) {
+		goproc init as this.base(left, right, 0)
+	}
+}
+
+rem Purpose: 	A record that implements the subtraction operator
+record eq_op_subtract extends eq_bin_op {
+	proc init(left, right) {
+		goproc init as this.base(left, right, 1)
+	}
+}
+
+rem Purpose:	A record that implements the multiplication operator
+record eq_op_multiply extends eq_bin_op {
+	proc init(left, right) {
+		goproc init as this.base(left, right, 2)
+	}
+}
+
+rem Purpose:	A record that implements the division operator
+record eq_op_divide extends eq_bin_op {
+	proc init(left, right) {
+		goproc init as this.base(left, right, 3)
+	}
+}
+
+rem Purpose:	A record that implements the remainder, not absoloute value operator
+record eq_op_mod extends eq_bin_op {
+	proc init(left, right) {
+		goproc init as this.base(left, right, 3)
+	}
+}
+
+rem Purpose:	A record that implements the power operator
+record eq_op_pow extends eq_bin_op {
+	proc init(left, right) {
+		goproc init as this.base(left, right, 4)
+	}
+}
+
+rem Purpose: 	A record that implements the logarithm operator
+record eq_op_log extends eq_bin_op {
+	proc init(val, base) {
+		goproc init as this.base(val, base, 4)
+	}
+}
+
+rem Purpose:	A record that implements the absoloute value operator
+record eq_op_abs extends eq_uni_op {
+	proc init(operand) {
+		goproc init as this.base(operand)
+	}
+}

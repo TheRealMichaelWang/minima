@@ -1,0 +1,42 @@
+include "symbol/core.txt"
+
+record eq_leaf {
+	proc compare(obj) {
+		if extern typeof(obj) != extern typeof(this) {
+			return this.obj == obj
+		}
+		return this.obj == obj.obj
+	}
+
+	proc == (obj) {
+		return goproc compare as this(obj)
+	}
+
+	proc != (obj) {
+		return !goproc compare as this(obj)
+	}
+}
+
+record eq_bin_op {
+	proc compare(obj) {
+		if extern typeof(obj) != extern typeof(this) {
+			return false
+		}
+		return goproc compare as this.left(obj.left) and goproc compare as this.right(obj.right)
+	}
+}
+
+record eq_uni_op {
+	proc compare(obj) {
+		if extern typeof(obj) != extern typeof(this) {
+			return false
+		}
+		return goproc compare as this.operand(obj.operand)
+	}
+}
+
+record match {
+	proc compare(obj) {
+		return false
+	}
+}

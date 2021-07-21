@@ -1,0 +1,200 @@
+include "map.min"
+include "symbol/core.txt"
+
+record match extends eq_entity{
+	id
+	expected_type
+
+	proc init(id, expected_type) {
+		set this.id to id
+		set this.expected_type to expected_type
+	}
+
+	proc match(eq_entity, match_map) {
+		if this.expected_type != #any {
+			if extern typeof(eq_entity) != extern typeof(this.expected_type) {
+				return false
+			}
+		}
+
+		set matched_ent to goproc find as match_map(this.id)
+		if matched_ent {
+			return goproc compare as matched_ent(eq_entity)
+		}
+		else {
+			goproc insert as match_map(this.id, eq_entity)
+			return true
+		}
+	}
+
+	proc substitute(match_map) {
+		return goproc find as match_map(this.id)
+	}
+}
+
+record eq_leaf {
+	proc substitute(match_map) {
+		return this
+	}
+
+	proc match(eq_entity, match_map) {
+		return goproc compare as this(eq_entity)
+	}
+}
+
+record eq_bin_op {
+	proc match(eq_entity, match_map) {
+		if extern typeof(eq_entity) != extern typeof(this) {
+			return false
+		}
+		return goproc match as this.left(eq_entity.left, match_map) and
+			goproc match as this.right(eq_entity.right, match_map)
+	}
+}
+
+record eq_uni_op {
+	proc match(eq_entity, match_map) {
+		if extern typeof(eq_entity) != extern typeof(this) {
+			return false
+		}
+		return goproc match as this.operand(eq_entity.operand, match_map)
+	}
+}
+
+record eq_op_add {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return lhs + rhs
+	}
+}
+
+record eq_op_subtract {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return lhs - rhs
+	}
+}
+
+record eq_op_multiply {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return lhs * rhs
+	}
+}
+
+record eq_op_divide {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return lhs / rhs
+	}
+}
+
+record eq_op_mod {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return lhs % rhs
+	}
+}
+
+record eq_op_pow {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return lhs ^ rhs
+	}
+}
+
+record eq_op_log {
+	proc substitute(match_map) {
+		set lhs to goproc substitute as this.left(match_map)
+		set rhs to goproc substitute as this.right(match_map)
+		if !lhs or !rhs {
+			return null
+		}
+		return goproc log(lhs, rhs)
+	}
+}
+
+record eq_op_abs {
+	proc substitute(match_map) {
+		set operand to goproc substitute as this.operand(match_map)
+		if !operand {
+			return null
+		}
+		return goproc abs(operand)
+	}
+}
+
+record rule {
+	match_rule
+	replace_rule
+
+	proc init(match_rule, replace_rule) {
+		set this.match_rule to match_rule
+		set this.replace_rule to replace_rule
+	}
+
+	proc apply(eq_entity) {
+		set match_map to new map
+		if goproc match as this.match_rule(eq_entity, match_map) {
+			return goproc substitute as this.replace_rule(match_map)
+		}
+		return null
+	}
+}
+
+record rule_set {
+	rules
+
+	proc apply(eq_entity) {
+		set simp_flag to true
+		while simp_flag {
+			set simp_flag to false
+
+			if extern implements(eq_entity, #eq_bin_op) {
+				set eq_entity.left to goproc apply as this(eq_entity.left)
+				set eq_entity.right to goproc apply as this(eq_entity.right)
+			}
+			elif extern implements(eq_entity, #eq_uni_op) {
+				set eq_entity.operand to goproc apply as this(eq_entity.operand)
+			}
+			else {
+				return eq_entity
+			}
+
+			set i to extern len(this.rules)
+			while dec i {
+				set m_stat to goproc apply as this.rules[i](eq_entity)
+				if m_stat {
+					set eq_entity to m_stat
+					set simp_flag to true
+					inc i
+				}
+			}
+		}
+		return eq_entity
+	}
+}

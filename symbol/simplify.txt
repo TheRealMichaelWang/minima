@@ -1,0 +1,270 @@
+include "symbol/core.txt"
+include "symbol/match.txt"
+
+record eq_node {
+	proc can_simplify {
+		set i to extern len(this.children)
+		while dec i {
+			if extern typeof(this.children[i]) != extern typeof(#eq_num) {
+				return false
+			}
+		}
+		return true
+	}
+
+	proc simplify_children {
+		set i to extern len(this.children)
+		while dec i {
+			set this.children[i] to goproc simplify as this.children[i]
+		}
+	}
+}
+
+record eq_bin_op {
+	proc simplify_children {
+		goproc simplify_children as this.base
+		set this.left to this.base.children[0]
+		set this.right to this.base.children[1]
+	}
+}
+
+record eq_uni_op {
+	proc simplify_children {
+		goproc simplify_children as this.base
+		set this.operand to this.base.children[0]
+	}
+}
+
+record eq_entity {
+	proc simplify {
+		return this
+	}
+}
+
+record eq_op_add {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(this.left.obj + this.right.obj)
+		}
+		elif goproc compare as this.left(0) {
+			return this.right
+		}
+		elif goproc compare as this.right(0) {
+			return this.left
+		}
+		return this
+	}
+}
+
+record eq_op_subtract {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(this.left.obj - this.right.obj)
+		}
+		elif goproc compare as this.left(this.right) {
+			return new eq_num(0)
+		}
+		elif goproc compare as this.left(0) {
+			return -this.left
+		}
+		elif goproc compare as this.right(0) {
+			return this.left
+		}
+		return this
+	}
+}
+
+record eq_op_multiply {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(this.left.obj * this.right.obj)
+		}
+		elif goproc compare as this.right(0) or goproc compare as this.left(0) {
+			return new eq_num(0)
+		}
+		elif goproc compare as this.left(1) {
+			return this.right
+		}
+		elif goproc compare as this.right(1) {
+			return this.left
+		}
+		return this
+	}
+}
+
+record eq_op_divide {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(this.left.obj / this.right.obj)
+		}
+		elif goproc compare as this.left(this.right) {
+			return new eq_num(1)
+		}
+		elif goproc compare as this.left(0) {
+			return new eq_num(0)
+		}
+		elif goproc compare as this.right(1) {
+			return this.left
+		}
+		return this
+	}
+}
+
+record eq_op_mod {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(this.left.obj % this.right.obj)
+		}
+		elif goproc compare as this.left(this.right) {
+			return new eq_num(0)
+		}
+		elif goproc compare as this.left(0) {
+			return new eq_num(0)
+		}
+		elif goproc compare as this.right(1) {
+			return this.left
+		}
+		return this
+	}
+}
+
+record eq_op_pow {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(this.left.obj ^ this.right.obj)
+		}
+		elif goproc compare as this.left(1) or goproc compare as this.right(0) {
+			return new eq_num(1)
+		}
+		elif goproc compare as this.right(1) {
+			return this.left
+		}
+		return this
+	}
+}
+
+rem TODO:	Implement a built-in method for evaluating logarithms
+record eq_op_log {
+	proc simplify {
+		goproc simplify_children as this
+		return this
+	}
+}
+
+record eq_op_abs {
+	proc simplify {
+		goproc simplify_children as this
+		if goproc can_simplify as this {
+			return new eq_num(extern abs(this.operand.obj))
+		}
+		return this
+	}
+}
+
+record simplifier extends rule_set {
+	proc init {
+		set any1 to new match(100, #any)
+		set any2 to new match(101, #any)
+		set any3 to new match(102, #any)
+		set const1 to new match(200, #eq_num)
+		set const2 to new match(201, #eq_num)
+		set const3 to new match(201, #eq_num)
+		set var1 to new match(300, #eq_var)
+		set var2 to new match(301, #eq_var)
+		set var3 to new match(302, #eq_var)
+
+		set this.base.rules to {
+			new rule(any1 / (any2 / any3), (any1 * any3) / any2),
+			new rule(any1 * (any2 / any3), (any1 * any2) / any3),
+
+			new rule(var1 * const1, const1 * var1),
+			new rule(const1 + var1, var1 + const1),
+
+			new rule(const1 * var1 + const2 * var1, (const1 + const2) * var1),
+			new rule(const1 * var1 - const2 * var1, (const1 - const2) * var1),
+
+			new rule(any1 * any2 + any1 * any3, any1 * (any2 + any3)),
+			new rule(any1 * any2 + any3 * any1, any1 * (any2 + any3)),
+			new rule(any2 * any1 + any1 * any3, any1 * (any2 + any3)),
+			new rule(any2 * any1 + any3 * any1, any1 * (any2 + any3)),
+
+			new rule(any1 + any1 * any2, any1 * (1 + any2)),
+			new rule(any1 + any2 * any1, any1 * (1 + any2)),
+			new rule(any1 * any2 + any1, any1 * (1 + any2)),
+			new rule(any2 * any1 + any1, any1 * (1 + any2)),
+
+			new rule(any1 + any1, 2 * any1),
+
+			new rule(any1 * any2 - any1 * any3, any1 * (any2 - any3)),
+			new rule(var1 * var1, var1^2),
+
+			new rule(var1 * any1 ^ any2, any1 ^ any2 * var1),
+
+			new rule(any1^any2 * any1, any1 ^ (any2 + 1)),
+			new rule(any1 * any1^any2, any1 ^ (any2 + 1)),
+
+			new rule(any1 ^ any2 * any1 ^ any3, any1 ^ (any2 + any3)),
+
+			new rule(any1 ^ any2 / any1 ^ any3, any1 ^ (any2 - any3)),
+
+			new rule(any1 ^ (any2 ^ any3), any1 ^ (any2 * any3)),
+
+			new rule(const1 ^ goproc log(any1, const2), any1),
+
+			new rule((const1 * var1) * const2, (const1 * const2) * var1),
+			new rule(const2 * (const1 * var1), (const1 * const2) * var1),
+
+			new rule((var1 + const1) + const2, (const1 + const2) + var1),
+			new rule(const2 + (var1 + const1), (const1 + const2) + var1),
+
+			new rule(any1 * (any1 * any2), (any1 * any1) * any2),
+			new rule(any1 * (any2 * any1), (any1 * any1) * any2),
+			new rule((any1 * any2) * any1, (any1 * any1) * any2),
+			new rule((any2 * any1) * any1, (any1 * any1) * any2),
+
+			new rule((any1 ^ any3) * (any1 * any2), (any1 ^ (any3 + 1)) * any2),
+			new rule((any1 ^ any3) * (any2 * any1), (any1 ^ (any3 + 1)) * any2),
+			new rule((any1 * any2) * (any1 ^ any3), (any1 ^ (any3 + 1)) * any2),
+			new rule((any2 * any1) * (any1 ^ any3), (any1 ^ (any3 + 1)) * any2),
+
+			new rule(any1^any3 * any2^any3, (any1 * any2) ^ any3),
+
+			new rule((const1 * any1) ^ const1, const1 ^ const1 * any1 ^ const2),
+
+			new rule(any1 / any1, new eq_num(1)),
+
+			new rule((any1 * any2) / any2, any1),
+			new rule((any2 * any1) / any2, any1),
+
+			new rule((any1 * any2) / (any2 * any3), any1 / any3),
+			new rule((any1 * any2) / (any3 * any2), any1 / any3),
+			new rule((any2 * any1) / (any2 * any3), any1 / any3),
+			new rule((any2 * any1) / (any3 * any2), any1 / any3),
+
+			new rule((any1 - any2) / (any2 - any1), new eq_num(-1)),
+
+			new rule((any1 + any2) / (any2 + any1), new eq_num(-1)),
+
+			new rule(const1 / (const2 * any1), (const1 / const2) / any1),
+			new rule(const1 / (any1 * const2), (const1 / const2) / any1),
+
+			new rule(const1 * (const2 * any1), (const1 * const2) * any1),
+
+			new rule(any1 - any1, new eq_num(0)),
+
+			new rule(any1 - any2 * any1, any1 * (1 - any2)),
+			new rule(any1 - any1 * any2, any1 * (1 - any2)),
+
+			new rule(any1 ^ -1, 1 / any1),
+
+			new rule(-1 * any1 + any2, any2 - any1),
+			new rule(any1 / any2 * any3, any1 * any3 / any2)
+		}
+	}
+}

@@ -1,0 +1,29 @@
+include "symbol/core.txt"
+include "symbol/sort.txt"
+
+rem Purpose:	Checks if a value is a numerical. If so, it converts it to it's eq_num representation.
+proc num_check(num) {
+	if extern typeof(num) == extern typeof(0) {
+		return new eq_num(num)
+	}
+	return num
+}
+
+proc log(val, base) {
+	return new eq_op_log(val, base)
+}
+
+proc log(val) {
+	return new eq_op_log(val, new eq_var("e"))
+}
+
+proc abs(val) {
+	return new eq_op_abs(val)
+}
+
+proc simplify(expr) {
+	rem set sorted to goproc sort_terms(goproc terms as expr, 3)
+	set sorted to goproc sort_terms(expr, 3)
+	set simplifier to new simplifier
+	return goproc apply as simplifier(sorted)
+}

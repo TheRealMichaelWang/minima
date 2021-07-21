@@ -1,0 +1,84 @@
+include "symbol/core.txt"
+
+rem Purpose:	Implements a deriviative function for variables
+record eq_var {
+	proc derive(var) {
+		return new eq_num(this.obj == var)
+	}
+}
+
+rem Purpose:	Implements a derivative function for numericals
+record eq_num {
+	proc derive(var) {
+		return new eq_num(0)
+	}
+}
+
+rem Purpose:	Implements a derivative function for addition
+record eq_op_add {
+	proc derive(var) {
+		return goproc derive as this.left(var) + goproc derive as this.right(var)
+	}
+}
+
+rem Purpose:	Implements a derivative function for subtraction
+record eq_op_subtract {
+	proc derive(var) {
+		return goproc derive as this.left(var) - goproc derive as this.right(var)
+	}
+}
+
+rem Purpose:	Implements a derivative function for multiplication
+record eq_op_multiply {
+	proc derive(var) {
+		return (goproc derive as this.left(var) * this.right) + 
+			(goproc derive as this.right(var) * this.left)
+	}
+}
+
+rem Purpose:	Implements a derivative function for division
+record eq_op_divide {
+	proc derive(var) {
+		return ((goproc derive as this.left(var) * this.right) + 
+			(goproc derive as this.right(var) * this.left)) /
+			(this.right ^ 2)
+	}
+}
+
+rem Purpose:	Implements a derivative function for modulous
+record eq_op_mod {
+	proc derive(var) {
+		return goproc derive as this.left(var) - 
+			(this.left / this.right) * goproc derive as this.right(var)
+	}
+}
+
+rem Purpose:	Implements a derivative function for exponentials
+record eq_op_pow {
+	proc derive(var) {
+		if extern typeof(this.right) == extern typeof(#eq_num) {
+			return this.right * this.left ^ (this.right - 1) * goproc derive as this.left(var)
+		}
+		elif extern typeof(this.left) == extern typeof(#eq_num) {
+			return this.right ^ this.left * goproc log(this.left) * goproc derive as this.right(var) 
+		}
+		return this.left ^ this.right * (goproc derive as this.left(var) * this.right / this.left + goproc log(this.left) * goproc derive as this.right(var))
+	}
+}
+
+rem Purpose:	Implements a derivative function for logarithms
+record eq_op_log {
+	proc derive(var) {
+		return (goproc derive as this.left(var) / this.left * goproc log(this.right) - 
+			goproc log(this.left) * goproc derive as this.right(var) / this.right) /
+			(goproc log(this.right) ^ 2)
+	}
+}
+
+rem Purpose:	Implements a derivative function for absoloute value
+record eq_op_abs {
+	rem 	Signum of abs is always 1
+	proc derive(var) {
+		return goproc derive as this.operand(var)
+	}
+}
