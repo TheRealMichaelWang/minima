@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "include/io.h"
 #include "include/hash.h"
 #include "include/error.h"
@@ -182,4 +183,16 @@ DECL_BUILT_IN(builtin_min) {
 	if (argc < 2)
 		return const_value_null;
 	return NUM_VALUE(min(argv[0]->payload.numerical, argv[1]->payload.numerical));
+}
+
+DECL_BUILT_IN(builtin_ceil) {
+	if (argc < 1)
+		return const_value_null;
+	return NUM_VALUE(ceil(argv[0]->payload.numerical));
+}
+
+DECL_BUILT_IN(builtin_floor) {
+	if (argc < 1)
+		return const_value_null;
+	return NUM_VALUE(floor(argv[0]->payload.numerical));
 }

@@ -17,7 +17,7 @@ struct garbage_collector {
 	struct garbage_frame* frame_stack;
 	struct value** value_stack;
 	struct value** trace_stack;
-	uint64_t frames;
+	uint64_t frames, to_collect, to_trace;
 };
 
 const int init_gcollect(struct garbage_collector* garbage_collector);

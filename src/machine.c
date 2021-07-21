@@ -24,7 +24,7 @@ const int init_machine(struct machine* machine) {
 
 	ERROR_ALLOC_CHECK(init_gcollect(&machine->garbage_collector));
 	init_global_cache(&machine->global_cache);
-
+	
 	cache_declare_builtin(&machine->global_cache, 210724587794, builtin_print);
 	cache_declare_builtin(&machine->global_cache, 6953911397310, builtin_print_line);
 	cache_declare_builtin(&machine->global_cache, 6954037470346, builtin_system_cmd);
@@ -37,6 +37,8 @@ const int init_machine(struct machine* machine) {
 	cache_declare_builtin(&machine->global_cache, 6954076481916, builtin_get_type);
 	cache_declare_builtin(&machine->global_cache, 8246457940939440931, builtin_implements);
 	cache_declare_builtin(&machine->global_cache, 193485979, builtin_abs);
+	cache_declare_builtin(&machine->global_cache, 6385112226, builtin_ceil);
+	cache_declare_builtin(&machine->global_cache, 210712519527, builtin_floor);
 	return 1;
 }
 
