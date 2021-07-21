@@ -1,0 +1,81 @@
+rem Minima, written by Michael Wang 2020-21
+
+rem Purpose:	Implements a basic hash-map
+
+include "list.min"
+
+record map_pair {
+	key
+	value
+
+	proc init(key, value) {
+		set this.key to key
+		set this.value to value
+	}
+}
+
+record map {
+	blocks
+
+	proc init(capacity) {
+		set this.blocks to alloc[capacity]
+	}
+
+	proc init {
+		goproc init as this(100)
+	}
+
+	proc rehash(new_capacity) {
+		set old_cap to extern len(this.blocks)
+
+		set i to old_cap
+		set found to new list
+		while dec i {
+			if this.blocks[i] {
+				goproc push_back as found(this.blocks[i])
+			}
+		}
+
+		set this.blocks to alloc[new_capacity]
+		while found.size {
+			set block to goproc pop_front as found
+			goproc insert_block as this(block.key, block.value)
+		}
+	}
+
+	proc insert_block(key, value) {
+		set cap to extern len(this.blocks)
+		set i to key % cap
+
+		while i < cap {
+			if !this.blocks[i] {
+				set this.blocks[i] to new map_pair(key, value)
+				return
+			}
+			inc i
+		}
+
+		goproc rehash as this(2 * cap)
+		goproc insert_block as this(key, value)
+	}
+
+	proc insert(key, value) {
+		goproc insert_block as this(extern hash(key), value)
+	}
+
+	proc find(key) {
+		set hash to extern hash(key)
+		set cap to extern len(this.blocks)
+		set i to hash % cap
+
+		while i < cap {
+			if this.blocks[i] {
+				if this.blocks[i].key == hash {
+					return this.blocks[i].value
+				}
+			}
+			inc i
+		}
+		return null
+	}
+}
