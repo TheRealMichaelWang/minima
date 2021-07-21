@@ -42,5 +42,7 @@ DECL_BUILT_IN(builtin_implements);
 DECL_BUILT_IN(builtin_abs);
 DECL_BUILT_IN(builtin_max);
 DECL_BUILT_IN(builtin_min);
+DECL_BUILT_IN(builtin_ceil);
+DECL_BUILT_IN(builtin_floor);
 
 #endif // !STDLIB_H

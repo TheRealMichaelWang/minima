@@ -172,7 +172,6 @@ DECL_OPCODE_HANDLER(opcode_goto) {
 	machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
 	machine->position_flags[machine->positions++] = 1;
 	uint64_t pos = cache_retrieve_pos(&machine->global_cache, chunk_read_ulong(chunk));
-
 	NULL_CHECK(pos, ERROR_LABEL_UNDEFINED);
 	chunk_jump_to(chunk, pos);
 	return 1;
@@ -405,7 +404,7 @@ DECL_OPCODE_HANDLER(opcode_build_collection) {
 	struct collection* collection = malloc(sizeof(struct collection));
 	NULL_CHECK(collection, ERROR_OUT_OF_MEMORY);
 	NULL_CHECK(init_collection(collection, req_size), ERROR_OUT_OF_MEMORY);
-
+	
 	while (req_size--)
 		NULL_CHECK(collection->inner_collection[req_size] = machine_pop_eval(machine), ERROR_INSUFFICIENT_EVALS);
 

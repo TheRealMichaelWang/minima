@@ -13,6 +13,8 @@ const int init_gcollect(struct garbage_collector* garbage_collector) {
 	ERROR_ALLOC_CHECK(garbage_collector->value_stack = malloc(MAX_VALUES * sizeof(struct value*)));
 	ERROR_ALLOC_CHECK(garbage_collector->trace_stack = malloc(MAX_TRACE * sizeof(struct value*)));
 	garbage_collector->frames = 0;
+	garbage_collector->to_collect = 0;
+	garbage_collector->to_trace = 0;
 	return 1;
 }
 
@@ -32,10 +34,13 @@ static void init_gframe(struct garbage_frame* garbage_frame, const struct value*
 }
 
 const int gc_register_trace(struct garbage_collector* garbage_collector, const struct value* value) {
+	if (garbage_collector->to_trace == MAX_TRACE)
+		return 0;
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	if (top->trace_values == MAX_GARBAGE)
 		return 0;
 	top->to_trace[top->trace_values++] = value;
+	garbage_collector->to_trace++;
 	return 1;
 }
 
@@ -56,7 +61,7 @@ const int gc_register_children(struct garbage_collector* garbage_collector, stru
 }
 
 struct value*gc_register_value(struct garbage_collector* garbage_collector, struct value value) {
-	if (value.gc_flag != GARBAGE_UNINIT)
+	if (value.gc_flag != GARBAGE_UNINIT || garbage_collector->to_collect == MAX_VALUES)
 		return NULL;
 
 	struct value* alloc_apartment = malloc(sizeof(struct value));
@@ -65,6 +70,7 @@ struct value*gc_register_value(struct garbage_collector* garbage_collector, stru
 
 	struct garbage_frame* gframe = &garbage_collector->frame_stack[garbage_collector->frames - 1];
 	gframe->to_collect[gframe->collect_values++] = alloc_apartment;
+	garbage_collector->to_collect++;
 	
 	gc_register_children(garbage_collector, alloc_apartment);
 	return alloc_apartment;
@@ -104,6 +110,7 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 
 	struct value** reset_stack = &top->to_collect[top->collect_values];
 	uint32_t reset_top = 0;
+	garbage_collector->to_trace -= top->trace_values;
 	while (top->trace_values--)
 		trace_value(top->to_trace[top->trace_values], reset_stack, &reset_top);
 
@@ -111,10 +118,12 @@ void gc_collect(struct garbage_collector* garbage_collector) {
 		if (top->to_collect[i]->gc_flag == GARBAGE_COLLECT || garbage_collector->frames < 2) {
 			free_value(top->to_collect[i]);
 			free(top->to_collect[i]);
+			garbage_collector->to_collect--;
 		}
 		else if (top->to_collect[i]->gc_flag == GARBAGE_KEEP) {
 			struct garbage_frame* prev = &garbage_collector->frame_stack[garbage_collector->frames - 2];
 			prev->to_collect[prev->collect_values++] = top->to_collect[i];
+			garbage_collector->to_collect++;
 		}
 	}
 
