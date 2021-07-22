@@ -75,8 +75,13 @@ const int scanner_read_str(struct scanner* scanner, char* str, const int data_mo
 			str[len++] = read_data_char(scanner);
 	}
 	else {
-		while (read_char(scanner) != '\"')
+		while (read_char(scanner) != '\"') {
+			if (!scanner->last_char) {
+				scanner->last_err = ERROR_UNEXPECTED_TOKEN;
+				return 0;
+			}
 			str[len++] = scanner->last_char;
+		}
 	}
 	str[len] = 0;
 	read_char(scanner);
