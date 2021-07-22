@@ -92,7 +92,7 @@ record union {
 
 		set j to extern len(this.parents)
 		while dec j {
-			if goproc index_parent as this(j) == j and this.keys[j] {
+			if goproc index_parent as this(j) == j and this.keys[j] != null {
 				goproc push_back as found(this.keys[j])
 			}
 		}
