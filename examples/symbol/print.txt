@@ -22,16 +22,16 @@ record eq_bin_op {
 		}
 	}
 
-	proc print_left(min_prec) {
-		if this.op_prec < min_prec {
+	proc print_left(op_prec) {
+		if this.op_prec < op_prec {
 			extern print('(')
 		}
 		goproc print_child as this(this.left)
 	}
 
-	proc print_right(min_prec) {
+	proc print_right(op_prec) {
 		goproc print_child as this(this.right)
-		if this.op_prec < min_prec {
+		if this.op_prec < op_prec {
 			extern print(')')
 		}
 	}
@@ -42,23 +42,23 @@ record eq_bin_op {
 }
 
 record eq_op_add {
-	proc print(min_prec) {
-		goproc print_left as this(min_prec)
+	proc print(op_prec) {
+		goproc print_left as this(op_prec)
 		extern print(" + ")
-		goproc print_right as this(min_prec)
+		goproc print_right as this(op_prec)
 	}
 }
 
 record eq_op_subtract {
-	proc print(min_prec) {
-		goproc print_left as this(min_prec)
+	proc print(op_prec) {
+		goproc print_left as this(op_prec)
 		extern print(" - ")
-		goproc print_right as this(min_prec)
+		goproc print_right as this(op_prec)
 	}
 }
 
 record eq_op_multiply {
-	proc print(min_prec) {
+	proc print(op_prec) {
 		if this.left == -1 {
 			extern print('-')
 			goproc print as this.right
@@ -68,39 +68,39 @@ record eq_op_multiply {
 			goproc print as this.left
 		}
 		else {
-			goproc print_left as this(min_prec)
+			goproc print_left as this(op_prec)
 			extern print(" * ")
-			goproc print_right as this(min_prec)
+			goproc print_right as this(op_prec)
 		}
 	}
 }
 
 record eq_op_divide {
-	proc print(min_prec) {
-		goproc print_left as this(min_prec)
+	proc print(op_prec) {
+		goproc print_left as this(op_prec)
 		extern print(" / ")
-		goproc print_right as this(min_prec)
+		goproc print_right as this(op_prec)
 	}
 }
 
 record eq_op_mod {
-	proc print(min_prec) {
-		goproc print_left as this(min_prec)
+	proc print(op_prec) {
+		goproc print_left as this(op_prec)
 		extern print(" % ")
-		goproc print_right as this(min_prec)
+		goproc print_right as this(op_prec)
 	}
 }
 
 record eq_op_pow {
-	proc print(min_prec) {
-		goproc print_left as this(min_prec)
+	proc print(op_prec) {
+		goproc print_left as this(op_prec)
 		extern print(" ^ ")
-		goproc print_right as this(min_prec)
+		goproc print_right as this(op_prec)
 	}
 }
 
 record eq_op_log {
-	proc print(min_prec) {
+	proc print(op_prec) {
 		extern print("log(")
 		goproc print as this.left
 		extern print(", ")

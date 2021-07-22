@@ -27,7 +27,7 @@ record eq_node {
 		}
 
 		if level == 3 and extern implements(eq_entity, #eq_bin_op) and extern implements(this, #eq_bin_op) {
-			return eq_entity.min_prec - (eq_entity.min_prec % 2) == this.min_prec - (this.min_prec % 2)
+			return eq_entity.op_prec - (eq_entity.op_prec % 2) == this.op_prec - (this.op_prec % 2)
 		}
 		if level == 2 and extern typeof(this) == extern typeof(eq_entity) {
 			return true
@@ -98,6 +98,7 @@ proc sort_terms(terms, level) {
 
 	set i to extern len(terms)
 	while dec i {
+		goproc insert as union(i)
 		set j to extern len(terms)
 		while dec j {
 			if i != j and goproc sort_comp as terms[i](terms[j], level) {
@@ -111,6 +112,7 @@ proc sort_terms(terms, level) {
 	set list to new list
 
 	set i to extern len(roots)
+
 	while dec i {
 		set children_i to goproc children as union(roots[i])
 		set j to extern len(children_i)

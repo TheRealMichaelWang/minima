@@ -1,5 +1,4 @@
 include "symbol/core.txt"
-include "symbol/sort.txt"
 
 rem Purpose:	Checks if a value is a numerical. If so, it converts it to it's eq_num representation.
 proc num_check(num) {
@@ -22,7 +21,6 @@ proc abs(val) {
 }
 
 proc simplify(expr) {
-	set sorted to goproc sort_terms(goproc terms as expr, 3)
 	set simplifier to new simplifier
-	return goproc apply as simplifier(sorted)
+	return goproc apply as simplifier(expr)
 }
