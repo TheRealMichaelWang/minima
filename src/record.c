@@ -51,7 +51,7 @@ const int init_record(struct record* record, struct record_prototype* prototype,
 			init_object_rec(&object, base_record);
 			init_obj_value(&property, object);
 		}
-		ERROR_ALLOC_CHECK(record->properties[i] = machine_push_eval(machine, &property, 0));
+		ERROR_ALLOC_CHECK(record->properties[i] = machine_push_const(machine, property, 0));
 	}
 	return 1;
 }

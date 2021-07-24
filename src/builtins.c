@@ -34,11 +34,8 @@ struct value str_to_value(const char* buffer, const size_t length, struct machin
 		return const_value_null;
 
 	init_collection(collection, length);
-	struct value char_elem;
-	for(uint_fast32_t i = 0; i < length; i++) {
-		char_elem = CHAR_VALUE(buffer[i]);
-		collection->inner_collection[i] = machine_push_eval(machine, &char_elem, 0);
-	}
+	for(uint_fast32_t i = 0; i < length; i++)
+		collection->inner_collection[i] = machine_push_const(machine, CHAR_VALUE(buffer[i]), 0);
 
 	struct object obj;
 	init_object_col(&obj, collection);

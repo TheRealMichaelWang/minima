@@ -90,23 +90,24 @@ struct value* machine_pop_eval(struct machine* machine) {
 struct value* machine_push_eval(struct machine* machine, struct value* value, int push_obj_children)
 {
 	STACK_CHECK;
+	if (value->gc_flag == GARBAGE_UNINIT)
+		return machine_push_const(machine, *value, push_obj_children);
+	else
+		return machine->evaluation_stack[machine->evals++] = value;
+}
 
-	if (value->gc_flag == GARBAGE_UNINIT) {
-		if (value->type == VALUE_TYPE_OBJ && push_obj_children) {
-			uint64_t children_count;
-			struct value** children = object_get_children(&value->payload.object, &children_count);
+struct value* machine_push_const(struct machine* machine, struct value const_value, int push_obj_children) {
+	STACK_CHECK;
+	if (const_value.type == VALUE_TYPE_OBJ && push_obj_children) {
+		uint64_t children_count;
+		struct value** children = object_get_children(&const_value.payload.object, &children_count);
 
-			for (uint_fast64_t i = 0; i < children_count; i++)
-				if (children[i]->gc_flag == GARBAGE_UNINIT)
-					machine_push_eval(machine, children[i], 1);
-		}
-
-		machine->constant_stack[machine->constants] = *value;
-		value = &machine->constant_stack[machine->constants++];
+		for (uint_fast64_t i = 0; i < children_count; i++)
+			if (children[i]->gc_flag == GARBAGE_UNINIT)
+				children[i] = machine_push_const(machine, *children[i], 1);
 	}
-
-	machine->evaluation_stack[machine->evals++] = value;
-	return value;
+	machine->constant_stack[machine->constants] = const_value;
+	return machine->evaluation_stack[machine->evals++] = &machine->constant_stack[machine->constants++];
 }
 
 const int machine_condition_check(struct machine* machine) {

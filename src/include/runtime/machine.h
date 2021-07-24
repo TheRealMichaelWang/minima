@@ -43,6 +43,7 @@ void machine_reset(struct machine* machine);
 
 struct value* machine_pop_eval(struct machine* machine);
 struct value* machine_push_eval(struct machine* machine, struct value* value, int push_obj_children);
+struct value* machine_push_const(struct machine* machine, struct value const_value, int push_obj_children);
 
 const int machine_condition_check(struct machine* machine);
 
