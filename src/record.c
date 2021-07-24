@@ -51,7 +51,7 @@ const int init_record(struct record* record, struct record_prototype* prototype,
 			init_object_rec(&object, base_record);
 			init_obj_value(&property, object);
 		}
-		record->properties[i] = machine_push_eval(machine, &property, 0);
+		ERROR_ALLOC_CHECK(record->properties[i] = machine_push_eval(machine, &property, 0));
 	}
 	return 1;
 }
@@ -74,6 +74,8 @@ struct value* record_get_property(struct record* record, const uint64_t property
 }
 
 const int record_set_property(struct record* record, const uint64_t property, const struct value* value) {
+	ERROR_ALLOC_CHECK(value);
+
 	uint_fast8_t i = retrieve_property_index(record->prototype, property);
 	if (i) {
 		record->properties[i - 1] = value;

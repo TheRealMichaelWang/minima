@@ -3,7 +3,7 @@
 #include "include/error.h"
 #include "include/runtime/variable.h"
 
-int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector) {
+const int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector) {
 	var_context->hash_limit = 16;
 	var_context->garbage_collector = garbage_collector;
 	ERROR_ALLOC_CHECK(var_context->buckets = malloc(var_context->hash_limit * sizeof(struct var_bucket)));
@@ -15,9 +15,9 @@ int init_var_context(struct var_context* var_context, struct garbage_collector* 
 	return 1;
 }
 
-void free_var_context(struct var_context* var_context) {
+const int free_var_context(struct var_context* var_context) {
 	free(var_context->buckets);
-	gc_collect(var_context->garbage_collector);
+	return gc_collect(var_context->garbage_collector);
 }
 
 static const int rehash(struct var_context* var_context) {
