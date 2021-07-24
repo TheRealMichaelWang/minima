@@ -7,7 +7,7 @@
 #include "include/runtime/opcodes.h"
 
 #define NULL_CHECK(PTR, ERROR) if(!(PTR)) { machine->last_err = ERROR; return 0; }
-#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
+//#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 
 #define MPUSH_EVAL(EVAL) NULL_CHECK(machine_push_eval(machine, EVAL, 1), ERROR_STACK_OVERFLOW)
 #define MPUSH_REF(EVAL) NULL_CHECK(machine_push_eval(machine, EVAL, 0), ERROR_STACK_OVERFLOW)
@@ -77,7 +77,8 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 			if (!pos)
 				record_val = record_get_property(record_val->payload.object.ptr.record, RECORD_BASE_PROPERTY);
 			else {
-				STACK_CHECK;
+				if (machine->positions == MACHINE_MAX_POSITIONS)
+					MACHINE_ERROR(ERROR_STACK_OVERFLOW);
 				machine->position_stack[machine->positions] = chunk->pos;
 				machine->position_flags[machine->positions++] = 1;
 
@@ -109,7 +110,8 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 				if (!pos)
 					record_val = record_get_property(record_val->payload.object.ptr.record, RECORD_BASE_PROPERTY);
 				else {
-					STACK_CHECK;
+					if (machine->positions == MACHINE_MAX_POSITIONS)
+						MACHINE_ERROR(ERROR_STACK_OVERFLOW);
 					machine->position_stack[machine->positions] = chunk->pos;
 					machine->position_flags[machine->positions++] = 1;
 
@@ -148,14 +150,16 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 }
 
 DECL_OPCODE_HANDLER(opcode_mark) {
-	STACK_CHECK;
+	if (machine->positions == MACHINE_MAX_POSITIONS)
+		MACHINE_ERROR(ERROR_STACK_OVERFLOW);
 	machine->position_stack[machine->positions] = chunk->pos - 1;
 	machine->position_flags[machine->positions++] = 0;
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_goto) {
-	STACK_CHECK;
+	if (machine->positions == MACHINE_MAX_POSITIONS)
+		MACHINE_ERROR(ERROR_STACK_OVERFLOW);
 	machine->position_stack[machine->positions] = chunk->pos + sizeof(uint64_t);
 	machine->position_flags[machine->positions++] = 1;
 	uint64_t pos = cache_retrieve_pos(&machine->global_cache, chunk_read_ulong(chunk));
@@ -174,7 +178,8 @@ DECL_OPCODE_HANDLER(opcode_goto_as) {
 	struct record* current_record = record_eval->payload.object.ptr.record;
 	uint64_t id = chunk_read_ulong(chunk);
 
-	STACK_CHECK;
+	if (machine->positions == MACHINE_MAX_POSITIONS)
+		MACHINE_ERROR(ERROR_STACK_OVERFLOW);
 	machine->position_stack[machine->positions] = chunk->pos; // +sizeof(uint64_t);
 	machine->position_flags[machine->positions++] = 1;
 
@@ -241,7 +246,8 @@ DECL_OPCODE_HANDLER(opcode_flag_skip) {
 }
 
 DECL_OPCODE_HANDLER(opcode_new_frame) {
-	STACK_CHECK;
+	if (machine->call_size == MACHINE_MAX_CALLS)
+		MACHINE_ERROR(ERROR_STACK_OVERFLOW);
 	if (!init_var_context(&machine->var_stack[machine->call_size++], &machine->garbage_collector))
 		MACHINE_ERROR(ERROR_OUT_OF_MEMORY);
 	return 1;

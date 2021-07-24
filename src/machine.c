@@ -5,8 +5,6 @@
 #include "include/runtime/opcodes.h"
 #include "include/runtime/machine.h"
 
-#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
-#define MATCH_EVALS(MIN_EVALS) if(machine->evals < MIN_EVALS) { machine->last_err = ERROR_INSUFFICIENT_EVALS; return 0; }
 #define NULL_CHECK(PTR, ERROR) if(PTR == NULL) { machine->last_err = ERROR; return 0; }
 
 const int init_machine(struct machine* machine) {
@@ -89,7 +87,8 @@ struct value* machine_pop_eval(struct machine* machine) {
 
 struct value* machine_push_eval(struct machine* machine, struct value* value, int push_obj_children)
 {
-	STACK_CHECK;
+	if (machine->evals == MACHINE_MAX_EVALS)
+		return NULL;
 	if (value->gc_flag == GARBAGE_UNINIT)
 		return machine_push_const(machine, *value, push_obj_children);
 	else
@@ -97,7 +96,8 @@ struct value* machine_push_eval(struct machine* machine, struct value* value, in
 }
 
 struct value* machine_push_const(struct machine* machine, struct value const_value, int push_obj_children) {
-	STACK_CHECK;
+	if (machine->evals == MACHINE_MAX_EVALS)
+		return NULL;
 	if (const_value.type == VALUE_TYPE_OBJ && push_obj_children) {
 		uint64_t children_count;
 		struct value** children = object_get_children(&const_value.payload.object, &children_count);
@@ -111,10 +111,7 @@ struct value* machine_push_const(struct machine* machine, struct value const_val
 }
 
 const int machine_condition_check(struct machine* machine) {
-	MATCH_EVALS(1);
-
 	struct value*valptr = machine_pop_eval(machine);
-	
 	NULL_CHECK(valptr, ERROR_INSUFFICIENT_EVALS);
 
 	int cond = 1;
