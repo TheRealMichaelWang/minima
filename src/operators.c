@@ -108,7 +108,7 @@ DECL_UNARY_OPERATOR(op_alloc) {
 	init_collection(collection, i);
 
 	while (i--)
-		collection->inner_collection[i] = machine_push_eval(machine, &const_value_null, 0);
+		collection->inner_collection[i] = machine_push_const(machine, const_value_null, 0);
 
 	struct object obj;
 	init_object_col(&obj, collection);
