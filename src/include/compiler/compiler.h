@@ -19,10 +19,13 @@ struct compiler
 
 	uint64_t imported_file_hashes[255];
 	uint_fast8_t imported_files;
+
+	const char* include_dir;
+	size_t include_dir_len;
 };
 
 //initializes a compiler instance
-void init_compiler(struct compiler* compiler, const char* source);
+void init_compiler(struct compiler* compiler, const char* include_dir, const char* source);
 
 //compiles a program, and stores the output in "chunk builder"
 const int compile(struct compiler* compiler, const int repl_mode);

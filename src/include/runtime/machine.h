@@ -12,7 +12,7 @@
 #include "../compiler/chunk.h"
 
 #define MACHINE_MAX_POSITIONS 20000
-#define MACHINE_MAX_EVALS 100000
+#define MACHINE_MAX_EVALS 10000
 #define MACHINE_MAX_CALLS 10000
 
 struct machine {
@@ -42,7 +42,7 @@ void free_machine(struct machine* machine);
 void machine_reset(struct machine* machine);
 
 struct value* machine_pop_eval(struct machine* machine);
-struct value* machine_push_eval(struct machine* machine, struct value* value, int push_obj_children);
+struct value* machine_push_eval(struct machine* machine, struct value* value);
 struct value* machine_push_const(struct machine* machine, struct value const_value, int push_obj_children);
 
 const int machine_condition_check(struct machine* machine);

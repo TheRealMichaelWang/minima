@@ -3,7 +3,7 @@
 #include "include/runtime/value.h"
 
 void init_obj_value(struct value* value, struct object obj) {
-	value->gc_flag = GARBAGE_UNINIT;
+	value->gc_flag = GARBAGE_CONSTANT;
 	value->type = VALUE_TYPE_OBJ;
 	value->payload.object = obj;
 }

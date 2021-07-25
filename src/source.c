@@ -30,6 +30,12 @@ int main(uint32_t argc, char** argv) {
 		exit(EXIT_FAILURE);
 	struct compiler compiler;
 
+	size_t i = strlen(argv[0]);
+	while (i--)
+		if (argv[0][i] == '\\')
+			break;
+	argv[0][i + 1] = 0;
+
 	if (argc > 1) {
 		FILE* infile = fopen(argv[1], "rb");
 		if (!infile) {
@@ -48,7 +54,7 @@ int main(uint32_t argc, char** argv) {
 		fclose(infile);
 		source[fsize] = 0;
 
-		init_compiler(&compiler, source);
+		init_compiler(&compiler, argv[0], source);
 
 		compiler.imported_file_hashes[compiler.imported_files++] = hash(argv[1], strlen(argv[1]));
 
@@ -113,7 +119,7 @@ int main(uint32_t argc, char** argv) {
 				debug_print_dump(global_chunk);
 			}
 			else {
-				init_compiler(&compiler, src_buf);
+				init_compiler(&compiler, argv[0], src_buf);
 				compiler.imported_files = imported_files;
 
 				if (!compile(&compiler, 1)) {
