@@ -56,7 +56,7 @@ const int gc_register_children(struct garbage_collector* garbage_collector, stru
 		struct value** children = object_get_children(&head->payload.object, &size);
 
 		for (uint64_t i = 0; i < size; i++)
-			if (children[i]->gc_flag == GARBAGE_UNINIT) {
+			if (children[i]->gc_flag == GARBAGE_CONSTANT) {
 				children[i] = gc_register_value(garbage_collector, *children[i]);
 				if (!children[i]) {
 					children[i] = NULL;
@@ -68,7 +68,7 @@ const int gc_register_children(struct garbage_collector* garbage_collector, stru
 }
 
 struct value*gc_register_value(struct garbage_collector* garbage_collector, struct value value) {
-	if (value.gc_flag != GARBAGE_UNINIT || garbage_collector->to_collect == MAX_VALUES)
+	if (value.gc_flag != GARBAGE_CONSTANT || garbage_collector->to_collect == MAX_VALUES)
 		return NULL;
 
 	struct value* alloc_apartment = malloc(sizeof(struct value));
@@ -97,7 +97,7 @@ void gc_new_frame(struct garbage_collector* garbage_collector) {
 
 static const int trace_value(struct garbage_collector* garbage_collector, struct value* value, struct value** reset_stack, uint32_t* stack_top) {
 	ERROR_ALLOC_CHECK(value);
-	if (value->gc_flag != GARBAGE_UNINIT) {
+	if (value->gc_flag != GARBAGE_CONSTANT) {
 		if (value->gc_flag == GARBAGE_KEEP)
 			return 1;
 

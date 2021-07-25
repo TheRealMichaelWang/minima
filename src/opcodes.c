@@ -9,8 +9,7 @@
 #define NULL_CHECK(PTR, ERROR) if(!(PTR)) { machine->last_err = ERROR; return 0; }
 //#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 
-#define MPUSH_EVAL(EVAL) NULL_CHECK(machine_push_eval(machine, EVAL, 1), ERROR_STACK_OVERFLOW)
-#define MPUSH_REF(EVAL) NULL_CHECK(machine_push_eval(machine, EVAL, 0), ERROR_STACK_OVERFLOW)
+#define MPUSH_EVAL(EVAL) NULL_CHECK(machine_push_eval(machine, EVAL), ERROR_STACK_OVERFLOW)
 #define MPUSH_CONST(EVAL, HAS_CHILDREN) NULL_CHECK(machine_push_const(machine, EVAL, HAS_CHILDREN), ERROR_STACK_OVERFLOW);
 
 #define MACHINE_ERROR(ERROR) {machine->last_err = ERROR; return 0;}
@@ -24,7 +23,7 @@ DECL_OPCODE_HANDLER(opcode_load_const) {
 DECL_OPCODE_HANDLER(opcode_load_var) {
 	struct value*var_ptr = retrieve_var(&machine->var_stack[machine->call_size - 1], chunk_read_ulong(chunk));
 	NULL_CHECK(var_ptr, ERROR_VARIABLE_UNDEFINED);
-	MPUSH_REF(var_ptr);
+	MPUSH_EVAL(var_ptr);
 	return 1;
 }
 
@@ -34,7 +33,7 @@ DECL_OPCODE_HANDLER(opcode_store_var) {
 	struct value*src = machine_pop_eval(machine);
 	NULL_CHECK(src, ERROR_INSUFFICIENT_EVALS);
 
-	if (src->gc_flag == GARBAGE_UNINIT) {
+	if (src->gc_flag == GARBAGE_CONSTANT) {
 		struct value* dest = retrieve_var(&machine->var_stack[machine->call_size - 1], id);
 		if (dest) {
 			if (src->type == VALUE_TYPE_NULL) {
@@ -91,7 +90,7 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 			}
 		}
 	}
-	MPUSH_CONST(invoke_binary_op(op, value_a, value_b), 0);
+	NULL_CHECK(invoke_binary_op(op, value_a, value_b, machine), ERROR_UNEXPECTED_TYPE);
 	return 1;
 }
 
@@ -100,32 +99,27 @@ DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	NULL_CHECK(operand, ERROR_INSUFFICIENT_EVALS);
 	enum unary_operator op = chunk_read(chunk);
 
-	if (!(op == OPERATOR_COPY && (operand->type == VALUE_TYPE_OBJ || operand->type == VALUE_TYPE_NULL))) {
-		if (IS_RECORD(*operand)) {
-			struct value* record_val = operand;
-			struct value* original_record_operand = record_val;
-			while (record_val != NULL)
-			{
-				uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(combine_hash(combine_hash((uint64_t)op, UNARY_OVERLOAD), 1), record_val->payload.object.ptr.record->prototype->identifier));
-				if (!pos)
-					record_val = record_get_property(record_val->payload.object.ptr.record, RECORD_BASE_PROPERTY);
-				else {
-					if (machine->positions == MACHINE_MAX_POSITIONS)
-						MACHINE_ERROR(ERROR_STACK_OVERFLOW);
-					machine->position_stack[machine->positions] = chunk->pos;
-					machine->position_flags[machine->positions++] = 1;
+	if (IS_RECORD(*operand)) {
+		struct value* record_val = operand;
+		struct value* original_record_operand = record_val;
+		while (record_val != NULL)
+		{
+			uint64_t pos = cache_retrieve_pos(&machine->global_cache, combine_hash(combine_hash(combine_hash((uint64_t)op, UNARY_OVERLOAD), 1), record_val->payload.object.ptr.record->prototype->identifier));
+			if (!pos)
+				record_val = record_get_property(record_val->payload.object.ptr.record, RECORD_BASE_PROPERTY);
+			else {
+				if (machine->positions == MACHINE_MAX_POSITIONS)
+					MACHINE_ERROR(ERROR_STACK_OVERFLOW);
+				machine->position_stack[machine->positions] = chunk->pos;
+				machine->position_flags[machine->positions++] = 1;
 
-					MPUSH_EVAL(original_record_operand);
-					chunk_jump_to(chunk, pos);
-					return 1;
-				}
+				MPUSH_EVAL(original_record_operand);
+				chunk_jump_to(chunk, pos);
+				return 1;
 			}
 		}
-		MPUSH_CONST(invoke_unary_op(op, operand, machine), 0);
 	}
-	else
-		MPUSH_EVAL(operand);
-
+	NULL_CHECK(invoke_unary_op(op, operand, machine), ERROR_UNEXPECTED_TYPE);
 	return 1;
 }
 
@@ -143,7 +137,7 @@ DECL_OPCODE_HANDLER(opcode_eval_builtin) {
 
 	i = arguments;
 	while (i--)
-		if(argv[i]->gc_flag == GARBAGE_UNINIT)
+		if(argv[i]->gc_flag == GARBAGE_CONSTANT)
 			free_value(argv[i]);
 
 	return 1;
@@ -309,8 +303,8 @@ DECL_OPCODE_HANDLER(opcode_set_index) {
 	if (index >= collection->size)
 		MACHINE_ERROR(ERROR_INDEX_OUT_OF_RANGE);
 
-	if (set_val->gc_flag == GARBAGE_UNINIT) {
-		if(collection->inner_collection[index] == GARBAGE_UNINIT)
+	if (set_val->gc_flag == GARBAGE_CONSTANT) {
+		if(collection->inner_collection[index] == GARBAGE_CONSTANT)
 			collection->inner_collection[index] = set_val;
 		else {
 			if (set_val->type == VALUE_TYPE_NULL) {
@@ -354,10 +348,10 @@ DECL_OPCODE_HANDLER(opcode_set_property) {
 		MACHINE_ERROR(ERROR_UNEXPECTED_TYPE);
 	struct record* record = record_eval->payload.object.ptr.record;
 	
-	if (set_val->gc_flag == GARBAGE_UNINIT) {
+	if (set_val->gc_flag == GARBAGE_CONSTANT) {
 		struct value* property_val = record_get_property(record, property);
 		
-		if (property_val->gc_flag == GARBAGE_UNINIT) {
+		if (property_val->gc_flag == GARBAGE_CONSTANT) {
 			if (!record_set_property(record, property, set_val))
 				MACHINE_ERROR(ERROR_PROPERTY_UNDEFINED);
 		}

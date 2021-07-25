@@ -8,13 +8,13 @@
 #define IS_COLLECTION(VALUE) ((VALUE).type == VALUE_TYPE_OBJ && (VALUE).payload.object.type == OBJ_TYPE_COL)
 #define IS_RECORD(VALUE) ((VALUE).type == VALUE_TYPE_OBJ && (VALUE).payload.object.type == OBJ_TYPE_REC)
 
-#define NUM_VALUE(NUM) (struct value) { .gc_flag = GARBAGE_UNINIT, .payload.numerical = NUM, .type = VALUE_TYPE_NUM}
-#define CHAR_VALUE(CHAR) (struct value) { .gc_flag = GARBAGE_UNINIT, .payload.character = CHAR, .type = VALUE_TYPE_CHAR}
-#define ID_VALUE(IDENTIFIER) (struct value) {.gc_flag = GARBAGE_UNINIT, .payload.identifier = IDENTIFIER, .type = VALUE_TYPE_ID}
+#define NUM_VALUE(NUM) (struct value) { .gc_flag = GARBAGE_CONSTANT, .payload.numerical = NUM, .type = VALUE_TYPE_NUM}
+#define CHAR_VALUE(CHAR) (struct value) { .gc_flag = GARBAGE_CONSTANT, .payload.character = CHAR, .type = VALUE_TYPE_CHAR}
+#define ID_VALUE(IDENTIFIER) (struct value) {.gc_flag = GARBAGE_CONSTANT, .payload.identifier = IDENTIFIER, .type = VALUE_TYPE_ID}
 
 struct value {
 	enum garbage_flag {
-		GARBAGE_UNINIT,
+		GARBAGE_CONSTANT,
 		GARBAGE_COLLECT,
 		GARBAGE_KEEP
 	} gc_flag;
@@ -36,9 +36,9 @@ struct value {
 	} type;
 };
 
-static const struct value const_value_null = { GARBAGE_UNINIT, 0, VALUE_TYPE_NULL };
-static const struct value const_value_true = { GARBAGE_UNINIT, 1, VALUE_TYPE_NUM };
-static const struct value const_value_false = { GARBAGE_UNINIT, 0, VALUE_TYPE_NUM };
+static const struct value const_value_null = { GARBAGE_CONSTANT, 0, VALUE_TYPE_NULL };
+static const struct value const_value_true = { GARBAGE_CONSTANT, 1, VALUE_TYPE_NUM };
+static const struct value const_value_false = { GARBAGE_CONSTANT, 0, VALUE_TYPE_NUM };
 
 void init_obj_value(struct value* value, struct object obj);
 
