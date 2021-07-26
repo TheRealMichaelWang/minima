@@ -419,6 +419,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	
 	chunk_write_ulong(&compiler->data_builder, combine_hash(combine_hash(proc_id, buffer_size), callee));
 	chunk_write(&compiler->data_builder, MACHINE_NEW_FRAME);
+
 	while (buffer_size--) {
 		chunk_write(&compiler->data_builder, MACHINE_TRACE);
 		chunk_write(&compiler->data_builder, MACHINE_STORE_VAR);
@@ -523,7 +524,24 @@ DECL_STATMENT_COMPILER(compile_include) {
 	NULL_CHECK(file_path);
 	scanner_read_str(&compiler->scanner, file_path, 0);
 
-	uint64_t path_hash = hash(file_path, strlen(file_path));
+	size_t path_length = strlen(file_path);
+
+	FILE* infile = fopen(file_path, "rb");
+	if (!infile) {
+		memmove(&file_path[compiler->include_dir_len], file_path, path_length);
+		memcpy(file_path, compiler->include_dir, compiler->include_dir_len);
+		path_length += compiler->include_dir_len;
+		file_path[path_length] = 0;
+
+		infile = fopen(file_path, "rb");
+		if (!infile) {
+			free(file_path);
+			compiler->last_err = ERROR_CANNOT_OPEN_FILE;
+			return 0;
+		}
+	}
+
+	uint64_t path_hash = hash(file_path, path_length);
 	for (uint_fast8_t i = 0; i < compiler->imported_files; i++)
 		if (compiler->imported_file_hashes[i] == path_hash) {
 			free(file_path);
@@ -532,12 +550,6 @@ DECL_STATMENT_COMPILER(compile_include) {
 		}
 	compiler->imported_file_hashes[compiler->imported_files++] = path_hash;
 
-	FILE* infile = fopen(file_path, "rb");
-	if (!infile) {
-		free(file_path);
-		compiler->last_err = ERROR_CANNOT_OPEN_FILE;
-		return 0;
-	}
 	free(file_path);
 
 	fseek(infile, 0, SEEK_END);
@@ -600,7 +612,7 @@ const int compile_value(struct compiler* compiler, struct chunk_builder* builder
 	return 0;
 }
 
-const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated) {
+const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated){
 	if (IS_STATMENT_TOK(compiler->last_tok))
 		return (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, builder, callee, control_encapsulated, proc_encapsulated);
 	compiler->last_err = ERROR_UNRECOGNIZED_TOKEN;
