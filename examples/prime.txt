@@ -1,0 +1,60 @@
+include "buffer.min"
+
+proc abs(n) {
+	return n * (1 - 2 * (n < 0))
+}
+
+proc is_prime_sure(n) {
+	if n < 2 {
+		return false
+	}
+	if n - (n % 1) != n {
+        	return false
+	}
+
+	set i to 2
+
+	while i <= n^0.5 {
+		if n % i == 0 {
+			return false
+		}
+		inc i
+	}
+	return true
+}
+
+proc sieve(n) {
+	set list_prime to alloc[n + 1]
+	goproc memset(list_prime, true)
+	set list_prime[0] to false
+	set list_prime[1] to false
+	set i to 2
+
+	set primes_count to n - 1
+
+	while i <= n^0.5 {
+		if list_prime[i] {
+			set j to i*i
+			while j <= n {
+				if list_prime[j] {
+					dec primes_count
+				}
+				set list_prime[j] to false
+				set j to j + i
+			}
+		}
+		inc i
+	}
+
+	set j to 0
+	set i to n + 1
+
+	set primes to alloc[primes_count]
+	while dec i {
+		if list_prime[i] {
+			set primes[inc j] to i
+		}
+	}
+
+	return primes
+}
