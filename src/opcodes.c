@@ -7,7 +7,6 @@
 #include "include/runtime/opcodes.h"
 
 #define NULL_CHECK(PTR, ERROR) if(!(PTR)) { machine->last_err = ERROR; return 0; }
-//#define STACK_CHECK if(machine->evals == MACHINE_MAX_EVALS || machine->constants == MACHINE_MAX_EVALS || machine->positions == MACHINE_MAX_POSITIONS || machine->call_size == MACHINE_MAX_CALLS) { machine->last_err = ERROR_STACK_OVERFLOW; return 0; }
 
 #define MPUSH_EVAL(EVAL) NULL_CHECK(machine_push_eval(machine, EVAL), ERROR_STACK_OVERFLOW)
 #define MPUSH_CONST(EVAL, HAS_CHILDREN) NULL_CHECK(machine_push_const(machine, EVAL, HAS_CHILDREN), ERROR_STACK_OVERFLOW);

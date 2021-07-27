@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "include/runtime/opcodes.h"
+#include "include/runtime/globals.h"
 #include "include/compiler/chunk.h"
 #include "include/compiler/compiler.h"
 #include "include/compiler/statements.h"
@@ -13,7 +14,7 @@
 #define NULL_CHECK(PTR) if (PTR == NULL) { compiler->last_err = ERROR_OUT_OF_MEMORY; return 0; }
 
 #define DECL_VALUE_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder, const int optimize)
-#define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder , const uint64_t callee, const int control_encapsulated, const int proc_encapsulated)
+#define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder , const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated)
 
 DECL_VALUE_COMPILER(compile_primative) {
 	MATCH_TOK(compiler->last_tok, TOK_PRIMATIVE);
@@ -373,7 +374,7 @@ DECL_STATMENT_COMPILER(compile_do_while) {
 
 DECL_STATMENT_COMPILER(compile_proc) {
 	MATCH_TOK(compiler->last_tok, TOK_PROC);
-	if (control_encapsulated) {
+	if (encapsulated) {
 		compiler->last_err = ERROR_UNEXPECTED_TOKEN;
 		return 0;
 	}
@@ -417,7 +418,8 @@ DECL_STATMENT_COMPILER(compile_proc) {
 			reverse_buffer[buffer_size++] = RECORD_OVERLOAD_ORDER;
 	}
 	
-	chunk_write_ulong(&compiler->data_builder, combine_hash(combine_hash(proc_id, buffer_size), callee));
+	uint64_t label_id = combine_hash(combine_hash(proc_id, buffer_size), callee);
+	chunk_write_ulong(&compiler->data_builder, label_id);
 	chunk_write(&compiler->data_builder, MACHINE_NEW_FRAME);
 
 	while (buffer_size--) {
@@ -426,7 +428,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write_ulong(&compiler->data_builder, reverse_buffer[buffer_size]);
 	}
 
-	if (!compile_body(compiler, &compiler->data_builder, 1))
+	if (!compile_body(compiler, &compiler->data_builder, label_id))
 		return 0;
 	if (callee && proc_id == RECORD_INIT_PROC) {
 		chunk_write(&compiler->data_builder, MACHINE_LOAD_VAR);
@@ -437,6 +439,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write(&compiler->data_builder, MACHINE_LOAD_CONST);
 		chunk_write_value(&compiler->data_builder, const_value_null);
 	}
+
 	chunk_write(&compiler->data_builder, MACHINE_CLEAN);
 	chunk_write(&compiler->data_builder, MACHINE_RETURN_GOTO);
 	chunk_write(&compiler->data_builder, MACHINE_END_SKIP);
@@ -445,6 +448,11 @@ DECL_STATMENT_COMPILER(compile_proc) {
 
 DECL_STATMENT_COMPILER(compile_record) {
 	MATCH_TOK(compiler->last_tok, TOK_RECORD);
+	if (encapsulated) {
+		compiler->last_err = ERROR_UNEXPECTED_TOKEN;
+		return 0;
+	}
+
 	MATCH_TOK(compiler_read_tok(compiler), TOK_IDENTIFIER);
 	uint64_t record_id = compiler->last_tok.payload.identifier;
 	uint64_t base_record_id = 0;
@@ -612,9 +620,9 @@ const int compile_value(struct compiler* compiler, struct chunk_builder* builder
 	return 0;
 }
 
-const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int control_encapsulated, const int proc_encapsulated){
+const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated){
 	if (IS_STATMENT_TOK(compiler->last_tok))
-		return (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, builder, callee, control_encapsulated, proc_encapsulated);
+		return (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, builder, callee, encapsulated, proc_encapsulated);
 	compiler->last_err = ERROR_UNRECOGNIZED_TOKEN;
 	return 0;
 }

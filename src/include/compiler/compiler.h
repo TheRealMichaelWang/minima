@@ -37,7 +37,7 @@ struct token compiler_read_tok(struct compiler* compiler);
 const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int expr_optimize);
 
 //compiles a block of code
-const int compile_body(struct compiler* compiler, struct chunk_builder* builder, const int func_encapsulated);
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t proc_encapsulated);
 
 struct chunk compiler_get_chunk(struct compiler* compiler);
 
