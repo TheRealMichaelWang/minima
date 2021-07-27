@@ -41,7 +41,7 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 	return 1;
 }
 
-const int compile_body(struct compiler* compiler, struct chunk_builder* builder, const int func_encapsulated) {
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t proc_encapsulated) {
 	if (compiler->last_tok.type != TOK_OPEN_BRACE) {
 		compiler->last_err = ERROR_UNEXPECTED_TOKEN;
 		return 0;
@@ -51,7 +51,7 @@ const int compile_body(struct compiler* compiler, struct chunk_builder* builder,
 
 	while (compiler->last_tok.type != TOK_END && compiler->last_tok.type != TOK_CLOSE_BRACE)
 	{
-		if (!compile_statement(compiler, builder, STD_PROC_CALLEE,1, func_encapsulated))
+		if (!compile_statement(compiler, builder, STD_PROC_CALLEE,1, proc_encapsulated))
 			return 0;
 	}
 	compiler_read_tok(compiler);

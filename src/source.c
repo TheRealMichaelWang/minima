@@ -84,7 +84,9 @@ int main(uint32_t argc, char** argv) {
 	else {
 		printf("North-Hollywood Minima, version 1.0\n");
 		printf("Written by Michael Wang in 2021\n\n");
-		printf("Type \"dump\" to produce a bytecode dump of your current program. Type \"quit\" to exit.\n");
+		printf("Type \"dump\" to produce a bytecode dump of your current program. Type \"quit\" to exit.\n\n");
+		
+		printf("Include Directory: %s\n\n", argv[0]);
 		printf("READY\n");
 
 		struct chunk_builder global_build; //contains our source

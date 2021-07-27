@@ -13,7 +13,8 @@ struct global_cache {
 		enum cache_type {
 			CACHE_TYPE_POS,
 			CACHE_TYPE_BUILTIN,
-			CACHE_TYPE_PROTO
+			CACHE_TYPE_PROTO,
+			CACHE_TYPE_PROC
 		}type;
 
 		union payload
