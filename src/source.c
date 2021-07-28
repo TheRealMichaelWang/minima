@@ -93,7 +93,7 @@ int main(uint32_t argc, char** argv) {
 		uint64_t ip = 0;
 		uint32_t imported_files = 0;
 		init_chunk_builder(&global_build);
-		chunk_write(&global_build, MACHINE_NEW_FRAME);
+		chunk_write_opcode(&global_build, MACHINE_NEW_FRAME);
 
 		while (1)
 		{
@@ -138,7 +138,7 @@ int main(uint32_t argc, char** argv) {
 
 					struct chunk global_chunk = build_chunk(&global_build);
 					chunk_jump_to(&global_chunk, ip);
-					chunk_read(&global_chunk);
+					chunk_read_opcode(&global_chunk);
 
  					enum error err = machine_execute(&machine, &global_chunk);
 					if (err) {

@@ -29,12 +29,12 @@ void debug_print_scanner(struct scanner scanner) {
 
 static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 	printf("%" PRIu64, chunk->pos);
-	char op_code = chunk_read(chunk);
+	enum op_code op = chunk_read_opcode(chunk);
 
 	for (uint32_t i = 0; i < *indent; i++)
 		printf("\t");
 
-	switch (op_code)
+	switch (op)
 	{
 	case MACHINE_LOAD_VAR:
 		printf("LOAD VAR, id:%"PRIu64, chunk_read_ulong(chunk));
@@ -47,10 +47,10 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		print_value(chunk_read_value(chunk), 0);
 		break;
 	case MACHINE_EVAL_BIN_OP:
-		printf("EVAL BIN OP, op: %d", chunk_read(chunk));
+		printf("EVAL BIN OP, op: %d", chunk_read_bin_op(chunk));
 		break;
 	case MACHINE_EVAL_UNI_OP:
-		printf("EVAL UNI OP, op: %d", chunk_read(chunk));
+		printf("EVAL UNI OP, op: %d", chunk_read_uni_op(chunk));
 		break;
 	case MACHINE_END_SKIP:
 		printf("END_SKIP");
@@ -69,10 +69,12 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("GOTO AS, id:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_LABEL:
+		chunk_read_ulong(chunk);
 		printf("LABEL, id:%" PRIu64, chunk_read_ulong(chunk));
 		(*indent)++;
 		break;
 	case MACHINE_COND_SKIP:
+		chunk_read_ulong(chunk);
 		printf("COND SKIP");
 		(*indent)++;
 		break;
@@ -86,6 +88,7 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("RESET FLAG");
 		break;
 	case MACHINE_FLAG_SKIP:
+		chunk_read_ulong(chunk);
 		printf("FLAG SKIP");
 		(*indent)++;
 		break;

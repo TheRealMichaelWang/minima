@@ -24,8 +24,8 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 		return 0;
 	if (compiler->last_tok.type != TOK_BINARY_OP) {
 		if (is_id &&!expr_optimize) {
-			chunk_write(builder, MACHINE_EVAL_UNI_OP);
-			chunk_write(builder, OPERATOR_COPY);
+			chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
+			chunk_write_uni_op(builder, OPERATOR_COPY);
 		}
 		return 1;
 	}
@@ -35,8 +35,8 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 		compiler_read_tok(compiler);
 		if (!compile_expression(compiler, builder, op_precedence[op], 1))
 			return 0;
-		chunk_write(builder, MACHINE_EVAL_BIN_OP);
-		chunk_write(builder, op);
+		chunk_write_opcode(builder, MACHINE_EVAL_BIN_OP);
+		chunk_write_bin_op(builder, op);
 	}
 	return 1;
 }
@@ -70,7 +70,7 @@ void init_compiler(struct compiler* compiler, const char* include_dir, const cha
 
 const int compile(struct compiler* compiler, const int repl_mode) {
 	if(!repl_mode)
-		chunk_write(&compiler->code_builder, MACHINE_NEW_FRAME);
+		chunk_write_opcode(&compiler->code_builder, MACHINE_NEW_FRAME);
 	
 	while (compiler->last_tok.type != TOK_END)
 	{
@@ -80,7 +80,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 	}
 
 	if(!repl_mode)
-		chunk_write(&compiler->code_builder, MACHINE_CLEAN);
+		chunk_write_opcode(&compiler->code_builder, MACHINE_CLEAN);
 	return 1;
 }
 
@@ -90,6 +90,9 @@ struct chunk compiler_get_chunk(struct compiler* compiler) {
 
 	chunk_write_chunk(&sum, build_chunk(&compiler->data_builder), 1);
 	chunk_write_chunk(&sum, build_chunk(&compiler->code_builder), 1);
+	
+	struct chunk build = build_chunk(&sum);
+	chunk_optimize(&build);
 
-	return build_chunk(&sum);
+	return build;
 }

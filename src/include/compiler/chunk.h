@@ -5,47 +5,46 @@
 
 #include <stdint.h>
 #include "../runtime/value.h"
+#include "../runtime/opcodes.h"
+#include "../runtime/operators.h"
 
 struct chunk_builder {
-	char* code_buf;
+	uint8_t* code_buf;
 	uint64_t size;
 	uint64_t alloc_size;
 };
 
 struct chunk {
-	char last_code;
-	char* code;
+	enum op_code last_code;
+	uint8_t* code;
 	uint64_t size;
 	uint64_t pos;
 };
 
-void init_chunk(struct chunk* chunk, char* code, const uint64_t size);
+void init_chunk(struct chunk* chunk, uint8_t* code, const uint64_t size);
 void free_chunk(struct chunk* chunk);
 
-void init_chunk_builder(struct chunk_builder* builder);
+const int init_chunk_builder(struct chunk_builder* builder);
 struct chunk build_chunk(struct chunk_builder* builder);
 
+const int chunk_write_ulong(struct chunk_builder* chunk_builder, const uint64_t ulong);
 const int chunk_write_value(struct chunk_builder* chunk_builder, struct value value);
-void chunk_write_chunk(struct chunk_builder* dest, struct chunk src, const int free_chunk);
-const int chunk_write(struct chunk_builder* chunk_builder, const char code);
-const int chunk_write_size(struct chunk_builder* chunk_builder, const void* ptr, const uint64_t size);
+const int chunk_write_chunk(struct chunk_builder* dest, struct chunk src, const int free_chunk);
+const int chunk_write_opcode(struct chunk_builder* chunk_builder, enum op_code opcode);
+const int chunk_write_bin_op(struct chunk_builder* chunk_builder, enum binary_operator bin_op);
+const int chunk_write_uni_op(struct chunk_builder* chunk_builder, enum unary_operator uni_op);
 
-inline void chunk_write_ulong(struct chunk_builder* chunk_builder, const uint64_t ulong) {
-	chunk_write_size(chunk_builder, &ulong, sizeof(ulong));
-}
+const void* chunk_write_size(struct chunk_builder* chunk_builder, const void* ptr, const uint64_t size);
 
-const char chunk_read(struct chunk* chunk);
+const uint64_t chunk_read_ulong(struct chunk* chunk);
+const struct value chunk_read_value(struct chunk* chunk);
+const enum op_code chunk_read_opcode(struct chunk* chunk);
+const enum binary_operator chunk_read_bin_op(struct chunk* chunk);
+const enum binary_operator chunk_read_uni_op(struct chunk* chunk);
+
 const void* chunk_read_size(struct chunk* chunk, const uint64_t size);
 
-inline const uint64_t chunk_read_ulong(struct chunk* chunk) {
-	return *(uint64_t*)chunk_read_size(chunk, sizeof(uint64_t));
-}
-
-inline const struct value chunk_read_value(struct chunk* chunk) {
-	return *(struct value*)chunk_read_size(chunk, sizeof(struct value));
-}
-
 void chunk_jump_to(struct chunk* chunk, const uint64_t pos);
-void chunk_skip(struct chunk* chunk, uint64_t depth);
-
+const int chunk_optimize(struct chunk* chunk);
 #endif // !CHUNK_H
+ 
