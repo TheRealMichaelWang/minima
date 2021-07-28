@@ -18,12 +18,12 @@ struct token compiler_read_tok(struct compiler* compiler) {
 	return compiler->last_tok;
 }
 
-const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int expr_optimize) {
+const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int optimize_copy, uint64_t optimize_goto) {
 	char is_id = compiler->last_tok.type == TOK_IDENTIFIER;
-	if (!compile_value(compiler, builder, 1)) //lhs
+	if (!compile_value(compiler, builder, optimize_copy, optimize_goto)) //lhs
 		return 0;
 	if (compiler->last_tok.type != TOK_BINARY_OP) {
-		if (is_id &&!expr_optimize) {
+		if (is_id && !optimize_copy) {
 			chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
 			chunk_write_uni_op(builder, OPERATOR_COPY);
 		}
@@ -33,7 +33,7 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 	{
 		enum binary_operator op = compiler->last_tok.payload.bin_op;
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, builder, op_precedence[op], 1))
+		if (!compile_expression(compiler, builder, op_precedence[op], optimize_copy && !optimize_goto, optimize_goto))
 			return 0;
 		chunk_write_opcode(builder, MACHINE_EVAL_BIN_OP);
 		chunk_write_bin_op(builder, op);

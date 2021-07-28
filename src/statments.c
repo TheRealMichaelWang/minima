@@ -13,7 +13,7 @@
 #define MATCH_TOK(TOK, TYPE) if(TOK.type != TYPE) { compiler->last_err = ERROR_UNEXPECTED_TOKEN; return 0; }
 #define NULL_CHECK(PTR) if (PTR == NULL) { compiler->last_err = ERROR_OUT_OF_MEMORY; return 0; }
 
-#define DECL_VALUE_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder, const int optimize)
+#define DECL_VALUE_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder, const int optimize_copy, uint64_t optimize_goto)
 #define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder , const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated)
 
 DECL_VALUE_COMPILER(compile_primative) {
@@ -56,7 +56,7 @@ DECL_VALUE_COMPILER(compile_reference) {
 	{
 		if (compiler->last_tok.type == TOK_OPEN_BRACKET) {
 			compiler_read_tok(compiler);
-			if (!compile_expression(compiler, builder, 0, 1))
+			if (!compile_expression(compiler, builder, 0, 1, 0))
 				return 0;
 			MATCH_TOK(compiler->last_tok, TOK_CLOSE_BRACKET);
 			chunk_write_opcode(builder, MACHINE_GET_INDEX);
@@ -69,7 +69,7 @@ DECL_VALUE_COMPILER(compile_reference) {
 		compiler_read_tok(compiler);
 	}
 
-	if (!is_ref && !optimize) {
+	if (!is_ref && !optimize_copy) {
 		chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
 		chunk_write_opcode(builder, OPERATOR_COPY);
 	}
@@ -81,7 +81,7 @@ DECL_VALUE_COMPILER(compile_array) {
 	uint64_t array_size = 0;
 	do {
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, builder, 0, 0))
+		if (!compile_expression(compiler, builder, 0, 0, 0))
 			return 0;
 		array_size++;
 	} while (compiler->last_tok.type == TOK_COMMA);
@@ -97,7 +97,7 @@ DECL_VALUE_COMPILER(compile_unary) {
 	if (compiler->last_tok.type == TOK_ALLOC) {
 		MATCH_TOK(compiler_read_tok(compiler), TOK_OPEN_BRACKET);
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+		if (!compile_expression(compiler, builder, PREC_BEGIN, 1, 0))
 			return 0;
 		chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
 		chunk_write_opcode(builder, OPERATOR_ALLOC);
@@ -106,7 +106,7 @@ DECL_VALUE_COMPILER(compile_unary) {
 	}
 	else if (compiler->last_tok.type == TOK_BINARY_OP && compiler->last_tok.payload.bin_op == OPERATOR_SUBTRACT) {
 		compiler_read_tok(compiler);
-		if (!compile_value(compiler, builder, 1))
+		if (!compile_value(compiler, builder, 1, optimize_goto))
 			return 0;
 		chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
 		chunk_write_uni_op(builder, OPERATOR_NEGATE);
@@ -115,7 +115,7 @@ DECL_VALUE_COMPILER(compile_unary) {
 		MATCH_TOK(compiler->last_tok, TOK_UNARY_OP);
 		enum unary_operator op = compiler->last_tok.payload.uni_op;
 		compiler_read_tok(compiler);
-		if (!compile_value(compiler, builder, 1))
+		if (!compile_value(compiler, builder, 1, optimize_goto))
 			return 0;
 		chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
 		chunk_write_uni_op(builder, op);
@@ -126,7 +126,7 @@ DECL_VALUE_COMPILER(compile_unary) {
 DECL_VALUE_COMPILER(compile_paren) {
 	MATCH_TOK(compiler->last_tok, TOK_OPEN_PAREN);
 	compiler_read_tok(compiler);
-	if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+	if (!compile_expression(compiler, builder, PREC_BEGIN, 1, 0))
 		return 0;
 	MATCH_TOK(compiler->last_tok, TOK_CLOSE_PAREN);
 	compiler_read_tok(compiler);
@@ -147,7 +147,7 @@ DECL_VALUE_COMPILER(compile_goto) {
 	if (compiler_read_tok(compiler).type == TOK_AS) {
 		compiler_read_tok(compiler);
 		init_chunk_builder(&temp_builder);
-		if (!compile_value(compiler, &temp_builder, 0))
+		if (!compile_value(compiler, &temp_builder, 0, optimize_goto))
 			return 0;
 		is_record_proc = 1;
 		arguments++;
@@ -157,7 +157,7 @@ DECL_VALUE_COMPILER(compile_goto) {
 		while (1)
 		{
 			compiler_read_tok(compiler);
-			if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+			if (!compile_expression(compiler, builder, PREC_BEGIN, 1, 0))
 				return 0;
 			arguments++;
 			if (compiler->last_tok.type != TOK_COMMA)
@@ -173,8 +173,17 @@ DECL_VALUE_COMPILER(compile_goto) {
 			chunk_write_ulong(builder, combine_hash(proc_id, arguments));
 		}
 		else {
-			chunk_write_opcode(builder, MACHINE_GOTO);
-			chunk_write_ulong(builder, combine_hash(combine_hash(proc_id, arguments), 0));
+			uint64_t label_id = combine_hash(combine_hash(proc_id, arguments), 0);
+			if(optimize_goto && compiler->last_tok.type != TOK_BINARY_OP && label_id == optimize_goto){
+				chunk_write_opcode(builder, MACHINE_GOTO);
+				chunk_write_ulong(builder, label_id);
+			}
+			else {
+				chunk_write_opcode(builder, MACHINE_NEW_FRAME);
+				chunk_write_opcode(builder, MACHINE_GOTO);
+				chunk_write_ulong(builder, label_id);
+				chunk_write_opcode(builder, MACHINE_CLEAN);
+			}
 		}
 	}
 	else {
@@ -194,7 +203,7 @@ DECL_VALUE_COMPILER(compile_new_record) {
 		while (1)
 		{
 			compiler_read_tok(compiler);
-			if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+			if (!compile_expression(compiler, builder, PREC_BEGIN, 1, 0))
 				return 0;
 			arguments++;
 			if (compiler->last_tok.type != TOK_COMMA)
@@ -220,7 +229,7 @@ DECL_VALUE_COMPILER(compile_hashtag) {
 }
 
 DECL_STATMENT_COMPILER(compile_value_statement) {
-	if (!compile_value(compiler, builder, 0))
+	if (!compile_value(compiler, builder, 0, proc_encapsulated))
 		return 0;
 	chunk_write_opcode(builder, MACHINE_POP);
 	return 1;
@@ -232,7 +241,7 @@ DECL_STATMENT_COMPILER(compile_set) {
 	uint64_t var_id = compiler->last_tok.payload.identifier;
 	if (compiler_read_tok(compiler).type == TOK_TO) {
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, builder, PREC_BEGIN, 0))
+		if (!compile_expression(compiler, builder, PREC_BEGIN, 0, 0))
 			return 0;
 		chunk_write_opcode(builder, MACHINE_STORE_VAR);
 		chunk_write_ulong(builder, var_id);
@@ -244,12 +253,12 @@ DECL_STATMENT_COMPILER(compile_set) {
 		{
 			if (compiler->last_tok.type == TOK_OPEN_BRACKET) {
 				compiler_read_tok(compiler);
-				if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+				if (!compile_expression(compiler, builder, PREC_BEGIN, 1, 0))
 					return 0;
 				MATCH_TOK(compiler->last_tok, TOK_CLOSE_BRACKET);
 				if (compiler_read_tok(compiler).type == TOK_TO) {
 					compiler_read_tok(compiler);
-					if (!compile_expression(compiler, builder, PREC_BEGIN, 0))
+					if (!compile_expression(compiler, builder, PREC_BEGIN, 0, 0))
 						return 0;
 					chunk_write_opcode(builder, MACHINE_SET_INDEX);
 					break;
@@ -263,7 +272,7 @@ DECL_STATMENT_COMPILER(compile_set) {
 				uint64_t property = compiler->last_tok.payload.identifier;
 				if (compiler_read_tok(compiler).type == TOK_TO) {
 					compiler_read_tok(compiler);
-					if (!compile_expression(compiler, builder, PREC_BEGIN, 0))
+					if (!compile_expression(compiler, builder, PREC_BEGIN, 0, 0))
 						return 0;
 					chunk_write_opcode(builder, MACHINE_SET_PROPERTY);
 					chunk_write_ulong(builder, property);
@@ -288,7 +297,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 	chunk_write_opcode(builder, MACHINE_RESET_FLAG);
 
 	compiler_read_tok(compiler);
-	if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+	if (!compile_expression(compiler, builder, PREC_BEGIN, 1, 0))
 		return 0;
 
 	chunk_write_opcode(builder, MACHINE_COND_SKIP);
@@ -304,7 +313,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 		if (compiler->last_tok.type == TOK_ELIF) {
 			compiler_read_tok(compiler);
 			chunk_write_opcode(builder, MACHINE_FLAG_SKIP);
-			if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+			if (!compile_expression(compiler, builder, PREC_BEGIN, 1,0))
 				return 0;
 			chunk_write_opcode(builder, MACHINE_COND_SKIP);
 
@@ -333,7 +342,7 @@ DECL_STATMENT_COMPILER(compile_while) {
 	struct chunk_builder temp_expr_builder;
 	init_chunk_builder(&temp_expr_builder);
 
-	if (!compile_expression(compiler, &temp_expr_builder,  PREC_BEGIN, 1))
+	if (!compile_expression(compiler, &temp_expr_builder,  PREC_BEGIN, 1, 0))
 		return 0;
 
 	struct chunk temp_expr_chunk = build_chunk(&temp_expr_builder);
@@ -365,7 +374,7 @@ DECL_STATMENT_COMPILER(compile_do_while) {
 	MATCH_TOK(compiler->last_tok, TOK_WHILE);
 	compiler_read_tok(compiler);
 
-	if (!compile_expression(compiler, builder, PREC_BEGIN, 1))
+	if (!compile_expression(compiler, builder, PREC_BEGIN, 1 ,0))
 		return 0;
 
 	chunk_write_opcode(builder, MACHINE_COND_RETURN);
@@ -420,7 +429,9 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	
 	uint64_t label_id = combine_hash(combine_hash(proc_id, buffer_size), callee);
 	chunk_write_ulong(&compiler->data_builder, label_id);
-	chunk_write_opcode(&compiler->data_builder, MACHINE_NEW_FRAME);
+
+	if(callee)
+		chunk_write_opcode(&compiler->data_builder, MACHINE_NEW_FRAME);
 
 	while (buffer_size--) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
@@ -440,7 +451,8 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write_value(&compiler->data_builder, const_value_null);
 	}
 
-	chunk_write_opcode(&compiler->data_builder, MACHINE_CLEAN);
+	if(callee)
+		chunk_write_opcode(&compiler->data_builder, MACHINE_CLEAN);
 	chunk_write_opcode(&compiler->data_builder, MACHINE_RETURN_GOTO);
 	chunk_write_opcode(&compiler->data_builder, MACHINE_END_SKIP);
 	return 1;
@@ -508,7 +520,7 @@ DECL_STATMENT_COMPILER(compile_return) {
 	}
 	compiler_read_tok(compiler);
 	if (IS_VALUE_TOK(compiler->last_tok)) {
-		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0))
+		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0, proc_encapsulated))
 			return 0;
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
 	}
@@ -516,7 +528,8 @@ DECL_STATMENT_COMPILER(compile_return) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_CONST);
 		chunk_write_value(&compiler->data_builder, const_value_null);
 	}
-	chunk_write_opcode(&compiler->data_builder, MACHINE_CLEAN);
+	if(callee)
+		chunk_write_opcode(&compiler->data_builder, MACHINE_CLEAN);
 	chunk_write_opcode(&compiler->data_builder, MACHINE_RETURN_GOTO);
 	return 1;
 }
@@ -613,9 +626,9 @@ DECL_STATMENT_COMPILER((*statment_compilers[11])) = {
 	compile_include
 };
 
-const int compile_value(struct compiler* compiler, struct chunk_builder* builder, const int expr_optimize) {
+const int compile_value(struct compiler* compiler, struct chunk_builder* builder, const int optimize_copy, uint64_t optimize_goto) {
 	if (IS_VALUE_TOK(compiler->last_tok))
-		return (*value_compilers[compiler->last_tok.type])(compiler, builder, expr_optimize);
+		return (*value_compilers[compiler->last_tok.type])(compiler, builder, optimize_copy, optimize_goto);
 	compiler->last_err = ERROR_UNRECOGNIZED_TOKEN;
 	return 0;
 }

@@ -17,7 +17,7 @@
 
 struct machine {
 	uint64_t* position_stack;
-	char* position_flags;
+	uint8_t* position_flags;
 
 	struct value* constant_stack;
 	struct value** evaluation_stack;
@@ -29,7 +29,7 @@ struct machine {
 	uint16_t evals;
 	uint16_t constants;
 
-	char std_flag;
+	int std_flag;
 	enum error last_err;
 
 	struct global_cache global_cache;
