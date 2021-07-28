@@ -128,7 +128,7 @@ const enum error machine_execute(struct machine* machine, struct chunk* chunk) {
 	{
 		if (!handle_opcode(chunk->last_code, machine, chunk))
 			return machine->last_err;
-		chunk_read(chunk);
+		chunk_read_opcode(chunk);
 	}
 	return ERROR_SUCCESS;
 }

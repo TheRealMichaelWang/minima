@@ -60,7 +60,7 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 	struct value*value_a = machine_pop_eval(machine);
 	NULL_CHECK(value_a, ERROR_INSUFFICIENT_EVALS);
 
-	enum binary_operator op = chunk_read(chunk);
+	enum binary_operator op = chunk_read_bin_op(chunk);
 
 	if (IS_RECORD(*value_a) || IS_RECORD(*value_b)) {
 		int in_order = IS_RECORD(*value_a);
@@ -96,7 +96,7 @@ DECL_OPCODE_HANDLER(opcode_eval_bin_op) {
 DECL_OPCODE_HANDLER(opcode_eval_uni_op) {
 	struct value*operand = machine_pop_eval(machine);
 	NULL_CHECK(operand, ERROR_INSUFFICIENT_EVALS);
-	enum unary_operator op = chunk_read(chunk);
+	enum unary_operator op = chunk_read_uni_op(chunk);
 
 	if (IS_RECORD(*operand)) {
 		struct value* record_val = operand;
@@ -201,17 +201,21 @@ DECL_OPCODE_HANDLER(opcode_return_goto) {
 }
 
 DECL_OPCODE_HANDLER(opcode_label) {
+	uint64_t pos = chunk_read_ulong(chunk);
 	uint64_t id = chunk_read_ulong(chunk);
 	if (!cache_insert_label(&machine->global_cache, id, chunk->pos))
 		MACHINE_ERROR(ERROR_LABEL_REDEFINE);
-	chunk_read(chunk);
-	chunk_skip(chunk, 1);
+	chunk_jump_to(chunk, pos);
+	chunk_read_opcode(chunk);
 	return 1;
 }
 
 DECL_OPCODE_HANDLER(opcode_cond_skip) {
-	if (!machine_condition_check(machine))
-		chunk_skip(chunk, 0);
+	uint64_t skip_pos = chunk_read_ulong(chunk);
+	if (!machine_condition_check(machine)) {
+		chunk_jump_to(chunk, skip_pos);
+		chunk_read_opcode(chunk);
+	}
 	return 1;
 }
 
@@ -233,8 +237,11 @@ DECL_OPCODE_HANDLER(opcode_reset_flag) {
 }
 
 DECL_OPCODE_HANDLER(opcode_flag_skip) {
-	if (machine->std_flag)
-		chunk_skip(chunk, 0);
+	uint64_t skip_pos = chunk_read_ulong(chunk);
+	if (machine->std_flag) {
+		chunk_jump_to(chunk, skip_pos);
+		chunk_read_opcode(chunk);
+	}
 	return 1;
 }
 
