@@ -147,7 +147,7 @@ DECL_VALUE_COMPILER(compile_goto) {
 	if (compiler_read_tok(compiler).type == TOK_AS) {
 		compiler_read_tok(compiler);
 		init_chunk_builder(&temp_builder);
-		if (!compile_value(compiler, &temp_builder, 0, optimize_goto))
+		if (!compile_value(compiler, &temp_builder, 1, optimize_goto))
 			return 0;
 		is_record_proc = 1;
 		arguments++;
@@ -229,7 +229,7 @@ DECL_VALUE_COMPILER(compile_hashtag) {
 }
 
 DECL_STATMENT_COMPILER(compile_value_statement) {
-	if (!compile_value(compiler, builder, 0, proc_encapsulated))
+	if (!compile_value(compiler, builder, 1, proc_encapsulated))
 		return 0;
 	chunk_write_opcode(builder, MACHINE_POP);
 	return 1;
@@ -302,7 +302,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 
 	chunk_write_opcode(builder, MACHINE_COND_SKIP);
 
-	if (!compile_body(compiler, builder, proc_encapsulated))
+	if (!compile_body(compiler, builder, callee, proc_encapsulated))
 		return 0;
 
 	chunk_write_opcode(builder, MACHINE_FLAG);
@@ -317,7 +317,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 				return 0;
 			chunk_write_opcode(builder, MACHINE_COND_SKIP);
 
-			if (!compile_body(compiler, builder, proc_encapsulated))
+			if (!compile_body(compiler, builder, callee, proc_encapsulated))
 				return 0;
 
 			chunk_write_opcode(builder, MACHINE_FLAG);
@@ -327,7 +327,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 		else {
 			compiler_read_tok(compiler);
 			chunk_write_opcode(builder, MACHINE_FLAG_SKIP);
-			if (!compile_body(compiler, builder, proc_encapsulated))
+			if (!compile_body(compiler, builder, callee, proc_encapsulated))
 				return 0;
 			chunk_write_opcode(builder, MACHINE_END_SKIP);
 		}
@@ -352,7 +352,7 @@ DECL_STATMENT_COMPILER(compile_while) {
 
 	chunk_write_opcode(builder, MACHINE_MARK);
 
-	if (!compile_body(compiler, builder, proc_encapsulated))
+	if (!compile_body(compiler, builder, callee, proc_encapsulated))
 		return 0;
 
 	chunk_write_chunk(builder, temp_expr_chunk, 1);
@@ -368,7 +368,7 @@ DECL_STATMENT_COMPILER(compile_do_while) {
 
 	chunk_write_opcode(builder, MACHINE_MARK);
 	
-	if (!compile_body(compiler, builder, proc_encapsulated))
+	if (!compile_body(compiler, builder, callee, proc_encapsulated))
 		return 0;
 
 	MATCH_TOK(compiler->last_tok, TOK_WHILE);
@@ -439,7 +439,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write_ulong(&compiler->data_builder, reverse_buffer[buffer_size]);
 	}
 
-	if (!compile_body(compiler, &compiler->data_builder, label_id))
+	if (!compile_body(compiler, &compiler->data_builder, callee, label_id))
 		return 0;
 	if (callee && proc_id == RECORD_INIT_PROC) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_VAR);
@@ -520,7 +520,7 @@ DECL_STATMENT_COMPILER(compile_return) {
 	}
 	compiler_read_tok(compiler);
 	if (IS_VALUE_TOK(compiler->last_tok)) {
-		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0, proc_encapsulated))
+		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0, callee ? 0 : proc_encapsulated))
 			return 0;
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
 	}

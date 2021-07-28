@@ -20,10 +20,10 @@ struct token compiler_read_tok(struct compiler* compiler) {
 
 const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int optimize_copy, uint64_t optimize_goto) {
 	char is_id = compiler->last_tok.type == TOK_IDENTIFIER;
-	if (!compile_value(compiler, builder, optimize_copy, optimize_goto)) //lhs
+	if (!compile_value(compiler, builder, !optimize_goto, optimize_goto)) //lhs
 		return 0;
 	if (compiler->last_tok.type != TOK_BINARY_OP) {
-		if (is_id && !optimize_copy) {
+		if (is_id && !optimize_copy && !optimize_goto) {
 			chunk_write_opcode(builder, MACHINE_EVAL_UNI_OP);
 			chunk_write_uni_op(builder, OPERATOR_COPY);
 		}
@@ -33,7 +33,7 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 	{
 		enum binary_operator op = compiler->last_tok.payload.bin_op;
 		compiler_read_tok(compiler);
-		if (!compile_expression(compiler, builder, op_precedence[op], optimize_copy && !optimize_goto, optimize_goto))
+		if (!compile_expression(compiler, builder, op_precedence[op], 1, optimize_goto))
 			return 0;
 		chunk_write_opcode(builder, MACHINE_EVAL_BIN_OP);
 		chunk_write_bin_op(builder, op);
@@ -41,7 +41,7 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 	return 1;
 }
 
-const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t proc_encapsulated) {
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t callee, uint64_t proc_encapsulated) {
 	if (compiler->last_tok.type != TOK_OPEN_BRACE) {
 		compiler->last_err = ERROR_UNEXPECTED_TOKEN;
 		return 0;
@@ -51,7 +51,7 @@ const int compile_body(struct compiler* compiler, struct chunk_builder* builder,
 
 	while (compiler->last_tok.type != TOK_END && compiler->last_tok.type != TOK_CLOSE_BRACE)
 	{
-		if (!compile_statement(compiler, builder, STD_PROC_CALLEE,1, proc_encapsulated))
+		if (!compile_statement(compiler, builder, callee, 1, proc_encapsulated))
 			return 0;
 	}
 	compiler_read_tok(compiler);
