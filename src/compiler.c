@@ -84,7 +84,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 	return 1;
 }
 
-struct chunk compiler_get_chunk(struct compiler* compiler) {
+struct chunk compiler_get_chunk(struct compiler* compiler, uint64_t prev_offset) {
 	struct chunk_builder sum;
 	init_chunk_builder(&sum);
 
@@ -92,7 +92,7 @@ struct chunk compiler_get_chunk(struct compiler* compiler) {
 	chunk_write_chunk(&sum, build_chunk(&compiler->code_builder), 1);
 	
 	struct chunk build = build_chunk(&sum);
-	chunk_optimize(&build);
+	chunk_optimize(&build, prev_offset);
 
 	return build;
 }

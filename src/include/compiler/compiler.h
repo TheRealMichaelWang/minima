@@ -39,6 +39,6 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 //compiles a block of code
 const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t proc_encapsulated);
 
-struct chunk compiler_get_chunk(struct compiler* compiler);
+struct chunk compiler_get_chunk(struct compiler* compiler, uint64_t prev_offset);
 
 #endif // !COMPILER_H

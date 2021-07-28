@@ -118,10 +118,7 @@ void chunk_jump_to(struct chunk* chunk, const uint64_t pos) {
 	chunk->pos = pos;
 }
 
-#include "include/debug.h"
-
-const int chunk_optimize(struct chunk* chunk) {
-//	debug_print_dump(*chunk);
+const int chunk_optimize(struct chunk* chunk, uint64_t offset) {
 	uint64_t** skip_stack = malloc(64);
 	uint8_t skips = 0;
 
@@ -139,7 +136,7 @@ const int chunk_optimize(struct chunk* chunk) {
 			break;
 		}
 		case MACHINE_END_SKIP: {
-			*skip_stack[--skips] = chunk->pos;
+			*skip_stack[--skips] = chunk->pos - 1 + offset;
 			break;
 		}
 		case MACHINE_CALL_EXTERN:

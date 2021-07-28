@@ -65,7 +65,7 @@ int main(uint32_t argc, char** argv) {
 			debug_print_scanner(compiler.scanner);
 		}
 		else {
-			struct chunk source_chunk = compiler_get_chunk(&compiler);
+			struct chunk source_chunk = compiler_get_chunk(&compiler, 0);
 			enum error err = machine_execute(&machine, &source_chunk);
 			if (err) {
 				printf("\n***Runtime Error***\n");
@@ -132,7 +132,7 @@ int main(uint32_t argc, char** argv) {
 					printf("\n");
 				}
 				else {
-					struct chunk new_chunk = compiler_get_chunk(&compiler);
+					struct chunk new_chunk = compiler_get_chunk(&compiler, global_build.size);
 					chunk_write_chunk(&global_build, new_chunk, 1);
 					imported_files = compiler.imported_files;
 
