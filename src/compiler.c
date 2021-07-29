@@ -5,8 +5,6 @@
 #include "include/compiler/statements.h"
 #include "include/compiler/compiler.h"
 
-#define STD_PROC_CALLEE 0
-
 struct token compiler_read_tok(struct compiler* compiler) {
 	do
 	{
@@ -74,7 +72,7 @@ const int compile(struct compiler* compiler, const int repl_mode) {
 	
 	while (compiler->last_tok.type != TOK_END)
 	{
-		if (!compile_statement(compiler, &compiler->code_builder, STD_PROC_CALLEE, 0, 0)) {
+		if (!compile_statement(compiler, &compiler->code_builder, 0, 0, 0)) {
 			return 0;
 		}
 	}

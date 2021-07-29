@@ -4,14 +4,12 @@
 #include "include/runtime/object/object.h"
 #include "include/runtime/garbage.h"
 
-#define MAX_FRAMES 10000
-#define MAX_VALUES 300000
-#define MAX_TRACE 25000
-
-const int init_gcollect(struct garbage_collector* garbage_collector) {
-	ERROR_ALLOC_CHECK(garbage_collector->frame_stack = malloc(MAX_FRAMES * sizeof(struct garbage_frame)));
-	ERROR_ALLOC_CHECK(garbage_collector->value_stack = malloc(MAX_VALUES * sizeof(struct value*)));
-	ERROR_ALLOC_CHECK(garbage_collector->trace_stack = malloc(MAX_TRACE * sizeof(struct value*)));
+const int init_gcollect(struct garbage_collector* garbage_collector, uint64_t max_frames) {
+	garbage_collector->allocated_collect = 3000;
+	garbage_collector->allocated_trace = 100;
+	ERROR_ALLOC_CHECK(garbage_collector->frame_stack = malloc(max_frames * sizeof(struct garbage_frame)));
+	ERROR_ALLOC_CHECK(garbage_collector->value_stack = malloc(garbage_collector->allocated_collect * sizeof(struct value*)));
+	ERROR_ALLOC_CHECK(garbage_collector->trace_stack = malloc(garbage_collector->allocated_trace * sizeof(struct value*)));
 	garbage_collector->frames = 0;
 	garbage_collector->to_collect = 0;
 	garbage_collector->to_trace = 0;
@@ -36,11 +34,9 @@ static void init_gframe(struct garbage_frame* garbage_frame, const struct value*
 }
 
 const int gc_register_trace(struct garbage_collector* garbage_collector, const struct value* value) {
-	if (garbage_collector->to_trace == MAX_TRACE)
-		return 0;
+	if (garbage_collector->to_trace == garbage_collector->allocated_trace)
+		ERROR_ALLOC_CHECK(garbage_collector->trace_stack = realloc(garbage_collector->trace_stack, (garbage_collector->allocated_trace *= 2) * sizeof(struct value*)));
 	struct garbage_frame* top = &garbage_collector->frame_stack[garbage_collector->frames - 1];
-	if (top->trace_values == MAX_FRAMES)
-		return 0;
 	top->to_trace[top->trace_values++] = value;
 	garbage_collector->to_trace++;
 	return 1;
@@ -68,8 +64,11 @@ const int gc_register_children(struct garbage_collector* garbage_collector, stru
 }
 
 struct value*gc_register_value(struct garbage_collector* garbage_collector, struct value value) {
-	if (value.gc_flag != GARBAGE_CONSTANT || garbage_collector->to_collect == MAX_VALUES)
+	if (value.gc_flag != GARBAGE_CONSTANT)
 		return NULL;
+	if(garbage_collector->to_collect == garbage_collector->allocated_collect)
+		ERROR_ALLOC_CHECK(garbage_collector->value_stack = realloc(garbage_collector->value_stack, (garbage_collector->allocated_collect *= 2) * sizeof(struct value*)));
+
 
 	struct value* alloc_apartment = malloc(sizeof(struct value));
 
@@ -103,8 +102,8 @@ static const int trace_value(struct garbage_collector* garbage_collector, struct
 
 		value->gc_flag = GARBAGE_KEEP;
 
-		if (garbage_collector->to_trace == MAX_TRACE)
-			return 0;
+		if (garbage_collector->to_trace == garbage_collector->allocated_trace)
+			ERROR_ALLOC_CHECK(garbage_collector->trace_stack = realloc(garbage_collector->trace_stack, (garbage_collector->allocated_trace *= 2) * sizeof(struct value*)));
 
 		reset_stack[*stack_top] = value;
 		(*stack_top)++;

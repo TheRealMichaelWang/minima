@@ -169,5 +169,6 @@ const int chunk_optimize(struct chunk* chunk, uint64_t offset) {
 		}
 		chunk_read_opcode(chunk);
 	}
+	free(skip_stack);
 	return skips == 0;
 }
