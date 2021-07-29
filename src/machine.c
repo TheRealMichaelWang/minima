@@ -18,7 +18,7 @@ const int init_machine(struct machine* machine) {
 	machine->std_flag = 0;
 	machine->call_size = 0;
 
-	ERROR_ALLOC_CHECK(init_gcollect(&machine->garbage_collector, MACHINE_MAX_CALLS));
+	ERROR_ALLOC_CHECK(init_gcollect(&machine->garbage_collector));
 	init_global_cache(&machine->global_cache);
 	
 	cache_declare_builtin(&machine->global_cache, 210724587794, builtin_print);

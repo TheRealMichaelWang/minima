@@ -12,7 +12,7 @@
 #include "../compiler/chunk.h"
 
 #define MACHINE_MAX_POSITIONS 20000
-#define MACHINE_MAX_EVALS 10000
+#define MACHINE_MAX_EVALS 100000
 #define MACHINE_MAX_CALLS 10000
 
 struct machine {
