@@ -68,7 +68,7 @@ int main(uint32_t argc, char** argv) {
 		else {
 			struct chunk source_chunk = compiler_get_chunk(&compiler, 0);
 			enum error err = machine_execute(&machine, &source_chunk);
-			if (err) {
+			if (err != ERROR_SUCCESS) {
 				printf("\n***Runtime Error***\n");
 				error_info(err);
 				printf("\n\nDUMP: \n");
@@ -142,7 +142,7 @@ int main(uint32_t argc, char** argv) {
 					chunk_read_opcode(&global_chunk);
 
  					enum error err = machine_execute(&machine, &global_chunk);
-					if (err) {
+					if (err != ERROR_SUCCESS) {
 						printf("\n***Runtime Error***\n");
 						error_info(err);
 						printf("\n\nGLOBAL DUMP:\n");

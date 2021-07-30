@@ -170,5 +170,7 @@ const int chunk_optimize(struct chunk* chunk, uint64_t offset) {
 		chunk_read_opcode(chunk);
 	}
 	free(skip_stack);
+	chunk->pos = 0;
+	chunk_read_opcode(chunk);
 	return skips == 0;
 }

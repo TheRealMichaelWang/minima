@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "include/error.h"
 #include "include/builtins.h"
 #include "include/opcodes.h"
@@ -114,7 +115,7 @@ struct value* machine_push_const(struct machine* machine, struct value const_val
 const int machine_condition_check(struct machine* machine) {
 	struct value*valptr = machine_pop_eval(machine);
 	if (!valptr)
-		return NULL;
+		return 0;
 
 	int cond = 1;
 	if (valptr->type == VALUE_TYPE_NULL || (valptr->type == VALUE_TYPE_NUM && valptr->payload.numerical == 0))
