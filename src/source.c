@@ -32,9 +32,10 @@ int main(uint32_t argc, char** argv) {
 
 	size_t i = strlen(argv[0]);
 	while (i--)
-		if (argv[0][i] == '\\')
+		if (argv[0][i] == '\\' || argv[0][i] == '/' || !i)
 			break;
-	argv[0][i + 1] = 0;
+	if(i)
+		argv[0][i + 1] = 0;
 
 	if (argc > 1) {
 		FILE* infile = fopen(argv[1], "rb");
