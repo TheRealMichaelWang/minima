@@ -1,5 +1,5 @@
 # Minima
-Minima is an object-oriented, imperative scripting language focused on being practical and pragmatic. Minima aims to be simple, easy to write, yet powerful enough to create readable, performant and concise code for any problem. You can read Minima's documentation [here.](https://github.com/TheRealMichaelWang/minima/wiki)
+Minima is an object-oriented, imperative scripting language focused on being practical and pragmatic. Minima aims to be simple, easy to write, yet powerful enough to create readable, performant and concise code for any problem. You can read [Minima's documentation here](https://github.com/TheRealMichaelWang/minima/wiki), and view the [installation guide here](https://github.com/TheRealMichaelWang/minima/wiki/Installation).
 
 Among many things, it's...
 * **Small** - The compiler and virutal-machine clock slightly under 5000 lines of code. 
