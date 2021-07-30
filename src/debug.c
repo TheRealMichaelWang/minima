@@ -128,7 +128,7 @@ static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {
 		printf("SET PROPERTY, property:%" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_TRACE:
-		printf("GC SET TRACE");
+		printf("GC SET TRACE, args: %" PRIu64, chunk_read_ulong(chunk));
 		break;
 	case MACHINE_POP:
 		printf("POP EVAL");

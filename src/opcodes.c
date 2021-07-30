@@ -261,8 +261,10 @@ DECL_OPCODE_HANDLER(opcode_clean) {
 }
 
 DECL_OPCODE_HANDLER(opcode_trace) {
-	NULL_CHECK(machine->evals, ERROR_INSUFFICIENT_EVALS);
-	gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1]);
+	NULL_CHECK(machine->evals >= machine->evals, ERROR_INSUFFICIENT_EVALS);
+	uint64_t to_trace = chunk_read_ulong(chunk);
+	for(uint_fast64_t i = 0; i < to_trace; i++)
+		gc_register_trace(&machine->garbage_collector, machine->evaluation_stack[machine->evals - 1 - i]);
 	return 1;
 }
 

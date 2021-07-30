@@ -180,6 +180,8 @@ DECL_VALUE_COMPILER(compile_goto) {
 			}
 			else {
 				chunk_write_opcode(builder, MACHINE_NEW_FRAME);
+				chunk_write_opcode(builder, MACHINE_TRACE);
+				chunk_write_ulong(builder, arguments);
 				chunk_write_opcode(builder, MACHINE_GOTO);
 				chunk_write_ulong(builder, label_id);
 				chunk_write_opcode(builder, MACHINE_CLEAN);
@@ -433,8 +435,11 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	if(callee)
 		chunk_write_opcode(&compiler->data_builder, MACHINE_NEW_FRAME);
 
-	while (buffer_size--) {
+	if (callee) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
+		chunk_write_ulong(&compiler->data_builder, buffer_size);
+	}
+	while (buffer_size--) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_STORE_VAR);
 		chunk_write_ulong(&compiler->data_builder, reverse_buffer[buffer_size]);
 	}
@@ -445,6 +450,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_VAR);
 		chunk_write_ulong(&compiler->data_builder, RECORD_THIS);
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
+		chunk_write_ulong(&compiler->data_builder, 1);
 	}
 	else {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_CONST);
@@ -523,6 +529,7 @@ DECL_STATMENT_COMPILER(compile_return) {
 		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0, callee ? 0 : proc_encapsulated))
 			return 0;
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
+		chunk_write_ulong(&compiler->data_builder, 1);
 	}
 	else {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_CONST);

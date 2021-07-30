@@ -150,6 +150,7 @@ const int chunk_optimize(struct chunk* chunk, uint64_t offset) {
 		case MACHINE_SET_PROPERTY:
 		case MACHINE_GET_PROPERTY:
 		case MACHINE_BUILD_RECORD:
+		case MACHINE_TRACE:
 			chunk_read_size(chunk, sizeof(uint64_t));
 			break;
 		case MACHINE_LOAD_CONST:
