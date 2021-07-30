@@ -13,7 +13,8 @@
 #define BINARY_OVERLOAD 2187
 #define UNARY_OVERLOAD 3187
 
-struct value; //forward declare value.
+struct value;
+struct machine;
 
 struct record_prototype {
 	uint64_t identifier;

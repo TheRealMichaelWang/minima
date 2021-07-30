@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 #include "value.h"
-#include "machine.h"
+
+struct machine;
 
 //API to facilitate the declaration of built-in procedures which can be called using the "extern" keyword within the Minima language
 #define DECL_BUILT_IN(METHOD_NAME) struct value (METHOD_NAME)(struct value** argv, uint32_t argc, struct machine* machine)

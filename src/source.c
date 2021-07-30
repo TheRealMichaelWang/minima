@@ -103,7 +103,7 @@ int main(uint32_t argc, char** argv) {
 			while (block_check(src_buf, index) || !index)
 			{
 				printf(">>> ");
-				while (scanf_s("%c", &src_buf[index], 1)) {
+				while (scanf("%c", &src_buf[index])) {
 					if (src_buf[index] == '\n')
 						break;
 					index++;

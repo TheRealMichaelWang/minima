@@ -3,8 +3,6 @@
 #ifndef OPCODE_H
 #define OPCODE_H
 
-#include "machine.h"
-
 //machine op-codes
 enum op_code {
 	MACHINE_LOAD_CONST,
@@ -49,6 +47,9 @@ enum op_code {
 	MACHINE_CALL_EXTERN,
 	MACHINE_END //last one isn't really an opcode, just an end signal
 };
+
+struct machine;
+struct chunk;
 
 const int handle_opcode(enum op_code op, struct machine* machine, struct chunk* chunk);
 
