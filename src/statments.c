@@ -184,6 +184,8 @@ DECL_VALUE_COMPILER(compile_goto) {
 				chunk_write_ulong(builder, arguments);
 				chunk_write_opcode(builder, MACHINE_GOTO);
 				chunk_write_ulong(builder, label_id);
+				chunk_write_opcode(builder, MACHINE_TRACE);
+				chunk_write_ulong(builder, 1);
 				chunk_write_opcode(builder, MACHINE_CLEAN);
 			}
 		}
@@ -528,8 +530,10 @@ DECL_STATMENT_COMPILER(compile_return) {
 	if (IS_VALUE_TOK(compiler->last_tok)) {
 		if (!compile_expression(compiler, &compiler->data_builder, PREC_BEGIN, 0, callee ? 0 : proc_encapsulated))
 			return 0;
-		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
-		chunk_write_ulong(&compiler->data_builder, 1);
+		if (callee) {
+			chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
+			chunk_write_ulong(&compiler->data_builder, 1);
+		}
 	}
 	else {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_CONST);
