@@ -6,8 +6,7 @@
 #include "include/compiler.h"
 
 struct token compiler_read_tok(struct compiler* compiler) {
-	do
-	{
+	do {
 		compiler->last_tok = scanner_read_tok(&compiler->scanner);
 	} while (compiler->last_tok.type == TOK_REMARK);
 	if (compiler->last_tok.type == TOK_ERROR) {

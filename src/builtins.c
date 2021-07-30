@@ -82,7 +82,7 @@ DECL_BUILT_IN(builtin_get_input) {
 
 	char buffer[4096];
 	uint32_t length = 0;
-	while (scanf_s("%c", &buffer[length], 1)) {
+	while (scanf("%c", &buffer[length])) {
 		if (buffer[length] == '\n')
 			break;
 		length++;
@@ -173,13 +173,13 @@ DECL_BUILT_IN(builtin_abs) {
 DECL_BUILT_IN(builtin_max) {
 	if (argc < 2)
 		return const_value_null;
-	return NUM_VALUE(max(argv[0]->payload.numerical, argv[1]->payload.numerical));
+	return NUM_VALUE(fmax(argv[0]->payload.numerical, argv[1]->payload.numerical));
 }
 
 DECL_BUILT_IN(builtin_min) {
 	if (argc < 2)
 		return const_value_null;
-	return NUM_VALUE(min(argv[0]->payload.numerical, argv[1]->payload.numerical));
+	return NUM_VALUE(fmin(argv[0]->payload.numerical, argv[1]->payload.numerical));
 }
 
 DECL_BUILT_IN(builtin_ceil) {
