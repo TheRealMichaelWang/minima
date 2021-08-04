@@ -9,12 +9,21 @@
 static const char read_char(struct scanner* scanner) {
 	if (scanner->pos == scanner->size)
 		return scanner->last_char = 0;
+	if (scanner->source[scanner->pos] == '\n') {
+		scanner->row++;
+		scanner->col = 1;
+	}
+	else
+		scanner->col++;
 	return scanner->last_char = scanner->source[scanner->pos++];
 }
 
-void init_scanner(struct scanner* scanner, const char* source) {
+void init_scanner(struct scanner* scanner, const char* source, const char* file) {
 	scanner->source = source;
+	scanner->file = file;
 	scanner->pos = 0;
+	scanner->row = 1;
+	scanner->col = 1;
 	scanner->size = strlen(source);
 	read_char(scanner);
 }

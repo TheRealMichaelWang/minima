@@ -491,7 +491,7 @@ DECL_OPCODE_HANDLER((*opcode_handler[30])) = {
 const int handle_opcode(enum op_code op, struct machine* machine, struct chunk* chunk) {
 	if (op >= MACHINE_END || op < 0)
 		MACHINE_ERROR(ERROR_UNRECOGNIZED_OPCODE);
-	if(opcode_handler[op])
+	if (opcode_handler[op])
 		return (*opcode_handler[op])(machine, chunk);
 	return 1;
 }

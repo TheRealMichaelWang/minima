@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include "include/opcodes.h"
@@ -8,23 +9,19 @@
 void debug_print_scanner(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)
 		scanner.pos = scanner.size - 1;
-	scanner.pos--;
-	uint32_t pos = scanner.pos - 1;
-	while (scanner.pos != 0)
-	{
+	while (--scanner.pos)
 		if (scanner.source[scanner.pos] == '\n') {
 			scanner.pos++;
 			break;
 		}
-		scanner.pos--;
-	}
 
 	while (scanner.pos < scanner.size && scanner.source[scanner.pos] != '\n')
 		printf("%c", scanner.source[scanner.pos++]);
-	printf("\n");
-	while (pos--)
-		printf(" ");
-	printf("^");
+	printf("\nROW: %" PRIu64 ", COL: %" PRIu64, scanner.row, scanner.col);
+	if (scanner.file)
+		printf(" in %s", scanner.file);
+	else
+		printf(" from the interactive REPL.");
 }
 
 static void print_instruction_dump(struct chunk* chunk, uint32_t* indent) {

@@ -55,11 +55,11 @@ const int compile_body(struct compiler* compiler, struct chunk_builder* builder,
 	return 1;
 }
 
-void init_compiler(struct compiler* compiler, const char* include_dir, const char* source) {
+void init_compiler(struct compiler* compiler, const char* include_dir, const char* source, const char* file) {
 	compiler->imported_files = 0;
 	compiler->include_dir = include_dir;
 	compiler->include_dir_len = strlen(include_dir);
-	init_scanner(&compiler->scanner, source);
+	init_scanner(&compiler->scanner, source, file);
 	init_chunk_builder(&compiler->code_builder);
 	init_chunk_builder(&compiler->data_builder);
 	compiler_read_tok(compiler);

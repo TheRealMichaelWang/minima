@@ -25,7 +25,7 @@ struct compiler
 };
 
 //initializes a compiler instance
-void init_compiler(struct compiler* compiler, const char* include_dir, const char* source);
+void init_compiler(struct compiler* compiler, const char* include_dir, const char* source, const char* file);
 
 //compiles a program, and stores the output in "chunk builder"
 const int compile(struct compiler* compiler, const int repl_mode);

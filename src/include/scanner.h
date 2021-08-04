@@ -8,14 +8,14 @@
 
 struct scanner {
 	const char* source;
-	uint64_t size;
-	uint64_t pos;
+	const char* file;
+	uint64_t size, pos, row, col;
 
 	char last_char;
 	char last_err;
 };
 
-void init_scanner(struct scanner* scanner, const char* source);
+void init_scanner(struct scanner* scanner, const char* source, const char* file);
 
 struct token scanner_read_tok(struct scanner* scanner);
 

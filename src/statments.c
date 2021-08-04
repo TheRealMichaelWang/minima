@@ -180,8 +180,10 @@ DECL_VALUE_COMPILER(compile_goto) {
 			}
 			else {
 				chunk_write_opcode(builder, MACHINE_NEW_FRAME);
-				chunk_write_opcode(builder, MACHINE_TRACE);
-				chunk_write_ulong(builder, arguments);
+				if (arguments) {
+					chunk_write_opcode(builder, MACHINE_TRACE);
+					chunk_write_ulong(builder, arguments);
+				}
 				chunk_write_opcode(builder, MACHINE_GOTO);
 				chunk_write_ulong(builder, label_id);
 				chunk_write_opcode(builder, MACHINE_TRACE);
@@ -437,7 +439,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 	if(callee)
 		chunk_write_opcode(&compiler->data_builder, MACHINE_NEW_FRAME);
 
-	if (callee) {
+	if (callee && buffer_size) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_TRACE);
 		chunk_write_ulong(&compiler->data_builder, buffer_size);
 	}
@@ -582,8 +584,6 @@ DECL_STATMENT_COMPILER(compile_include) {
 		}
 	compiler->imported_file_hashes[compiler->imported_files++] = path_hash;
 
-	free(file_path);
-
 	fseek(infile, 0, SEEK_END);
 	uint64_t fsize = ftell(infile);
 	fseek(infile, 0, SEEK_SET);
@@ -594,12 +594,13 @@ DECL_STATMENT_COMPILER(compile_include) {
 	source[fsize] = 0;
 
 	struct scanner my_scanner = compiler->scanner;
-	init_scanner(&compiler->scanner, source);
+	init_scanner(&compiler->scanner, source, file_path);
 	
 	compiler_read_tok(compiler);
 	if (!compile(compiler, 0)) 
 		return 0;
 	free(source);
+	free(file_path);
 
 	compiler->scanner = my_scanner;
 	compiler_read_tok(compiler);

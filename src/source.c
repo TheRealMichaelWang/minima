@@ -55,7 +55,7 @@ int main(uint32_t argc, char** argv) {
 		fclose(infile);
 		source[fsize] = 0;
 
-		init_compiler(&compiler, argv[0], source);
+		init_compiler(&compiler, argv[0], source, argv[1]);
 
 		compiler.imported_file_hashes[compiler.imported_files++] = hash(argv[1], strlen(argv[1]));
 
@@ -122,7 +122,7 @@ int main(uint32_t argc, char** argv) {
 				debug_print_dump(global_chunk);
 			}
 			else {
-				init_compiler(&compiler, argv[0], src_buf);
+				init_compiler(&compiler, argv[0], src_buf, NULL);
 				compiler.imported_files = imported_files;
 
 				if (!compile(&compiler, 1)) {
