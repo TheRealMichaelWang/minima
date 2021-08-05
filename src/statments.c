@@ -14,7 +14,7 @@
 #define NULL_CHECK(PTR) if (PTR == NULL) { compiler->last_err = ERROR_OUT_OF_MEMORY; return 0; }
 
 #define DECL_VALUE_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder, const int optimize_copy, uint64_t optimize_goto)
-#define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder , const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated)
+#define DECL_STATMENT_COMPILER(METHOD_NAME) static const int METHOD_NAME(struct compiler* compiler, struct chunk_builder* builder, struct loc_table* loc_table, const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated)
 
 DECL_VALUE_COMPILER(compile_primative) {
 	MATCH_TOK(compiler->last_tok, TOK_PRIMATIVE);
@@ -308,7 +308,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 
 	chunk_write_opcode(builder, MACHINE_COND_SKIP);
 
-	if (!compile_body(compiler, builder, callee, proc_encapsulated))
+	if (!compile_body(compiler, builder, loc_table, callee, proc_encapsulated))
 		return 0;
 
 	chunk_write_opcode(builder, MACHINE_FLAG);
@@ -323,7 +323,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 				return 0;
 			chunk_write_opcode(builder, MACHINE_COND_SKIP);
 
-			if (!compile_body(compiler, builder, callee, proc_encapsulated))
+			if (!compile_body(compiler, builder, loc_table, callee, proc_encapsulated))
 				return 0;
 
 			chunk_write_opcode(builder, MACHINE_FLAG);
@@ -333,7 +333,7 @@ DECL_STATMENT_COMPILER(compile_if) {
 		else {
 			compiler_read_tok(compiler);
 			chunk_write_opcode(builder, MACHINE_FLAG_SKIP);
-			if (!compile_body(compiler, builder, callee, proc_encapsulated))
+			if (!compile_body(compiler, builder, loc_table, callee, proc_encapsulated))
 				return 0;
 			chunk_write_opcode(builder, MACHINE_END_SKIP);
 		}
@@ -358,7 +358,7 @@ DECL_STATMENT_COMPILER(compile_while) {
 
 	chunk_write_opcode(builder, MACHINE_MARK);
 
-	if (!compile_body(compiler, builder, callee, proc_encapsulated))
+	if (!compile_body(compiler, builder, loc_table, callee, proc_encapsulated))
 		return 0;
 
 	chunk_write_chunk(builder, temp_expr_chunk, 1);
@@ -374,7 +374,7 @@ DECL_STATMENT_COMPILER(compile_do_while) {
 
 	chunk_write_opcode(builder, MACHINE_MARK);
 	
-	if (!compile_body(compiler, builder, callee, proc_encapsulated))
+	if (!compile_body(compiler, builder, loc_table, callee, proc_encapsulated))
 		return 0;
 
 	MATCH_TOK(compiler->last_tok, TOK_WHILE);
@@ -448,7 +448,7 @@ DECL_STATMENT_COMPILER(compile_proc) {
 		chunk_write_ulong(&compiler->data_builder, reverse_buffer[buffer_size]);
 	}
 
-	if (!compile_body(compiler, &compiler->data_builder, callee, label_id))
+	if (!compile_body(compiler, &compiler->data_builder, loc_table, callee, label_id))
 		return 0;
 	if (callee && proc_id == RECORD_INIT_PROC) {
 		chunk_write_opcode(&compiler->data_builder, MACHINE_LOAD_VAR);
@@ -496,7 +496,7 @@ DECL_STATMENT_COMPILER(compile_record) {
 				compiler_read_tok(compiler);
 			}
 			else if (compiler->last_tok.type == TOK_PROC) {
-				if (!compile_proc(compiler, &compiler->data_builder, record_id, 0, 1))
+				if (!compile_proc(compiler, &compiler->data_builder, loc_table, record_id, 0, 1))
 					return 0;
 			}
 			else {
@@ -596,11 +596,15 @@ DECL_STATMENT_COMPILER(compile_include) {
 	struct scanner my_scanner = compiler->scanner;
 	init_scanner(&compiler->scanner, source, file_path);
 	
+	loc_table_include(loc_table, file_path);
+
 	compiler_read_tok(compiler);
-	if (!compile(compiler, 0)) 
+	if (!compile(compiler, loc_table, 0)) {
 		return 0;
+	}
 	free(source);
-	free(file_path);
+
+	loc_table_uninclude(loc_table);
 
 	compiler->scanner = my_scanner;
 	compiler_read_tok(compiler);
@@ -645,9 +649,13 @@ const int compile_value(struct compiler* compiler, struct chunk_builder* builder
 	return 0;
 }
 
-const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated){
-	if (IS_STATMENT_TOK(compiler->last_tok))
-		return (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, builder, callee, encapsulated, proc_encapsulated);
+const int compile_statement(struct compiler* compiler, struct chunk_builder* builder, struct loc_table* loc_table, const uint64_t callee, const int encapsulated, uint64_t proc_encapsulated){
+	loc_table_insert(loc_table, compiler, builder);
+	if (IS_STATMENT_TOK(compiler->last_tok)) {
+		int stat = (*statment_compilers[compiler->last_tok.type - TOK_UNARY_OP])(compiler, builder, loc_table, callee, encapsulated, proc_encapsulated);
+		loc_table_insert(loc_table, compiler, builder);
+		return stat;
+	}
 	compiler->last_err = ERROR_UNRECOGNIZED_TOKEN;
 	return 0;
 }

@@ -29,6 +29,7 @@ int main(uint32_t argc, char** argv) {
 	if (!init_machine(&machine))
 		exit(EXIT_FAILURE);
 	struct compiler compiler;
+	struct loc_table loc_table;
 
 	size_t i = strlen(argv[0]);
 	while (i--)
@@ -56,10 +57,11 @@ int main(uint32_t argc, char** argv) {
 		source[fsize] = 0;
 
 		init_compiler(&compiler, argv[0], source, argv[1]);
+		init_loc_table(&loc_table, argv[1]);
 
 		compiler.imported_file_hashes[compiler.imported_files++] = hash(argv[1], strlen(argv[1]));
 
-		if (!compile(&compiler, 0)) {
+		if (!compile(&compiler, &loc_table, 0)) {
 			printf("\n***Syntax Error***\n");
 			error_info(compiler.last_err);
 			printf("\n\n");
@@ -71,10 +73,12 @@ int main(uint32_t argc, char** argv) {
 			if (err != ERROR_SUCCESS) {
 				printf("\n***Runtime Error***\n");
 				error_info(err);
-				printf("\n\nDUMP: \n");
-				debug_print_dump(source_chunk);
+				printf("\n");
+				loc_table_finalize(&loc_table, &compiler);
+				debug_print_trace(&machine, &loc_table, source_chunk.pos);
 			}
 		}
+		free_loc_table(&loc_table);
 		free(source);
 
 		if (argc > 2 && !strcmp(argv[2], "--debug")) {
@@ -95,6 +99,8 @@ int main(uint32_t argc, char** argv) {
 		uint32_t imported_files = 0;
 		init_chunk_builder(&global_build);
 		chunk_write_opcode(&global_build, MACHINE_NEW_FRAME);
+		init_loc_table(&loc_table, NULL);
+		loc_table.global_offset = 1;
 
 		while (1)
 		{
@@ -125,7 +131,7 @@ int main(uint32_t argc, char** argv) {
 				init_compiler(&compiler, argv[0], src_buf, NULL);
 				compiler.imported_files = imported_files;
 
-				if (!compile(&compiler, 1)) {
+				if (!compile(&compiler, &loc_table, 1)) {
 					printf("\n***Syntax Error***\n");
 					error_info(compiler.last_err);
 					printf("\n\n");
@@ -133,6 +139,8 @@ int main(uint32_t argc, char** argv) {
 					printf("\n");
 				}
 				else {
+					loc_table_finalize(&loc_table, &compiler);
+					
 					struct chunk new_chunk = compiler_get_chunk(&compiler, global_build.size);
 					chunk_write_chunk(&global_build, new_chunk, 1);
 					imported_files = compiler.imported_files;
@@ -145,8 +153,9 @@ int main(uint32_t argc, char** argv) {
 					if (err != ERROR_SUCCESS) {
 						printf("\n***Runtime Error***\n");
 						error_info(err);
-						printf("\n\nGLOBAL DUMP:\n");
-						debug_print_dump(global_chunk);
+						printf("\n");
+
+						debug_print_trace(&machine, &loc_table, global_chunk.pos);
 
 						global_build.size = ip;
 						machine_reset(&machine);
@@ -154,10 +163,12 @@ int main(uint32_t argc, char** argv) {
 					else
 						ip = global_chunk.pos;
 				}
+				loc_table.global_offset = ip;
 			}
 		}
 		struct chunk global_chunk = build_chunk(&global_build);
 		free_chunk(&global_chunk);
+		free_loc_table(&loc_table);
 	}
 	free_machine(&machine);
    	exit(EXIT_SUCCESS);

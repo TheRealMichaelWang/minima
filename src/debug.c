@@ -6,6 +6,97 @@
 #include "include/error.h"
 #include "include/debug.h"
 
+const int init_loc_table(struct loc_table* loc_table, char* initial_file) {
+	ERROR_ALLOC_CHECK(loc_table->locations = malloc((loc_table->alloced_locs = 64) * sizeof(struct loc_info)));
+	ERROR_ALLOC_CHECK(loc_table->to_free = malloc((loc_table->alloced_files = 64) * sizeof(char*)));
+	ERROR_ALLOC_CHECK(loc_table->file_stack = malloc(64 * sizeof(const char*)));
+	loc_table->files = 0;
+	loc_table->current_file = 0;
+	loc_table->loc_entries = 0;
+	loc_table->global_offset = 0;
+	loc_table->file_stack[0] = initial_file;
+	return 1;
+}
+
+void free_loc_table(struct loc_table* loc_table) {
+	for (uint_fast64_t i = 0; i < loc_table->files; i++)
+		free(loc_table->to_free[i]);
+	free(loc_table->to_free);
+	free(loc_table->locations);
+	free(loc_table->file_stack);
+}
+
+const int loc_table_include(struct loc_table* loc_table, char* file) {
+	if (loc_table->files == loc_table->alloced_files) {
+		char** new_free = realloc(loc_table->to_free, (loc_table->alloced_files *= 2) * sizeof(char*));
+		if (!new_free)
+			return 0;
+		loc_table->to_free = new_free;
+	}
+	loc_table->to_free[loc_table->files++] = file;
+	loc_table->file_stack[++loc_table->current_file] = file;
+	return 1;
+}
+
+void loc_table_uninclude(struct loc_table* loc_table) {
+	loc_table->current_file--;
+}
+
+const int loc_table_insert(struct loc_table* loc_table, struct compiler* compiler, struct chunk_builder* builder) {
+	if (loc_table->loc_entries == loc_table->alloced_locs) {
+		struct loc_info** new_entries = realloc(loc_table->locations, (loc_table->alloced_locs *= 2) * sizeof(struct loc_info));
+		if (!new_entries)
+			return 0;
+		loc_table->locations = new_entries;
+	}
+	loc_table->locations[loc_table->loc_entries++] = (struct loc_info){
+		.file = loc_table->file_stack[loc_table->current_file],
+		.chunk_loc = builder->size + loc_table->global_offset,
+		.src_col = compiler->scanner.col,
+		.src_row = compiler->scanner.row,
+		.offset_flag = (builder == &compiler->code_builder)
+	};
+	return 1;
+}
+
+void loc_table_finalize(struct loc_table* loc_table, struct compiler* compiler) {
+	for (uint_fast64_t i = 0; i < loc_table->loc_entries; i++)
+		if (loc_table->locations[i].offset_flag) {
+			loc_table->locations[i].chunk_loc += compiler->data_builder.size;
+			loc_table->locations[i].offset_flag = 0;
+		}
+	int sorted = 0;
+	do {
+		sorted = 1;
+		for(uint_fast64_t i = 1; i < loc_table->loc_entries; i++)
+			if (loc_table->locations[i - 1].chunk_loc > loc_table->locations[i].chunk_loc) {
+				struct loc_info temp = loc_table->locations[i];
+				loc_table->locations[i] = loc_table->locations[i - 1];
+				loc_table->locations[i - 1] = temp;
+				sorted = 0;
+			}
+	} while (!sorted);
+}
+
+void loc_table_print(struct loc_table* loc_table, const uint64_t chunk_loc) {
+	uint64_t low = 0;
+	uint64_t high = loc_table->loc_entries;
+
+	do {
+		uint64_t middle = (high - low) / 2 + low;
+		if (chunk_loc > loc_table->locations[middle].chunk_loc)
+			low = middle;
+		else
+			high = middle;
+	} while (high - low > 1);
+
+	printf("ROW: %" PRIu64 ", COL: %" PRIu64, loc_table->locations[low].src_row, loc_table->locations[low].src_col);
+	if (loc_table->locations[low].file)
+		printf(" in %s.", loc_table->locations[low].file);
+	else
+		printf(" from the interactive REPL.");
+}
+
 void debug_print_scanner(struct scanner scanner) {
 	if (scanner.pos >= scanner.size)
 		scanner.pos = scanner.size - 1;
@@ -156,4 +247,14 @@ void debug_print_dump(struct chunk chunk) {
 		}
 		printf("\n");
 	}
+}
+
+void debug_print_trace(struct machine* machine, struct loc_table* table, uint64_t last_pos) {
+	for (uint_fast64_t i = 0; i < machine->positions; i++) {
+		printf("in ");
+		loc_table_print(table, machine->position_stack[i]);
+		printf("\n");
+	}
+	printf("\t");
+	loc_table_print(table, last_pos);
 }

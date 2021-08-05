@@ -8,6 +8,7 @@
 #include "hash.h"
 #include "scanner.h"
 #include "chunk.h"
+#include "debug.h"
 
 struct compiler
 {
@@ -28,7 +29,7 @@ struct compiler
 void init_compiler(struct compiler* compiler, const char* include_dir, const char* source, const char* file);
 
 //compiles a program, and stores the output in "chunk builder"
-const int compile(struct compiler* compiler, const int repl_mode);
+const int compile(struct compiler* compiler, struct loc_table* loc_table, const int repl_mode);
 
 //reads a token as a compiler
 struct token compiler_read_tok(struct compiler* compiler);
@@ -37,7 +38,7 @@ struct token compiler_read_tok(struct compiler* compiler);
 const int compile_expression(struct compiler* compiler, struct chunk_builder* builder, enum op_precedence min_prec, const int optimize_copy, uint64_t optimize_goto);
 
 //compiles a block of code
-const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t callee, uint64_t proc_encapsulated);
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, struct loc_table* loc_table, uint64_t callee, uint64_t proc_encapsulated);
 
 struct chunk compiler_get_chunk(struct compiler* compiler, uint64_t prev_offset);
 

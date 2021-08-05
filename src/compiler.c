@@ -5,6 +5,16 @@
 #include "include/statements.h"
 #include "include/compiler.h"
 
+void init_compiler(struct compiler* compiler, const char* include_dir, const char* source, const char* file) {
+	compiler->imported_files = 0;
+	compiler->include_dir = include_dir;
+	compiler->include_dir_len = strlen(include_dir);
+	init_scanner(&compiler->scanner, source, file);
+	init_chunk_builder(&compiler->code_builder);
+	init_chunk_builder(&compiler->data_builder);
+	compiler_read_tok(compiler);
+}
+
 struct token compiler_read_tok(struct compiler* compiler) {
 	do {
 		compiler->last_tok = scanner_read_tok(&compiler->scanner);
@@ -38,7 +48,7 @@ const int compile_expression(struct compiler* compiler, struct chunk_builder* bu
 	return 1;
 }
 
-const int compile_body(struct compiler* compiler, struct chunk_builder* builder, uint64_t callee, uint64_t proc_encapsulated) {
+const int compile_body(struct compiler* compiler, struct chunk_builder* builder, struct loc_table* loc_table, uint64_t callee, uint64_t proc_encapsulated) {
 	if (compiler->last_tok.type != TOK_OPEN_BRACE) {
 		compiler->last_err = ERROR_UNEXPECTED_TOKEN;
 		return 0;
@@ -48,33 +58,20 @@ const int compile_body(struct compiler* compiler, struct chunk_builder* builder,
 
 	while (compiler->last_tok.type != TOK_END && compiler->last_tok.type != TOK_CLOSE_BRACE)
 	{
-		if (!compile_statement(compiler, builder, callee, 1, proc_encapsulated))
+		if (!compile_statement(compiler, builder, loc_table, callee, 1, proc_encapsulated))
 			return 0;
 	}
 	compiler_read_tok(compiler);
 	return 1;
 }
 
-void init_compiler(struct compiler* compiler, const char* include_dir, const char* source, const char* file) {
-	compiler->imported_files = 0;
-	compiler->include_dir = include_dir;
-	compiler->include_dir_len = strlen(include_dir);
-	init_scanner(&compiler->scanner, source, file);
-	init_chunk_builder(&compiler->code_builder);
-	init_chunk_builder(&compiler->data_builder);
-	compiler_read_tok(compiler);
-}
-
-const int compile(struct compiler* compiler, const int repl_mode) {
+const int compile(struct compiler* compiler, struct loc_table* loc_table, const int repl_mode) {
 	if(!repl_mode)
 		chunk_write_opcode(&compiler->code_builder, MACHINE_NEW_FRAME);
 	
 	while (compiler->last_tok.type != TOK_END)
-	{
-		if (!compile_statement(compiler, &compiler->code_builder, 0, 0, 0)) {
+		if (!compile_statement(compiler, &compiler->code_builder, loc_table, 0, 0, 0))
 			return 0;
-		}
-	}
 
 	if(!repl_mode)
 		chunk_write_opcode(&compiler->code_builder, MACHINE_CLEAN);
