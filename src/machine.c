@@ -42,6 +42,7 @@ const int init_machine(struct machine* machine) {
 void machine_reset(struct machine* machine) {
 	machine->evals = 0;
 	machine->constants = 0;
+	machine->positions = 0;
 	while (machine->call_size > 1)
 		free_var_context(&machine->var_stack[--machine->call_size]);
 }
