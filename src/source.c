@@ -74,7 +74,7 @@ int main(uint32_t argc, char** argv) {
 				printf("\n***Runtime Error***\n");
 				error_info(err);
 				printf("\n");
-				loc_table_finalize(&loc_table, &compiler);
+				loc_table_finalize(&loc_table, &compiler, 0);
 				debug_print_trace(&machine, &loc_table, source_chunk.pos);
 			}
 		}
@@ -132,6 +132,7 @@ int main(uint32_t argc, char** argv) {
 				compiler.imported_files = imported_files;
 
 				if (!compile(&compiler, &loc_table, 1)) {
+					loc_table_dispose(&loc_table);
 					printf("\n***Syntax Error***\n");
 					error_info(compiler.last_err);
 					printf("\n\n");
@@ -139,8 +140,6 @@ int main(uint32_t argc, char** argv) {
 					printf("\n");
 				}
 				else {
-					loc_table_finalize(&loc_table, &compiler);
-					
 					struct chunk new_chunk = compiler_get_chunk(&compiler, global_build.size);
 					chunk_write_chunk(&global_build, new_chunk, 1);
 					imported_files = compiler.imported_files;
@@ -151,17 +150,21 @@ int main(uint32_t argc, char** argv) {
 
  					enum error err = machine_execute(&machine, &global_chunk);
 					if (err != ERROR_SUCCESS) {
+						loc_table_dispose(&loc_table);
 						printf("\n***Runtime Error***\n");
 						error_info(err);
 						printf("\n");
 
+						loc_table_finalize(&loc_table, &compiler, 0);
 						debug_print_trace(&machine, &loc_table, global_chunk.pos);
 
 						global_build.size = ip;
 						machine_reset(&machine);
 					}
-					else
+					else {
 						ip = global_chunk.pos;
+						loc_table_finalize(&loc_table, &compiler, 1);
+					}
 				}
 				loc_table.global_offset = ip;
 			}
