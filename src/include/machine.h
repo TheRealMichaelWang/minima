@@ -24,10 +24,8 @@ struct machine {
 
 	struct var_context* var_stack;
 
-	uint64_t positions;
-	uint64_t call_size;
-	uint16_t evals;
-	uint16_t constants;
+	uint64_t positions, call_size;
+	uint16_t evals,  constants;
 
 	int std_flag;
 	enum error last_err;

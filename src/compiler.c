@@ -2,17 +2,32 @@
 #include <string.h>
 #include "include/opcodes.h"
 #include "include/tokens.h"
+#include "include/globals.h"
 #include "include/statements.h"
 #include "include/compiler.h"
 
-void init_compiler(struct compiler* compiler, const char* include_dir, const char* source, const char* file) {
+void init_compiler(struct compiler* compiler, struct machine* machine, const char* include_dir, const char* source, const char* file) {
 	compiler->imported_files = 0;
 	compiler->include_dir = include_dir;
+	compiler->machine = machine;
 	compiler->include_dir_len = strlen(include_dir);
 	init_scanner(&compiler->scanner, source, file);
 	init_chunk_builder(&compiler->code_builder);
 	init_chunk_builder(&compiler->data_builder);
 	compiler_read_tok(compiler);
+}
+
+const int compile(struct compiler* compiler, struct loc_table* loc_table, const int repl_mode) {
+	if(!repl_mode)
+		chunk_write_opcode(&compiler->code_builder, MACHINE_NEW_FRAME);
+	
+	while (compiler->last_tok.type != TOK_END)
+		if (!compile_statement(compiler, &compiler->code_builder, loc_table, 0, 0, 0))
+			return 0;
+
+	if(!repl_mode)
+		chunk_write_opcode(&compiler->code_builder, MACHINE_CLEAN);
+	return 1;
 }
 
 struct token compiler_read_tok(struct compiler* compiler) {
@@ -65,16 +80,124 @@ const int compile_body(struct compiler* compiler, struct chunk_builder* builder,
 	return 1;
 }
 
-const int compile(struct compiler* compiler, struct loc_table* loc_table, const int repl_mode) {
-	if(!repl_mode)
-		chunk_write_opcode(&compiler->code_builder, MACHINE_NEW_FRAME);
-	
-	while (compiler->last_tok.type != TOK_END)
-		if (!compile_statement(compiler, &compiler->code_builder, loc_table, 0, 0, 0))
-			return 0;
+static const int compiler_link_chunk(struct compiler* compiler, struct chunk* chunk, uint64_t offset) {
+	uint64_t** skip_stack = malloc(64);
+	ERROR_ALLOC_CHECK(skip_stack);
 
-	if(!repl_mode)
-		chunk_write_opcode(&compiler->code_builder, MACHINE_CLEAN);
+	uint8_t skips = 0;
+
+	while (chunk->last_code != MACHINE_END)
+	{
+		enum op_code op = chunk->last_code;
+		switch (op)
+		{
+		case MACHINE_LABEL:
+		case MACHINE_COND_SKIP:
+		case MACHINE_FLAG_SKIP: {
+			skip_stack[skips++] = chunk_read_size(chunk, sizeof(uint64_t));
+			if (op == MACHINE_LABEL) {
+				uint64_t label_id = chunk_read_ulong(chunk);
+				if (!cache_insert_label(&compiler->machine->global_cache, label_id, chunk->pos + offset)) {
+					compiler->last_err = ERROR_LABEL_REDEFINE;
+					return 0;
+				}
+			}
+			break;
+		}
+		case MACHINE_END_SKIP: {
+			*skip_stack[--skips] = chunk->pos - 1 + offset;
+			break;
+		}
+		case MACHINE_CALL_EXTERN:
+		case MACHINE_INHERIT_REC:
+			chunk_read_size(chunk, sizeof(uint64_t));
+		case MACHINE_GOTO:
+		case MACHINE_GOTO_AS:
+		case MACHINE_STORE_VAR:
+		case MACHINE_LOAD_VAR:
+		case MACHINE_BUILD_COL:
+		case MACHINE_SET_PROPERTY:
+		case MACHINE_GET_PROPERTY:
+		case MACHINE_BUILD_RECORD:
+		case MACHINE_TRACE:
+			chunk_read_size(chunk, sizeof(uint64_t));
+			break;
+		case MACHINE_LOAD_CONST:
+			chunk_read_size(chunk, sizeof(struct value));
+			break;
+		case MACHINE_EVAL_BIN_OP:
+		case MACHINE_EVAL_UNI_OP:
+			chunk_read_size(chunk, sizeof(uint8_t));
+			break;
+		case MACHINE_BUILD_PROTO: {
+			chunk_read_size(chunk, sizeof(uint64_t));
+			uint64_t i = chunk_read_ulong(chunk);
+			while (i--)
+				chunk_read_size(chunk, sizeof(uint64_t));
+			break;
+		}
+		}
+		chunk_read_opcode(chunk);
+	}
+	free(skip_stack);
+	chunk->pos = 0;
+	chunk_read_opcode(chunk);
+	if (skips)
+		return 0;
+	while (chunk->last_code != MACHINE_END)
+	{
+		enum op_code op = chunk->last_code;
+		switch (op)
+		{
+		case MACHINE_LABEL:
+			chunk_read_size(chunk, sizeof(uint64_t));
+		case MACHINE_COND_SKIP:
+		case MACHINE_FLAG_SKIP: {
+			chunk_read_size(chunk, sizeof(uint64_t));
+			break;
+		}
+		case MACHINE_CALL_EXTERN:
+		case MACHINE_INHERIT_REC:
+			chunk_read_size(chunk, sizeof(uint64_t));
+		case MACHINE_GOTO_AS:
+		case MACHINE_STORE_VAR:
+		case MACHINE_LOAD_VAR:
+		case MACHINE_BUILD_COL:
+		case MACHINE_SET_PROPERTY:
+		case MACHINE_GET_PROPERTY:
+		case MACHINE_BUILD_RECORD:
+		case MACHINE_TRACE:
+			chunk_read_size(chunk, sizeof(uint64_t));
+			break;
+		case MACHINE_GOTO: {
+			uint64_t* pos_slot = chunk_read_size(chunk, sizeof(uint64_t));
+			uint64_t pos = cache_retrieve_pos(&compiler->machine->global_cache, *pos_slot);
+			if (!pos) {
+				compiler->last_err = ERROR_LABEL_UNDEFINED;
+				return 0;
+			}
+			*pos_slot = pos;
+			break;
+		}
+		case MACHINE_LOAD_CONST:
+			chunk_read_size(chunk, sizeof(struct value));
+			break;
+		case MACHINE_EVAL_BIN_OP:
+		case MACHINE_EVAL_UNI_OP:
+			chunk_read_size(chunk, sizeof(uint8_t));
+			break;
+		case MACHINE_BUILD_PROTO: {
+			chunk_read_size(chunk, sizeof(uint64_t));
+			uint64_t i = chunk_read_ulong(chunk);
+			while (i--)
+				chunk_read_size(chunk, sizeof(uint64_t));
+			break;
+		}
+		}
+		chunk_read_opcode(chunk);
+	}
+	chunk->pos = 0;
+	chunk_read_opcode(chunk);
 	return 1;
 }
 
@@ -86,7 +209,7 @@ struct chunk compiler_get_chunk(struct compiler* compiler, uint64_t prev_offset)
 	chunk_write_chunk(&sum, build_chunk(&compiler->code_builder), 1);
 	
 	struct chunk build = build_chunk(&sum);
-	chunk_optimize(&build, prev_offset);
+	compiler_link_chunk(compiler, &build, prev_offset);
 
 	return build;
 }

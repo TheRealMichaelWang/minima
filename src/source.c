@@ -56,7 +56,7 @@ int main(uint32_t argc, char** argv) {
 		fclose(infile);
 		source[fsize] = 0;
 
-		init_compiler(&compiler, argv[0], source, argv[1]);
+		init_compiler(&compiler, &machine, argv[0], source, argv[1]);
 		init_loc_table(&loc_table, argv[1]);
 
 		compiler.imported_file_hashes[compiler.imported_files++] = hash(argv[1], strlen(argv[1]));
@@ -128,7 +128,7 @@ int main(uint32_t argc, char** argv) {
 				debug_print_dump(global_chunk);
 			}
 			else {
-				init_compiler(&compiler, argv[0], src_buf, NULL);
+				init_compiler(&compiler, &machine, argv[0], src_buf, NULL);
 				compiler.imported_files = imported_files;
 
 				if (!compile(&compiler, &loc_table, 1)) {
@@ -141,6 +141,7 @@ int main(uint32_t argc, char** argv) {
 				}
 				else {
 					struct chunk new_chunk = compiler_get_chunk(&compiler, global_build.size);
+
 					chunk_write_chunk(&global_build, new_chunk, 1);
 					imported_files = compiler.imported_files;
 

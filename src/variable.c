@@ -4,7 +4,7 @@
 #include "include/variable.h"
 
 const int init_var_context(struct var_context* var_context, struct garbage_collector* garbage_collector) {
-	var_context->hash_limit = 16;
+	var_context->hash_limit = 8;
 	var_context->garbage_collector = garbage_collector;
 	ERROR_ALLOC_CHECK(var_context->buckets = malloc(var_context->hash_limit * sizeof(struct var_bucket)));
 	

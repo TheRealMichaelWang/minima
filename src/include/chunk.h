@@ -45,6 +45,5 @@ const enum binary_operator chunk_read_uni_op(struct chunk* chunk);
 const void* chunk_read_size(struct chunk* chunk, const uint64_t size);
 
 void chunk_jump_to(struct chunk* chunk, const uint64_t pos);
-const int chunk_optimize(struct chunk* chunk, uint64_t offset);
 #endif // !CHUNK_H
  
