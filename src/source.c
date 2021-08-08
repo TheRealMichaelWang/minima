@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
 #include "include/debug.h"
 #include "include/hash.h"
 #include "include/compiler.h"
@@ -61,21 +60,20 @@ int main(uint32_t argc, char** argv) {
 
 		compiler.imported_file_hashes[compiler.imported_files++] = hash(argv[1], strlen(argv[1]));
 
-		if (!compile(&compiler, &loc_table, 0)) {
+		if (!compile(&compiler, &loc_table, 0, 1, 0)) {
 			printf("\n***Syntax Error***\n");
 			error_info(compiler.last_err);
 			printf("\n\n");
 			debug_print_scanner(compiler.scanner);
 		}
 		else {
-			struct chunk source_chunk = compiler_get_chunk(&compiler, 0);
-			enum error err = machine_execute(&machine, &source_chunk);
+			enum error err = machine_execute(&machine, &compiler.result);
 			if (err != ERROR_SUCCESS) {
 				printf("\n***Runtime Error***\n");
 				error_info(err);
 				printf("\n");
 				loc_table_finalize(&loc_table, &compiler, 0);
-				debug_print_trace(&machine, &loc_table, source_chunk.pos);
+				debug_print_trace(&machine, &loc_table, compiler.result.pos);
 			}
 		}
 		free_loc_table(&loc_table);
@@ -83,7 +81,7 @@ int main(uint32_t argc, char** argv) {
 
 		if (argc > 2 && !strcmp(argv[2], "--debug")) {
 			printf("\nPress ENTER to exit.");
-			getchar();
+			while(getchar() != '\n');
 		}
 	}
 	else {
@@ -131,7 +129,7 @@ int main(uint32_t argc, char** argv) {
 				init_compiler(&compiler, &machine, argv[0], src_buf, NULL);
 				compiler.imported_files = imported_files;
 
-				if (!compile(&compiler, &loc_table, 1)) {
+				if (!compile(&compiler, &loc_table, 1, 1, global_build.size)) {
 					loc_table_dispose(&loc_table);
 					printf("\n***Syntax Error***\n");
 					error_info(compiler.last_err);
@@ -140,9 +138,7 @@ int main(uint32_t argc, char** argv) {
 					printf("\n");
 				}
 				else {
-					struct chunk new_chunk = compiler_get_chunk(&compiler, global_build.size);
-
-					chunk_write_chunk(&global_build, new_chunk, 1);
+					chunk_write_chunk(&global_build, compiler.result, 1);
 					imported_files = compiler.imported_files;
 
 					struct chunk global_chunk = build_chunk(&global_build);

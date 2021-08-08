@@ -599,7 +599,7 @@ DECL_STATMENT_COMPILER(compile_include) {
 	loc_table_include(loc_table, file_path);
 
 	compiler_read_tok(compiler);
-	if (!compile(compiler, loc_table, 0)) {
+	if (!compile(compiler, loc_table, 0, 0, 0)) {
 		return 0;
 	}
 	free(source);
