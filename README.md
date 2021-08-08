@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://repository-images.githubusercontent.com/371836745/8d964bac-a4d2-4e19-b8f3-2e2522bec8a1" width="350" title="hover text">
+</p>
+
 # Minima
 Minima is an object-oriented, imperative scripting language focused on being practical and pragmatic. Minima aims to be simple, easy to write, yet powerful enough to create readable, performant and concise code for any problem. You can read [Minima's documentation here](https://github.com/TheRealMichaelWang/minima/wiki), and view the [installation guide here](https://github.com/TheRealMichaelWang/minima/wiki/Installation).
 
