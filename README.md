@@ -9,10 +9,10 @@ Among many things, it's...
 * **Small** - The compiler and virutal-machine clock slightly under 5000 lines of code. 
 * **Portable** - Minima compiles byte-code and runs it on a virtual-machine. It's the same way Java does it.
 * **Powerful** - Minima is designed for quick-and-messy object-oriented programming on the fly. 
-* **Embedable** - It's very easy to imbed it into your C/C++ project.
+* **Embeddable** - It's very easy to imbed it into your C/C++ project.
 * **Easy To Learn** - You could probably read the documentation, and learn the language, in under half-an-hour.
 
-## Some Examples
+## Examples
 
 ### Count Down 
 ```
